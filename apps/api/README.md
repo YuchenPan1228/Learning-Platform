@@ -17,8 +17,33 @@ Create a virtual environment and install dependencies:
 cd apps/api
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
 ```
+
+## Test
+
+Requires PostgreSQL. From the repository root:
+
+```bash
+./scripts/start-services.sh
+```
+
+If your Docker volume was created before the test database was added:
+
+```bash
+docker compose exec postgres psql -U quant_prep -d quant_prep -c "CREATE DATABASE quant_prep_test;"
+```
+
+Run tests:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+pip install -e ".[dev]"
+pytest
+```
+
+Integration tests use `TEST_DATABASE_URL` and skip automatically when PostgreSQL is unavailable.
 
 ## Run
 
