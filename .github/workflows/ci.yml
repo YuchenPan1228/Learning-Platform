@@ -17,6 +17,22 @@ jobs:
     defaults:
       run:
         working-directory: apps/api
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://quant_prep:quant_prep@localhost:5432/quant_prep_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: quant_prep_test
+          POSTGRES_USER: quant_prep
+          POSTGRES_PASSWORD: quant_prep
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quant_prep -d quant_prep_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
