@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quant Prep AI</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">QP</div>
+          <div>
+            <strong>Quant Prep AI</strong>
+            <span>Interview training</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Primary">
+          <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="topics">Topics</button>
+          <button class="nav-item" data-view="paths">Learning Paths</button>
+          <button class="nav-item" data-view="concept">Concept Page</button>
+          <button class="nav-item" data-view="practice">Practice</button>
+          <button class="nav-item" data-view="mental">Mental Math</button>
+          <button class="nav-item" data-view="crawler">Ingestion</button>
+        </nav>
+
+        <div class="sidebar-panel">
+          <span class="panel-label">Today</span>
+          <strong>90 min plan</strong>
+          <p>15 probability, 10 mental math, 5 finance, 2 market games.</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Adaptive quant interview prep</p>
+            <h1 id="page-title">Dashboard</h1>
+          </div>
+          <div class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input id="search" type="search" placeholder="Search topics, tags, formulas..." />
+          </div>
+        </header>
+
+        <section id="dashboard" class="view active-view">
+          <div class="summary-grid">
+            <article class="metric">
+              <span>Mastery</span>
+              <strong>48%</strong>
+              <div class="bar"><i style="width: 48%"></i></div>
+            </article>
+            <article class="metric">
+              <span>Streak</span>
+              <strong>6 days</strong>
+              <div class="bar"><i style="width: 72%"></i></div>
+            </article>
+            <article class="metric">
+              <span>Weakest prerequisite</span>
+              <strong>Bayes</strong>
+              <div class="bar warning"><i style="width: 28%"></i></div>
+            </article>
+            <article class="metric">
+              <span>Review due</span>
+              <strong>32 cards</strong>
+              <div class="bar"><i style="width: 64%"></i></div>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel wide">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Study planner</p>
+                  <h2>Today's queue</h2>
+                </div>
+                <button class="icon-button" title="Regenerate plan">↻</button>
+              </div>
+              <div class="queue-list" id="study-plan"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">AI diagnosis</p>
+                  <h2>Focus area</h2>
+                </div>
+              </div>
+              <p class="diagnosis">
+                You are solving independent probability quickly, but conditional probability
+                answers often miss whether the sample space changed after observing evidence.
+              </p>
+              <div class="graph-strip" aria-label="Knowledge graph preview">
+                <span>Conditional Probability</span>
+                <i></i>
+                <span>Bayes</span>
+                <i></i>
+                <span>Random Variables</span>
+              </div>
+              <button class="primary-action" data-view-target="practice">Start Bayes drill</button>
+            </section>
+          </div>
+        </section>
+
+        <section id="topics" class="view">
+          <div class="topic-grid" id="topic-grid"></div>
+        </section>
+
+        <section id="paths" class="view">
+          <div class="path-layout">
+            <section class="panel wide">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Curriculum</p>
+                  <h2>Learning paths</h2>
+                </div>
+              </div>
+              <div id="path-list" class="path-list"></div>
+            </section>
+            <section class="panel">
+              <p class="eyebrow">Recommendation</p>
+              <h2>Why this order</h2>
+              <p class="diagnosis">
+                The graph starts with prerequisite concepts, then moves into interview patterns.
+                Mastery scores can reroute the path when a weak dependency shows up.
+              </p>
+            </section>
+          </div>
+        </section>
+
+        <section id="concept" class="view">
+          <div class="concept-layout">
+            <section class="panel wide concept-page">
+              <p class="eyebrow">Concept page</p>
+              <h2>Bayes' Rule</h2>
+              <div class="formula">P(A | B) = P(B | A)P(A) / P(B)</div>
+              <div class="concept-columns">
+                <div>
+                  <h3>Definition</h3>
+                  <p>Updates the probability of a hypothesis after observing evidence.</p>
+                  <h3>Common mistakes</h3>
+                  <p>Confusing P(A | B) with P(B | A), ignoring base rates, or failing to redefine the sample space.</p>
+                </div>
+                <div>
+                  <h3>Interview tips</h3>
+                  <p>Name the events, write the formula, compute the denominator with total probability, then sanity-check the result.</p>
+                  <h3>Practice</h3>
+                  <p>Medical testing, urns, card draws, defect rates, and trading signal reliability.</p>
+                </div>
+              </div>
+            </section>
+            <aside class="panel">
+              <p class="eyebrow">Knowledge graph</p>
+              <div id="concept-graph" class="concept-graph"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="practice" class="view">
+          <div class="practice-layout">
+            <section class="panel practice-card">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Probability · Medium</p>
+                  <h2 id="question-title">Exactly 7 Heads</h2>
+                </div>
+                <span class="pill">binomial</span>
+              </div>
+              <p id="question-body" class="question-body">
+                You flip 10 fair coins. What is the probability of exactly 7 heads?
+              </p>
+              <textarea id="answer" placeholder="Write your reasoning..."></textarea>
+              <div id="question-metadata" class="metadata-grid"></div>
+              <div class="button-row">
+                <button id="grade-answer" class="primary-action">Grade answer</button>
+                <button id="next-question" class="secondary-action">Similar question</button>
+              </div>
+            </section>
+
+            <aside class="panel tutor-panel">
+              <p class="eyebrow">AI tutor</p>
+              <h2>Feedback</h2>
+              <p id="feedback">
+                Submit an answer to get a step-by-step explanation, a mistake diagnosis,
+                and a follow-up variant.
+              </p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="mental" class="view">
+          <div class="mental-layout">
+            <section class="panel">
+              <p class="eyebrow">Timed drill</p>
+              <h2 id="mental-prompt">13 × 27</h2>
+              <div class="answer-line">
+                <input id="mental-answer" inputmode="decimal" placeholder="Answer" />
+                <button id="check-mental" class="primary-action">Check</button>
+              </div>
+              <p id="mental-feedback" class="subtle">Type an answer and check instantly.</p>
+            </section>
+            <section class="panel">
+              <p class="eyebrow">Categories</p>
+              <div class="mini-list" id="mental-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="crawler" class="view">
+          <div class="content-grid">
+            <section class="panel wide">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Knowledge ingestion pipeline</p>
+                  <h2>Topic job: Conditional Probability</h2>
+                </div>
+                <button class="primary-action">Create topic job</button>
+              </div>
+              <div class="pipeline-steps" id="pipeline-steps"></div>
+              <div class="review-list" id="review-list"></div>
+            </section>
+            <section class="panel">
+              <p class="eyebrow">Review detail</p>
+              <h2>Structured draft</h2>
+              <p class="diagnosis">
+                Topic jobs collect sources, score quality, extract typed objects, cluster
+                semantic duplicates, preserve provenance, then publish only reviewed knowledge.
+              </p>
+              <div class="score-card">
+                <span>Source quality</span>
+                <strong>82%</strong>
+                <div class="bar"><i style="width: 82%"></i></div>
+              </div>
+              <div class="provenance-list">
+                <div><span>License</span><strong>Unknown · review required</strong></div>
+                <div><span>Similarity</span><strong>0.91 to existing coin-flip cluster</strong></div>
+                <div><span>Model</span><strong>extractor-v1.0</strong></div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
