@@ -1,0 +1,19 @@
+from app.models import Base
+
+EXPECTED_TABLES = {
+    "topics",
+    "concepts",
+    "concept_edges",
+    "questions",
+    "tags",
+    "question_tags",
+    "flashcards",
+    "learning_paths",
+    "learning_path_steps",
+    "attempts",
+    "user_topic_mastery",
+}
+
+
+def test_mvp_tables_are_registered() -> None:
+    assert EXPECTED_TABLES.issubset(Base.metadata.tables.keys())
