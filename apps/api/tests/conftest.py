@@ -1,0 +1,64 @@
+import os
+from collections.abc import Generator
+
+import pytest
+from app.config import get_settings
+from app.db import reset_db_state
+from app.main import create_app
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+
+DEFAULT_TEST_DATABASE_URL = (
+    "postgresql+psycopg://quant_prep:quant_prep@localhost:5432/quant_prep_test"
+)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "integration: tests that require a running PostgreSQL instance",
+    )
+
+
+@pytest.fixture(scope="session")
+def database_url() -> str:
+    return os.environ.get("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL)
+
+
+@pytest.fixture(scope="session")
+def postgres_available(database_url: str) -> bool:
+    engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return False
+    finally:
+        engine.dispose()
+    return True
+
+
+@pytest.fixture
+def require_postgres(postgres_available: bool) -> None:
+    if not postgres_available:
+        pytest.skip(
+            "PostgreSQL is not available. Run ./scripts/start-services.sh from the repo root.",
+        )
+
+
+@pytest.fixture
+def client(
+    monkeypatch: pytest.MonkeyPatch,
+    database_url: str,
+) -> Generator[TestClient, None, None]:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    monkeypatch.setenv("APP_ENV", "test")
+    get_settings.cache_clear()
+    reset_db_state()
+
+    with TestClient(create_app()) as test_client:
+        yield test_client
+
+    reset_db_state()
+    get_settings.cache_clear()

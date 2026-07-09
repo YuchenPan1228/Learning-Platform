@@ -51,7 +51,10 @@ disallow_untyped_defs = false
 minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra --cov=app --cov-report=term-missing"
+addopts = "-ra --cov=app --cov-report=term-missing --cov-report=xml"
+markers = [
+    "integration: tests that require a running PostgreSQL instance",
+]
 
 [tool.coverage.run]
 branch = true
@@ -60,3 +63,4 @@ source = ["app"]
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+fail_under = 70
