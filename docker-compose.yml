@@ -1,0 +1,39 @@
+name: quant-prep-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quant-prep-postgres
+    environment:
+      POSTGRES_DB: quant_prep
+      POSTGRES_USER: quant_prep
+      POSTGRES_PASSWORD: quant_prep
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quant_prep -d quant_prep"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: quant-prep-redis
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
