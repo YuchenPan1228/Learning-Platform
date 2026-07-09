@@ -44,3 +44,11 @@ def check_database_connection() -> bool:
     with get_engine().connect() as connection:
         connection.execute(text("SELECT 1"))
     return True
+
+
+def reset_db_state() -> None:
+    global _engine, _session_factory
+    if _engine is not None:
+        _engine.dispose()
+    _engine = None
+    _session_factory = None
