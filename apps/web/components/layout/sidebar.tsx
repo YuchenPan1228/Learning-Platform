@@ -45,18 +45,14 @@ export function Sidebar() {
       </nav>
 
       <nav className="grid gap-1.5" aria-label="Admin">
-        <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-          Admin
-        </span>
+        <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">Admin</span>
         {adminNavItems.map((item) => (
           <NavLink key={item.href} href={item.href} label={item.label} />
         ))}
       </nav>
 
       <div className="mt-auto rounded-lg border border-[#dfe6e1] bg-white p-4">
-        <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-          Today
-        </span>
+        <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">Today</span>
         <strong className="mt-1 block text-sm text-[#15201c]">90 min plan</strong>
         <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
           Study planner content arrives in Phase 2.
