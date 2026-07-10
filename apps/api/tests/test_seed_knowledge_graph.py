@@ -1,25 +1,9 @@
 import pytest
-from alembic import command
-from alembic.config import Config
 from app.config import get_settings
 from app.models.concept import Concept, ConceptEdge
 from app.models.topic import Topic
 from app.seeds.knowledge_graph import seed_knowledge_graph
 from sqlalchemy import func, select
-
-from tests.paths import ALEMBIC_INI
-
-
-@pytest.fixture
-def migrated_database(
-    database_url: str,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("DATABASE_URL", database_url)
-    get_settings.cache_clear()
-    alembic_config = Config(str(ALEMBIC_INI))
-    command.downgrade(alembic_config, "base")
-    command.upgrade(alembic_config, "head")
 
 
 @pytest.mark.integration
