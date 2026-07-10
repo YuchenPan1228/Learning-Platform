@@ -42,3 +42,9 @@ class LearningSignalType(StrEnum):
 class SearchResourceType(StrEnum):
     QUESTIONS = "questions"
     CONCEPTS = "concepts"
+
+
+class DuplicateMatchType(StrEnum):
+    EXACT_RAW = "exact_raw"
+    EXACT_NORMALIZED = "exact_normalized"
+    NEAR_NORMALIZED = "near_normalized"
