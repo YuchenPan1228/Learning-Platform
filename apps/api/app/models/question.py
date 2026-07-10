@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
-from app.models.enums import ContentStatus, Difficulty
+from app.models.enums import ContentStatus, Difficulty, enum_values
 
 if TYPE_CHECKING:
     from app.models.attempt import Attempt
@@ -25,7 +25,7 @@ class Question(Base, TimestampMixin):
     canonical_solution: Mapped[str | None] = mapped_column(Text, nullable=True)
     short_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     difficulty: Mapped[Difficulty] = mapped_column(
-        SAEnum(Difficulty, name="difficulty"),
+        SAEnum(Difficulty, name="difficulty", values_callable=enum_values),
         nullable=False,
         index=True,
     )
@@ -59,7 +59,7 @@ class Question(Base, TimestampMixin):
     prerequisites: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     related_question_ids: Mapped[list[int] | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[ContentStatus] = mapped_column(
-        SAEnum(ContentStatus, name="content_status"),
+        SAEnum(ContentStatus, name="content_status", values_callable=enum_values),
         default=ContentStatus.DRAFT,
         nullable=False,
         index=True,

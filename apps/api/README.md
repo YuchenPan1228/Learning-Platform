@@ -45,6 +45,22 @@ pytest
 
 Integration tests use `TEST_DATABASE_URL` and skip automatically when PostgreSQL is unavailable.
 
+## Migrations
+
+Apply the latest schema:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+alembic upgrade head
+```
+
+Create a new migration after model changes:
+
+```bash
+alembic revision --autogenerate -m "describe change"
+```
+
 ## Run
 
 ```bash

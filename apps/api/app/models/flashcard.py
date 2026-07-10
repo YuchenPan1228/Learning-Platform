@@ -7,7 +7,7 @@ from sqlalchemy import ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.enums import Difficulty
+from app.models.enums import Difficulty, enum_values
 
 if TYPE_CHECKING:
     from app.models.topic import Topic
@@ -26,7 +26,7 @@ class Flashcard(Base):
     )
     source_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     difficulty: Mapped[Difficulty | None] = mapped_column(
-        SAEnum(Difficulty, name="difficulty", create_type=False),
+        SAEnum(Difficulty, name="difficulty", create_type=False, values_callable=enum_values),
         nullable=True,
     )
 

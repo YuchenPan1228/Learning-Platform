@@ -7,7 +7,7 @@ from sqlalchemy import Float, ForeignKey, Integer, String, Text, UniqueConstrain
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.enums import ConceptEdgeRelationshipType
+from app.models.enums import ConceptEdgeRelationshipType, enum_values
 
 if TYPE_CHECKING:
     from app.models.learning_path import LearningPathStep
@@ -69,7 +69,11 @@ class ConceptEdge(Base):
         index=True,
     )
     relationship_type: Mapped[ConceptEdgeRelationshipType] = mapped_column(
-        SAEnum(ConceptEdgeRelationshipType, name="concept_edge_relationship_type"),
+        SAEnum(
+            ConceptEdgeRelationshipType,
+            name="concept_edge_relationship_type",
+            values_callable=enum_values,
+        ),
         nullable=False,
         index=True,
     )
