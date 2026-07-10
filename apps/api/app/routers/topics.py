@@ -47,9 +47,7 @@ def list_topics(session: SessionDep) -> list[TopicWithSubtopicsRead]:
 @router.get("/{slug}")
 def get_topic(slug: str, session: SessionDep) -> TopicWithSubtopicsRead:
     topic = session.scalar(
-        select(Topic)
-        .where(Topic.slug == slug)
-        .options(selectinload(Topic.subtopics)),
+        select(Topic).where(Topic.slug == slug).options(selectinload(Topic.subtopics)),
     )
     if topic is None:
         raise HTTPException(status_code=404, detail="Topic not found")

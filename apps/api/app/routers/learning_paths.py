@@ -48,8 +48,9 @@ def _learning_path_detail(learning_path: LearningPath) -> LearningPathDetailRead
 @router.get("")
 def list_learning_paths(session: SessionDep) -> list[LearningPathSummaryRead]:
     rows = session.execute(
-        select(LearningPathStep.learning_path_id, func.count())
-        .group_by(LearningPathStep.learning_path_id),
+        select(LearningPathStep.learning_path_id, func.count()).group_by(
+            LearningPathStep.learning_path_id
+        ),
     ).all()
     step_counts: dict[int, int] = {path_id: count for path_id, count in rows}
     learning_paths = session.scalars(
