@@ -61,6 +61,19 @@ Create a new migration after model changes:
 alembic revision --autogenerate -m "describe change"
 ```
 
+## Seed knowledge graph
+
+Load the README topic hierarchy, initial concepts, and concept edges:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+alembic upgrade head
+python -m app.seeds
+```
+
+The seed is idempotent and safe to rerun locally.
+
 ## Run
 
 ```bash

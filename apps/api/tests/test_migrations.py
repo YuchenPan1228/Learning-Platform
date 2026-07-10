@@ -1,12 +1,9 @@
-from pathlib import Path
-
 import pytest
 from alembic import command
 from alembic.config import Config
 from app.config import get_settings
 from sqlalchemy import create_engine, inspect, text
-
-ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
+from tests.paths import ALEMBIC_INI
 
 
 @pytest.fixture
