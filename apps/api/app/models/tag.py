@@ -7,7 +7,7 @@ from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.enums import TagCategory
+from app.models.enums import TagCategory, enum_values
 
 if TYPE_CHECKING:
     from app.models.question import Question
@@ -20,7 +20,7 @@ class Tag(Base):
     slug: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     category: Mapped[TagCategory] = mapped_column(
-        SAEnum(TagCategory, name="tag_category"),
+        SAEnum(TagCategory, name="tag_category", values_callable=enum_values),
         nullable=False,
         index=True,
     )
