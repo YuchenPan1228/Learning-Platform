@@ -109,3 +109,10 @@ Read-only endpoints for the MVP content model (no auth per ADR-001):
 - `GET /flashcards/{flashcard_id}` — flashcard detail
 - `GET /learning-paths` — list learning paths
 - `GET /learning-paths/{slug}` — learning path with ordered steps
+
+## Search
+
+Full-text search uses the existing PostgreSQL GIN indexes (`quant_prep_english`) on questions and concepts. No embeddings (ADR-005).
+
+- `GET /search?q=&types=&topic_slug=&difficulty=&limit=` — search questions and concepts
+- Empty result sets are recorded as `search_miss` learning signals for later active learning

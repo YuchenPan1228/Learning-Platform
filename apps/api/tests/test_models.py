@@ -10,6 +10,7 @@ EXPECTED_TABLES = {
     "flashcards",
     "learning_paths",
     "learning_path_steps",
+    "learning_signals",
     "attempts",
     "user_topic_mastery",
 }

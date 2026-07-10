@@ -5,8 +5,10 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from app.config import get_settings
-from app.db import reset_db_state
+from app.db import get_session_factory, reset_db_state
 from app.main import create_app
+from app.seeds.knowledge_graph import seed_knowledge_graph
+from app.seeds.mvp_content import seed_mvp_content
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -61,6 +63,24 @@ def require_postgres(postgres_available: bool) -> None:
         pytest.skip(
             "PostgreSQL is not available. Run ./scripts/start-services.sh from the repo root.",
         )
+
+
+@pytest.fixture
+def seeded_database(
+    database_url: str,
+    migrated_database: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    reset_db_state()
+
+    session = get_session_factory()()
+    try:
+        seed_knowledge_graph(session)
+        seed_mvp_content(session)
+    finally:
+        session.close()
 
 
 @pytest.fixture

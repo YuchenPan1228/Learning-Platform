@@ -6,10 +6,13 @@ from app.models.enums import (
     ConceptEdgeRelationshipType,
     ContentStatus,
     Difficulty,
+    LearningSignalType,
+    SearchResourceType,
     TagCategory,
 )
 from app.models.flashcard import Flashcard
 from app.models.learning_path import LearningPath, LearningPathStep
+from app.models.learning_signal import LearningSignal
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
@@ -26,9 +29,12 @@ __all__ = [
     "Flashcard",
     "LearningPath",
     "LearningPathStep",
+    "LearningSignal",
+    "LearningSignalType",
     "LOCAL_USER_ID",
     "Question",
     "QuestionTag",
+    "SearchResourceType",
     "Tag",
     "TagCategory",
     "Topic",
