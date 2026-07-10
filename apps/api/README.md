@@ -116,3 +116,10 @@ Full-text search uses the existing PostgreSQL GIN indexes (`quant_prep_english`)
 
 - `GET /search?q=&types=&topic_slug=&difficulty=&limit=` — search questions and concepts
 - Empty result sets are recorded as `search_miss` learning signals for later active learning
+
+## Duplicate detection
+
+Hash-based duplicate detection for questions (no embeddings per ADR-005):
+
+- `GET /questions/{question_id}/duplicates` — exact raw, exact normalized, and near-normalized matches
+- Question rows store `raw_text_hash`, `normalized_text_hash`, and `normalized_text` for ingestion and review flows

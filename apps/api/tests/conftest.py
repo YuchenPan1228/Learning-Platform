@@ -4,6 +4,7 @@ from collections.abc import Generator
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.util.exc import CommandError
 from app.config import get_settings
 from app.db import get_session_factory, reset_db_state
 from app.main import create_app
@@ -18,6 +19,14 @@ from tests.paths import ALEMBIC_INI
 DEFAULT_TEST_DATABASE_URL = (
     "postgresql+psycopg://quant_prep:quant_prep@localhost:5432/quant_prep_test"
 )
+
+
+def reset_database_schema(database_url: str) -> None:
+    engine = create_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(text("DROP SCHEMA public CASCADE"))
+        connection.execute(text("CREATE SCHEMA public"))
+    engine.dispose()
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -53,7 +62,10 @@ def migrated_database(
     monkeypatch.setenv("DATABASE_URL", database_url)
     get_settings.cache_clear()
     alembic_config = Config(str(ALEMBIC_INI))
-    command.downgrade(alembic_config, "base")
+    try:
+        command.downgrade(alembic_config, "base")
+    except CommandError:
+        reset_database_schema(database_url)
     command.upgrade(alembic_config, "head")
 
 
