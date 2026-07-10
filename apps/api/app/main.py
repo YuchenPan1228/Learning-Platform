@@ -11,6 +11,7 @@ from app.routers import (
     health,
     learning_paths,
     questions,
+    search,
     topics,
 )
 
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     application.include_router(questions.router)
     application.include_router(flashcards.router)
     application.include_router(learning_paths.router)
+    application.include_router(search.router)
     application.state.settings = settings
     return application
 
