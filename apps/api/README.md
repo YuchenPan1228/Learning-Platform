@@ -94,3 +94,18 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Health check: `GET http://127.0.0.1:8000/health`
+
+## Read APIs
+
+Read-only endpoints for the MVP content model (no auth per ADR-001):
+
+- `GET /topics` — root topics with nested subtopics
+- `GET /topics/{slug}` — topic detail
+- `GET /concepts` — list concepts (`topic_slug` filter optional)
+- `GET /concepts/{slug}` — concept detail with graph neighbors
+- `GET /questions` — list approved questions (`topic_slug`, `subtopic_slug`, `difficulty`, `limit`, `offset`)
+- `GET /questions/{question_id}` — question detail including solution fields
+- `GET /flashcards` — list flashcards (`topic_slug` filter optional)
+- `GET /flashcards/{flashcard_id}` — flashcard detail
+- `GET /learning-paths` — list learning paths
+- `GET /learning-paths/{slug}` — learning path with ordered steps
