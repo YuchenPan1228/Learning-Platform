@@ -54,7 +54,7 @@ jobs:
         run: ruff format --check .
 
       - name: Mypy
-        run: mypy app tests
+        run: mypy
 
       - name: Pytest with coverage
         run: pytest
