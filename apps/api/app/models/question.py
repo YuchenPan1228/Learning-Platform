@@ -58,6 +58,9 @@ class Question(Base, TimestampMixin):
     common_mistakes: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     prerequisites: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     related_question_ids: Mapped[list[int] | None] = mapped_column(JSONB, nullable=True)
+    raw_text_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    normalized_text_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    normalized_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ContentStatus] = mapped_column(
         SAEnum(ContentStatus, name="content_status", values_callable=enum_values),
         default=ContentStatus.DRAFT,

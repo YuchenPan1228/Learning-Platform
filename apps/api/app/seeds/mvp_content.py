@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_session_factory
+from app.dedup.fingerprints import apply_question_fingerprints
 from app.models.question import Question
 from app.models.topic import Topic
 from app.seeds.data.mvp import ALL_MVP_QUESTIONS
@@ -75,10 +76,13 @@ def _upsert_question(
     }
 
     if question is None:
-        session.add(Question(**payload))
+        question = Question(**payload)
+        session.add(question)
     else:
         for field, value in payload.items():
             setattr(question, field, value)
+
+    apply_question_fingerprints(question)
 
 
 def seed_mvp_content(session: Session) -> MvpContentSummary:
