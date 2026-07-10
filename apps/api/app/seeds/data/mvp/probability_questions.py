@@ -42,6 +42,7 @@ PROBABILITY_QUESTIONS: tuple[QuestionSeed, ...] = (
         canonical_solution="This is geometric with p = 1/6, so E[N] = 1/p = 6.",
         estimated_time_seconds=300,
         common_mistakes=("Trying to enumerate many finite cases instead of using geometric distribution",),
+        prerequisites=("Geometric distribution",),
     ),
     QuestionSeed(
         seed_key="prob-004",
