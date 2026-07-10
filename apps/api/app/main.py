@@ -5,7 +5,14 @@ from fastapi import FastAPI
 
 from app.config import get_settings
 from app.db import get_engine
-from app.routers import health
+from app.routers import (
+    concepts,
+    flashcards,
+    health,
+    learning_paths,
+    questions,
+    topics,
+)
 
 
 @asynccontextmanager
@@ -22,6 +29,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     application.include_router(health.router)
+    application.include_router(topics.router)
+    application.include_router(concepts.router)
+    application.include_router(questions.router)
+    application.include_router(flashcards.router)
+    application.include_router(learning_paths.router)
     application.state.settings = settings
     return application
 
