@@ -74,6 +74,19 @@ python -m app.seeds
 
 The seed is idempotent and safe to rerun locally.
 
+## Seed MVP content
+
+Requires the knowledge graph seed first:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+python -m app.seeds
+python -m app.seeds.mvp_content
+```
+
+This loads 65 hand-authored questions: 20 probability, 20 mental math, 10 coding, 10 finance, and 5 market game placeholders.
+
 ## Run
 
 ```bash

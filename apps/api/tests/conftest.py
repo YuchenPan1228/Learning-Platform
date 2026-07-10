@@ -2,12 +2,16 @@ import os
 from collections.abc import Generator
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from app.config import get_settings
 from app.db import reset_db_state
 from app.main import create_app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+
+from tests.paths import ALEMBIC_INI
 
 DEFAULT_TEST_DATABASE_URL = (
     "postgresql+psycopg://quant_prep:quant_prep@localhost:5432/quant_prep_test"
@@ -37,6 +41,18 @@ def postgres_available(database_url: str) -> bool:
     finally:
         engine.dispose()
     return True
+
+
+@pytest.fixture
+def migrated_database(
+    database_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    alembic_config = Config(str(ALEMBIC_INI))
+    command.downgrade(alembic_config, "base")
+    command.upgrade(alembic_config, "head")
 
 
 @pytest.fixture
