@@ -5,6 +5,7 @@ description = "FastAPI backend for Quant Prep AI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "alembic>=1.14.0",
   "fastapi>=0.115.0",
   "pydantic-settings>=2.6.0",
   "psycopg[binary]>=3.2.0",
@@ -32,10 +33,13 @@ include = ["app*"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["app", "tests"]
+src = ["app", "tests", "alembic"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501", "UP007", "UP035", "I001"]
 
 [tool.mypy]
 python_version = "3.11"
