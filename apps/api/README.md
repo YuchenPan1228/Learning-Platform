@@ -85,7 +85,7 @@ python -m app.seeds
 python -m app.seeds.mvp_content
 ```
 
-This loads 65 hand-authored questions: 20 probability, 20 mental math, 10 coding, 10 finance, and 5 market game placeholders.
+This loads 65 hand-authored questions: 20 probability, 20 mental math, 10 coding, 10 finance, and 5 market game placeholders, plus 15 flashcards.
 
 ## Run
 

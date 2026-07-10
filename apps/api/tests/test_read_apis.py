@@ -107,7 +107,19 @@ def test_flashcards_and_learning_paths_endpoints(
 ) -> None:
     flashcards_response = client.get("/flashcards")
     assert flashcards_response.status_code == 200
-    assert flashcards_response.json() == []
+    flashcards = flashcards_response.json()
+    assert len(flashcards) == 15
+    assert flashcards[0]["front"]
+    assert flashcards[0]["topic_slug"]
+
+    filtered_flashcards_response = client.get("/flashcards", params={"topic_slug": "bayes"})
+    assert filtered_flashcards_response.status_code == 200
+    assert len(filtered_flashcards_response.json()) == 1
+    assert filtered_flashcards_response.json()[0]["front"] == "State Bayes' rule."
+
+    flashcard_detail_response = client.get(f"/flashcards/{flashcards[0]['id']}")
+    assert flashcard_detail_response.status_code == 200
+    assert flashcard_detail_response.json()["back"]
 
     learning_paths_response = client.get("/learning-paths")
     assert learning_paths_response.status_code == 200
