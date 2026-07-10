@@ -30,3 +30,15 @@ class TagCategory(StrEnum):
     FORMAT = "format"
     SKILL = "skill"
     FORMULA = "formula"
+
+
+class LearningSignalType(StrEnum):
+    SEARCH_MISS = "search_miss"
+    CONFUSING_QUESTION_FLAG = "confusing_question_flag"
+    HIGH_COMPLETION_RATE = "high_completion_rate"
+    WEAK_TOPIC = "weak_topic"
+
+
+class SearchResourceType(StrEnum):
+    QUESTIONS = "questions"
+    CONCEPTS = "concepts"

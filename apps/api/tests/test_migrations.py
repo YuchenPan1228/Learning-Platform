@@ -37,6 +37,7 @@ def test_initial_migration_applies(
             "flashcards",
             "learning_paths",
             "learning_path_steps",
+            "learning_signals",
             "attempts",
             "user_topic_mastery",
             "alembic_version",
