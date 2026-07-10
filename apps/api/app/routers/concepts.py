@@ -66,9 +66,7 @@ def _concept_neighbors(concept: Concept) -> list[ConceptNeighborRead]:
 
 def _topic_scope_ids(session: Session, topic_slug: str) -> list[int] | None:
     topic = session.scalar(
-        select(Topic)
-        .where(Topic.slug == topic_slug)
-        .options(selectinload(Topic.subtopics)),
+        select(Topic).where(Topic.slug == topic_slug).options(selectinload(Topic.subtopics)),
     )
     if topic is None:
         return None

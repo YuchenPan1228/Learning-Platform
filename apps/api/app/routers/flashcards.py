@@ -45,9 +45,7 @@ def list_flashcards(
 @router.get("/{flashcard_id}")
 def get_flashcard(flashcard_id: int, session: SessionDep) -> FlashcardRead:
     flashcard = session.scalar(
-        select(Flashcard)
-        .where(Flashcard.id == flashcard_id)
-        .options(joinedload(Flashcard.topic)),
+        select(Flashcard).where(Flashcard.id == flashcard_id).options(joinedload(Flashcard.topic)),
     )
     if flashcard is None:
         raise HTTPException(status_code=404, detail="Flashcard not found")
