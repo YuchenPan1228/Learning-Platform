@@ -1,27 +1,5 @@
 import pytest
-from app.config import get_settings
-from app.db import get_session_factory, reset_db_state
-from app.seeds.knowledge_graph import seed_knowledge_graph
-from app.seeds.mvp_content import seed_mvp_content
 from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def seeded_database(
-    database_url: str,
-    migrated_database: None,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("DATABASE_URL", database_url)
-    get_settings.cache_clear()
-    reset_db_state()
-
-    session = get_session_factory()()
-    try:
-        seed_knowledge_graph(session)
-        seed_mvp_content(session)
-    finally:
-        session.close()
 
 
 @pytest.mark.integration
