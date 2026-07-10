@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.db import get_session_factory
 from app.dedup.fingerprints import apply_question_fingerprints
+from app.models.flashcard import Flashcard
 from app.models.question import Question
 from app.models.topic import Topic
-from app.seeds.data.mvp import ALL_MVP_QUESTIONS
+from app.seeds.data.flashcard_seed import FlashcardSeed, flashcard_source_id
+from app.seeds.data.mvp import ALL_MVP_FLASHCARDS, ALL_MVP_QUESTIONS
 from app.seeds.data.question_seed import QuestionSeed, seed_extraction_method
 
 
@@ -18,6 +20,7 @@ class MvpContentSummary:
     coding_questions: int
     finance_questions: int
     market_game_questions: int
+    flashcards: int
 
     @property
     def total(self) -> int:
@@ -85,6 +88,33 @@ def _upsert_question(
     apply_question_fingerprints(question)
 
 
+def _upsert_flashcard(
+    session: Session,
+    seed: FlashcardSeed,
+    topics_by_slug: dict[str, Topic],
+) -> None:
+    topic = topics_by_slug.get(seed.topic_slug)
+    if topic is None:
+        msg = f"Missing topic slug '{seed.topic_slug}' for flashcard seed {seed.seed_key}"
+        raise ValueError(msg)
+
+    source_id = flashcard_source_id(seed.seed_key)
+    flashcard = session.scalar(select(Flashcard).where(Flashcard.source_id == source_id))
+    payload = {
+        "front": seed.front,
+        "back": seed.back,
+        "topic_id": topic.id,
+        "source_id": source_id,
+        "difficulty": seed.difficulty,
+    }
+
+    if flashcard is None:
+        session.add(Flashcard(**payload))
+    else:
+        for field, value in payload.items():
+            setattr(flashcard, field, value)
+
+
 def seed_mvp_content(session: Session) -> MvpContentSummary:
     topics_by_slug = _load_topics_by_slug(session)
     if not topics_by_slug:
@@ -112,6 +142,9 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
         elif seed.seed_key.startswith("game-"):
             counts["market_game"] += 1
 
+    for flashcard_seed in ALL_MVP_FLASHCARDS:
+        _upsert_flashcard(session, flashcard_seed, topics_by_slug)
+
     session.commit()
     return MvpContentSummary(
         probability_questions=counts["probability"],
@@ -119,6 +152,7 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
         coding_questions=counts["coding"],
         finance_questions=counts["finance"],
         market_game_questions=counts["market_game"],
+        flashcards=len(ALL_MVP_FLASHCARDS),
     )
 
 
@@ -138,8 +172,9 @@ def main() -> None:
         f"{summary.mental_math_questions} mental math,",
         f"{summary.coding_questions} coding,",
         f"{summary.finance_questions} finance,",
-        f"{summary.market_game_questions} market games",
-        f"({summary.total} total).",
+        f"{summary.market_game_questions} market games,",
+        f"{summary.flashcards} flashcards",
+        f"({summary.total} questions).",
     )
 
 

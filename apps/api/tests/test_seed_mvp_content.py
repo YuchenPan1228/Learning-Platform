@@ -1,5 +1,6 @@
 import pytest
 from app.config import get_settings
+from app.models.flashcard import Flashcard
 from app.models.question import Question
 from app.seeds.knowledge_graph import seed_knowledge_graph
 from app.seeds.mvp_content import seed_mvp_content
@@ -24,6 +25,7 @@ def test_seed_mvp_content_is_idempotent(
         seed_knowledge_graph(session)
         first = seed_mvp_content(session)
         question_count = session.scalar(select(func.count()).select_from(Question))
+        flashcard_count = session.scalar(select(func.count()).select_from(Flashcard))
         second = seed_mvp_content(session)
 
         assert first.total == 65
@@ -32,8 +34,10 @@ def test_seed_mvp_content_is_idempotent(
         assert first.coding_questions == 10
         assert first.finance_questions == 10
         assert first.market_game_questions == 5
+        assert first.flashcards == 15
         assert second == first
         assert question_count == 65
+        assert flashcard_count == 15
 
         mental_math = session.scalar(
             select(Question).where(Question.extraction_method == "hand_seed:mm-001")
