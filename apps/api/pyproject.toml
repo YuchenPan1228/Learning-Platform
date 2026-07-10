@@ -45,6 +45,7 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
+explicit_package_bases = true
 packages = ["app", "tests"]
 plugins = ["pydantic.mypy"]
 

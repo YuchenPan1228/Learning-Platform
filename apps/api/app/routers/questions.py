@@ -4,10 +4,12 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from app.dedup.detection import find_question_duplicates
 from app.dependencies import SessionDep
 from app.models.enums import ContentStatus, Difficulty
 from app.models.question import Question
 from app.models.topic import Topic
+from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 
 router = APIRouter(prefix="/questions", tags=["questions"])
@@ -92,6 +94,27 @@ def list_questions(
 
     questions = session.scalars(query).unique().all()
     return [_question_summary(question) for question in questions]
+
+
+@router.get("/{question_id}/duplicates")
+def get_question_duplicates(question_id: int, session: SessionDep) -> QuestionDuplicatesRead:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    matches = find_question_duplicates(session, question_id)
+    return QuestionDuplicatesRead(
+        question_id=question_id,
+        matches=[
+            DuplicateMatchRead(
+                question_id=match.question_id,
+                title=match.title,
+                match_type=match.match_type,
+                similarity_score=match.similarity_score,
+            )
+            for match in matches
+        ],
+    )
 
 
 @router.get("/{question_id}")

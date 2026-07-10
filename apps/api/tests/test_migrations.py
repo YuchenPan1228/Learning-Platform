@@ -1,9 +1,11 @@
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.util.exc import CommandError
 from app.config import get_settings
 from sqlalchemy import create_engine, inspect, text
 
+from tests.conftest import reset_database_schema
 from tests.paths import ALEMBIC_INI
 
 
@@ -20,7 +22,10 @@ def test_initial_migration_applies(
     database_url: str,
     require_postgres: None,
 ) -> None:
-    command.downgrade(alembic_config, "base")
+    try:
+        command.downgrade(alembic_config, "base")
+    except CommandError:
+        reset_database_schema(database_url)
     command.upgrade(alembic_config, "head")
 
     engine = create_engine(database_url)
@@ -56,9 +61,17 @@ def test_initial_migration_applies(
                     "WHERE tablename = 'concepts' AND indexname = 'ix_concepts_fts'"
                 )
             ).scalar_one()
+            question_hash_index = connection.execute(
+                text(
+                    "SELECT indexname FROM pg_indexes "
+                    "WHERE tablename = 'questions' "
+                    "AND indexname = 'ix_questions_normalized_text_hash'"
+                )
+            ).scalar_one()
 
         assert question_fts == "ix_questions_fts"
         assert concept_fts == "ix_concepts_fts"
+        assert question_hash_index == "ix_questions_normalized_text_hash"
     finally:
         engine.dispose()
         get_settings.cache_clear()
