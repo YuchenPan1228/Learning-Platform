@@ -7,6 +7,7 @@ import { QuestionCard } from "@/components/practice/question-card";
 import type { ConceptSummary } from "@/lib/types/concept";
 import type { Difficulty, QuestionSummary, Tag } from "@/lib/types/question";
 import type { TopicWithSubtopics } from "@/lib/types/topic";
+import { cn } from "@/lib/utils";
 
 type QuestionBrowserProps = {
   topics: TopicWithSubtopics[];
@@ -35,19 +36,23 @@ function FilterSelect({
   value,
   onChange,
   children,
+  className,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">{label}</span>
+    <label className={cn("grid min-w-0 gap-1 text-sm", className)}>
+      <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 rounded-lg border border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] outline-none focus-visible:border-[#0f766e] focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
+        className="h-9 w-full rounded-lg border border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] outline-none focus-visible:border-[#0f766e] focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
       >
         {children}
       </select>
@@ -121,7 +126,7 @@ export function QuestionBrowser({
         aria-label="Question filters"
         className="rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
           <FilterSelect
             label="Topic"
             value={filters.topicSlug}
