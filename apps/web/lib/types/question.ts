@@ -22,3 +22,20 @@ export type QuestionSummary = {
   status: string;
   tags: Tag[];
 };
+
+export type QuestionDetail = QuestionSummary & {
+  body: string;
+  canonical_solution: string | null;
+  short_answer: string | null;
+  expected_solution_pattern: string | null;
+  common_mistakes: string[] | null;
+  prerequisites: string[] | null;
+  source_attribution: string | null;
+};
+
+export type SelfCheckResult = {
+  question_id: number;
+  supported: boolean;
+  is_correct: boolean | null;
+  feedback: string;
+};
