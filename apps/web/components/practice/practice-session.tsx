@@ -5,9 +5,10 @@ import { useState } from "react";
 
 import { QuestionMetadata } from "@/components/practice/question-metadata";
 import { buttonVariants } from "@/components/ui/button";
-import { submitSelfCheck } from "@/lib/api/practice";
+import { recordAttempt } from "@/lib/api/attempts";
 import { formatDifficulty } from "@/lib/questions/format";
-import type { QuestionDetail, SelfCheckResult } from "@/lib/types/question";
+import type { AttemptResult } from "@/lib/types/attempt";
+import type { QuestionDetail } from "@/lib/types/question";
 import { cn } from "@/lib/utils";
 
 type PracticeSessionProps = {
@@ -16,8 +17,9 @@ type PracticeSessionProps = {
 };
 
 export function PracticeSession({ question, returnTo }: PracticeSessionProps) {
+  const [startedAt] = useState(() => Date.now());
   const [answer, setAnswer] = useState("");
-  const [checkResult, setCheckResult] = useState<SelfCheckResult | null>(null);
+  const [checkResult, setCheckResult] = useState<AttemptResult | null>(null);
   const [solutionRevealed, setSolutionRevealed] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -35,7 +37,12 @@ export function PracticeSession({ question, returnTo }: PracticeSessionProps) {
     setCheckError(null);
 
     try {
-      const result = await submitSelfCheck(question.id, trimmedAnswer);
+      const timeSpentSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+      const result = await recordAttempt({
+        questionId: question.id,
+        answer: trimmedAnswer,
+        timeSpentSeconds,
+      });
       setCheckResult(result);
     } catch {
       setCheckError("Self-check is unavailable. Check that the API is running.");
@@ -145,7 +152,7 @@ export function PracticeSession({ question, returnTo }: PracticeSessionProps) {
                 checkResult.is_correct ? "text-[#176b54]" : "text-[#66736e]",
               )}
             >
-              {checkResult.feedback}
+              {checkResult.feedback ?? "Attempt recorded."}
             </p>
             {checkResult.supported && checkResult.is_correct === false ? (
               <p className="text-sm text-[#66736e]">
