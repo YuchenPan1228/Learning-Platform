@@ -9,6 +9,8 @@ export type Tag = {
 
 export type Difficulty = "easy" | "medium" | "hard" | "expert";
 
+export type QuestionProgressStatus = "not_attempted" | "attempted" | "solved";
+
 export type QuestionSummary = {
   id: number;
   title: string;
@@ -21,6 +23,8 @@ export type QuestionSummary = {
   company_hint: string | null;
   status: string;
   tags: Tag[];
+  progress_status?: QuestionProgressStatus | null;
+  attempt_count?: number | null;
 };
 
 export type QuestionDetail = QuestionSummary & {

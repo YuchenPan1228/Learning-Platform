@@ -55,14 +55,20 @@ export function TopicLibrary({ topics, masteryBySlug }: TopicLibraryProps) {
         aria-label="Topic library filters"
         className="rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
       >
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-          <Input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search topics and subtopics..."
-            aria-label="Search topics and subtopics"
-          />
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
+          <label className="grid min-w-0 gap-1 text-sm">
+            <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+              Search
+            </span>
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search topics and subtopics..."
+              aria-label="Search topics and subtopics"
+              className="h-9 border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] focus-visible:border-[#0f766e] focus-visible:ring-[#0f766e]/20"
+            />
+          </label>
 
           <label className="grid gap-1 text-sm">
             <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
@@ -71,7 +77,7 @@ export function TopicLibrary({ topics, masteryBySlug }: TopicLibraryProps) {
             <select
               value={selectedTopicSlug}
               onChange={(event) => setSelectedTopicSlug(event.target.value)}
-              className="h-9 rounded-lg border border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] outline-none focus-visible:border-[#0f766e] focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
+              className="h-9 w-full rounded-lg border border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] outline-none focus-visible:border-[#0f766e] focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
             >
               <option value="all">All topics</option>
               {topics.map((topic) => (

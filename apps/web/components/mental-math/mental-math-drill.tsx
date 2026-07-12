@@ -95,7 +95,7 @@ export function MentalMathDrill({ categories, questions }: MentalMathDrillProps)
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
       <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
         <div className="mb-4">
-          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Timed drill</p>
+          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Practice drill</p>
           <h2 className="text-2xl font-semibold text-[#15201c]">Mental math prompt</h2>
           {currentQuestion ? (
             <p className="mt-1 text-sm text-[#66736e]">
@@ -120,7 +120,12 @@ export function MentalMathDrill({ categories, questions }: MentalMathDrillProps)
                 className="h-11"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    void handleCheck();
+                    event.preventDefault();
+                    if (feedback) {
+                      handleNextPrompt();
+                    } else {
+                      void handleCheck();
+                    }
                   }
                 }}
               />

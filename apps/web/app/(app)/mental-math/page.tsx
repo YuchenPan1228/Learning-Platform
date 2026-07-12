@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { MentalMathDrill } from "@/components/mental-math/mental-math-drill";
+import { MentalMathView } from "@/components/mental-math/mental-math-view";
 import { fetchQuestion, fetchQuestions } from "@/lib/api/questions";
 import { fetchTopic } from "@/lib/api/topics";
 
@@ -18,5 +18,5 @@ export default async function MentalMathPage() {
     await Promise.all(summaries.map((summary) => fetchQuestion(summary.id)))
   ).filter((question) => question !== null);
 
-  return <MentalMathDrill categories={topic.subtopics} questions={questions} />;
+  return <MentalMathView categories={topic.subtopics} questions={questions} />;
 }
