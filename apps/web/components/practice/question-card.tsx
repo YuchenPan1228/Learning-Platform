@@ -1,54 +1,75 @@
-import Link from "next/link";
+"use client";
 
-import type { QuestionSummary } from "@/lib/types/question";
-import type { QuestionProgressStatus } from "@/lib/types/progress";
+import { useRouter } from "next/navigation";
+
+import type { QuestionProgressStatus, QuestionSummary } from "@/lib/types/question";
 import { formatDifficulty } from "@/lib/questions/format";
 import { cn } from "@/lib/utils";
 
 const PROGRESS_LABELS: Record<QuestionProgressStatus, string> = {
-  not_attempted: "Not started",
+  not_attempted: "New",
   attempted: "Attempted",
   solved: "Solved",
 };
 
 const PROGRESS_STYLES: Record<QuestionProgressStatus, string> = {
   not_attempted: "border-[#dfe6e1] bg-[#fbfcfa] text-[#66736e]",
-  attempted: "border-[#f2d6a0] bg-[#fff8eb] text-[#9a6700]",
+  attempted: "border-[#f4d9a6] bg-[#fff8eb] text-[#8a5b00]",
   solved: "border-[#bdd3ca] bg-[#edf5f1] text-[#176b54]",
 };
 
 export function QuestionCard({
   question,
   returnTo,
+  questionIds,
 }: {
   question: QuestionSummary;
   returnTo?: string;
+  questionIds?: number[];
 }) {
-  const practiceHref = returnTo
-    ? `/practice/${question.id}?returnTo=${encodeURIComponent(returnTo)}`
-    : `/practice/${question.id}`;
+  const router = useRouter();
   const progressStatus = question.progress_status ?? "not_attempted";
 
+  const params = new URLSearchParams();
+  if (returnTo) {
+    params.set("returnTo", returnTo);
+  }
+  if (questionIds && questionIds.length > 0) {
+    params.set("ids", questionIds.join(","));
+  }
+  const query = params.toString();
+  const practiceHref = query
+    ? `/practice/${question.id}?${query}`
+    : `/practice/${question.id}`;
+
   return (
-    <Link
-      href={practiceHref}
-      className="group block rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_12px_32px_rgba(21,32,28,0.06)] transition-colors hover:border-[#bdd3ca] hover:bg-[#fbfcfa]"
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(practiceHref)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(practiceHref);
+        }
+      }}
+      className="cursor-pointer rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_8px_24px_rgba(21,32,28,0.06)] transition-colors hover:border-[#bdd3ca] hover:bg-[#fbfcfa] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
             {question.topic_slug}
             {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
           </p>
-          <h3 className="mt-1 line-clamp-2 text-base font-semibold text-[#15201c] group-hover:text-[#176b54]">
+          <h3 className="mt-1 line-clamp-2 text-base font-semibold text-[#15201c]">
             {question.title}
           </h3>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           <span className="rounded-full border border-[#dfe6e1] bg-[#fbfcfa] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#31443d] uppercase">
             {formatDifficulty(question.difficulty)}
           </span>
-          <span className="text-[11px] font-medium text-[#66736e]">
+          <span className="text-[11px] text-[#66736e]">
             {question.company_hint ?? "General quant"}
           </span>
         </div>
@@ -72,6 +93,6 @@ export function QuestionCard({
           </span>
         ))}
       </div>
-    </Link>
+    </article>
   );
 }
