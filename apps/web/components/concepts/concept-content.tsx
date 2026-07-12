@@ -1,20 +1,29 @@
 import Link from "next/link";
 
 import { ConceptSection } from "@/components/concepts/concept-section";
+import { buttonVariants } from "@/components/ui/button";
 import type { ConceptDetail } from "@/lib/types/concept";
+import { cn } from "@/lib/utils";
 
 export function ConceptContent({ concept }: { concept: ConceptDetail }) {
+  const practiceHref = `/practice?concept=${encodeURIComponent(concept.slug)}`;
+
   return (
     <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
       <div className="mb-5">
         <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Concept page</p>
         <h2 className="mt-1 text-2xl font-semibold text-[#15201c] sm:text-3xl">{concept.name}</h2>
-        <Link
-          href={`/topics/${concept.topic_slug}`}
-          className="mt-2 inline-block text-sm text-[#176b54] hover:underline"
-        >
-          View in topic library
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Link
+            href={`/topics/${concept.topic_slug}`}
+            className="text-sm text-[#176b54] hover:underline"
+          >
+            View in topic library
+          </Link>
+          <Link href={practiceHref} className={cn(buttonVariants({ size: "sm" }))}>
+            Practice questions
+          </Link>
+        </div>
       </div>
 
       {concept.formula ? (
