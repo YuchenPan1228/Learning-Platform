@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.dedup.detection import find_question_duplicates
 from app.dependencies import SessionDep
 from app.models.concept import Concept
-from app.models.enums import ContentStatus, Difficulty
+from app.models.enums import ContentStatus, Difficulty, QuestionProgressStatus
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
@@ -16,6 +16,7 @@ from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.schemas.tag import TagRead
 from app.services.answer_check import grade_short_answer
+from app.services.progress import get_question_progress_map
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -27,13 +28,18 @@ TopicSlugQuery = Annotated[str | None, Query()]
 SubtopicSlugQuery = Annotated[str | None, Query()]
 ConceptSlugQuery = Annotated[str | None, Query()]
 TagSlugQuery = Annotated[str | None, Query()]
+IncludeProgressQuery = Annotated[bool, Query()]
 
 
 def _tag_read(tag: Tag) -> TagRead:
     return TagRead(id=tag.id, slug=tag.slug, name=tag.name, category=tag.category)
 
 
-def _question_summary(question: Question) -> QuestionSummaryRead:
+def _question_summary(
+    question: Question,
+    *,
+    progress_status: QuestionProgressStatus | None = None,
+) -> QuestionSummaryRead:
     tags = sorted(
         (_tag_read(question_tag.tag) for question_tag in question.question_tags),
         key=lambda item: (item.category.value, item.name, item.id),
@@ -50,6 +56,7 @@ def _question_summary(question: Question) -> QuestionSummaryRead:
         company_hint=question.company_hint,
         status=question.status,
         tags=tags,
+        progress_status=progress_status,
     )
 
 
@@ -88,6 +95,7 @@ def list_questions(
     tag_slug: TagSlugQuery = None,
     difficulty: DifficultyQuery = None,
     status: StatusQuery = ContentStatus.APPROVED,
+    include_progress: IncludeProgressQuery = False,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
 ) -> list[QuestionSummaryRead]:
@@ -132,7 +140,18 @@ def list_questions(
         query = query.where(Question.difficulty == difficulty)
 
     questions = session.scalars(query).unique().all()
-    return [_question_summary(question) for question in questions]
+    progress_map = get_question_progress_map(session) if include_progress else None
+    return [
+        _question_summary(
+            question,
+            progress_status=(
+                progress_map.get(question.id, QuestionProgressStatus.NOT_ATTEMPTED)
+                if progress_map is not None
+                else None
+            ),
+        )
+        for question in questions
+    ]
 
 
 @router.get("/{question_id}/duplicates")

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from app.models.enums import ContentStatus, Difficulty
+from app.models.enums import ContentStatus, Difficulty, QuestionProgressStatus
 from app.schemas.tag import TagRead
 
 
@@ -18,6 +18,7 @@ class QuestionSummaryRead(BaseModel):
     company_hint: str | None
     status: ContentStatus
     tags: list[TagRead]
+    progress_status: QuestionProgressStatus | None = None
 
 
 class QuestionDetailRead(QuestionSummaryRead):

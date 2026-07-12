@@ -6,6 +6,7 @@ export type QuestionListFilters = {
   conceptSlug?: string;
   tagSlug?: string;
   difficulty?: Difficulty;
+  includeProgress?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -26,6 +27,9 @@ export async function fetchQuestions(
   }
   if (filters.difficulty) {
     params.set("difficulty", filters.difficulty);
+  }
+  if (filters.includeProgress) {
+    params.set("include_progress", "true");
   }
   params.set("limit", String(filters.limit ?? 100));
   if (filters.offset !== undefined) {
