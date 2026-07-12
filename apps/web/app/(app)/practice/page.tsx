@@ -1,10 +1,64 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { Suspense } from "react";
 
-export default function PracticePage() {
+import { QuestionBrowser } from "@/components/practice/question-browser";
+import { fetchConcepts } from "@/lib/api/concepts";
+import { fetchQuestions } from "@/lib/api/questions";
+import { fetchTags } from "@/lib/api/tags";
+import { fetchTopics } from "@/lib/api/topics";
+import type { Difficulty } from "@/lib/types/question";
+
+type PracticePageProps = {
+  searchParams: Promise<{
+    topic?: string;
+    concept?: string;
+    tag?: string;
+    difficulty?: string;
+  }>;
+};
+
+const DIFFICULTIES = new Set<Difficulty>(["easy", "medium", "hard", "expert"]);
+
+function parseDifficulty(value: string | undefined): Difficulty | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return DIFFICULTIES.has(value as Difficulty) ? (value as Difficulty) : undefined;
+}
+
+export default async function PracticePage({ searchParams }: PracticePageProps) {
+  const params = await searchParams;
+  const topicSlug = params.topic && params.topic !== "all" ? params.topic : undefined;
+  const conceptSlug = params.concept && params.concept !== "all" ? params.concept : undefined;
+  const tagSlug = params.tag && params.tag !== "all" ? params.tag : undefined;
+  const difficulty = parseDifficulty(params.difficulty);
+
+  const [topics, concepts, tags, questions] = await Promise.all([
+    fetchTopics(),
+    fetchConcepts(topicSlug),
+    fetchTags(),
+    fetchQuestions({
+      topicSlug,
+      conceptSlug,
+      tagSlug,
+      difficulty,
+      limit: 100,
+    }),
+  ]);
+
   return (
-    <PlaceholderPage
-      title="Practice shell"
-      description="Question browser and practice sessions will be implemented in QP-017 and QP-018."
-    />
+    <Suspense fallback={<p className="text-sm text-[#66736e]">Loading question browser…</p>}>
+      <QuestionBrowser
+        topics={topics}
+        concepts={concepts}
+        tags={tags}
+        questions={questions}
+        filters={{
+          topicSlug: topicSlug ?? "all",
+          conceptSlug: conceptSlug ?? "all",
+          tagSlug: tagSlug ?? "all",
+          difficulty: difficulty ?? "all",
+        }}
+      />
+    </Suspense>
   );
 }

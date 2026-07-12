@@ -1,0 +1,173 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useTransition } from "react";
+
+import { QuestionCard } from "@/components/practice/question-card";
+import type { ConceptSummary } from "@/lib/types/concept";
+import type { Difficulty, QuestionSummary, Tag } from "@/lib/types/question";
+import type { TopicWithSubtopics } from "@/lib/types/topic";
+
+type QuestionBrowserProps = {
+  topics: TopicWithSubtopics[];
+  concepts: ConceptSummary[];
+  tags: Tag[];
+  questions: QuestionSummary[];
+  filters: {
+    topicSlug: string;
+    conceptSlug: string;
+    tagSlug: string;
+    difficulty: string;
+  };
+};
+
+const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "expert"];
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="grid gap-1 text-sm">
+      <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-9 rounded-lg border border-[#dfe6e1] bg-white px-3 text-sm text-[#15201c] outline-none focus-visible:border-[#0f766e] focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+export function QuestionBrowser({
+  topics,
+  concepts,
+  tags,
+  questions,
+  filters,
+}: QuestionBrowserProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const conceptOptions = useMemo(() => {
+    if (filters.topicSlug === "all") {
+      return concepts;
+    }
+    const topic = topics.find((item) => item.slug === filters.topicSlug);
+    if (topic === undefined) {
+      return concepts;
+    }
+    const allowedSlugs = new Set(topic.subtopics.map((subtopic) => subtopic.slug));
+    return concepts.filter((concept) => allowedSlugs.has(concept.slug));
+  }, [concepts, filters.topicSlug, topics]);
+
+  function updateFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all" || value === "") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+
+    if (key === "topic") {
+      params.delete("concept");
+    }
+
+    const query = params.toString();
+    startTransition(() => {
+      router.push(query ? `/practice?${query}` : "/practice");
+    });
+  }
+
+  return (
+    <div className="grid gap-6">
+      <section
+        aria-label="Question filters"
+        className="rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <FilterSelect
+            label="Topic"
+            value={filters.topicSlug}
+            onChange={(value) => updateFilter("topic", value)}
+          >
+            <option value="all">All topics</option>
+            {topics.map((topic) => (
+              <option key={topic.id} value={topic.slug}>
+                {topic.name}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            label="Concept"
+            value={filters.conceptSlug}
+            onChange={(value) => updateFilter("concept", value)}
+          >
+            <option value="all">All concepts</option>
+            {conceptOptions.map((concept) => (
+              <option key={concept.id} value={concept.slug}>
+                {concept.name}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            label="Difficulty"
+            value={filters.difficulty}
+            onChange={(value) => updateFilter("difficulty", value)}
+          >
+            <option value="all">All difficulties</option>
+            {DIFFICULTIES.map((difficulty) => (
+              <option key={difficulty} value={difficulty}>
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            label="Tag"
+            value={filters.tagSlug}
+            onChange={(value) => updateFilter("tag", value)}
+          >
+            <option value="all">All tags</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.slug}>
+                {tag.name}
+              </option>
+            ))}
+          </FilterSelect>
+        </div>
+
+        <p className="mt-3 text-sm text-[#66736e]">
+          {questions.length} question{questions.length === 1 ? "" : "s"} shown
+          {isPending ? " · updating…" : ""}
+        </p>
+      </section>
+
+      {questions.length === 0 ? (
+        <section className="rounded-lg border border-dashed border-[#dfe6e1] bg-white p-8 text-center">
+          <p className="text-sm text-[#66736e]">
+            No questions matched these filters. Try clearing a filter or choosing a broader topic.
+          </p>
+        </section>
+      ) : (
+        <section aria-label="Question results" className="grid gap-4 md:grid-cols-2">
+          {questions.map((question) => (
+            <QuestionCard key={question.id} question={question} />
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}

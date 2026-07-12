@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.concept import Concept
 from app.models.constants import LOCAL_USER_ID
 from app.models.enums import ContentStatus, Difficulty, LearningSignalType, SearchResourceType
 from app.models.learning_signal import LearningSignal
 from app.models.question import Question
+from app.models.tag import QuestionTag
 from app.models.topic import Topic
 from app.routers.concepts import _topic_scope_ids
 from app.search.fts import concept_search_vector, plainto_tsquery, question_search_vector
@@ -38,6 +39,7 @@ def search_questions(
         .options(
             joinedload(Question.topic),
             joinedload(Question.subtopic),
+            selectinload(Question.question_tags).joinedload(QuestionTag.tag),
         )
         .where(Question.status == ContentStatus.APPROVED)
         .where(question_search_vector().op("@@")(tsquery))
