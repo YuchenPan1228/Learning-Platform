@@ -59,6 +59,11 @@ export function QuestionBrowser({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  const returnTo = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `/practice?${query}` : "/practice";
+  }, [searchParams]);
+
   const conceptOptions = useMemo(() => {
     if (filters.topicSlug === "all") {
       return concepts;
@@ -164,7 +169,7 @@ export function QuestionBrowser({
       ) : (
         <section aria-label="Question results" className="grid gap-4 md:grid-cols-2">
           {questions.map((question) => (
-            <QuestionCard key={question.id} question={question} />
+            <QuestionCard key={question.id} question={question} returnTo={returnTo} />
           ))}
         </section>
       )}

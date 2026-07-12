@@ -1,7 +1,21 @@
+import Link from "next/link";
+
 import type { QuestionSummary } from "@/lib/types/question";
 import { formatDifficulty, formatEstimatedTime } from "@/lib/questions/format";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function QuestionCard({ question }: { question: QuestionSummary }) {
+export function QuestionCard({
+  question,
+  returnTo,
+}: {
+  question: QuestionSummary;
+  returnTo?: string;
+}) {
+  const practiceHref = returnTo
+    ? `/practice/${question.id}?returnTo=${encodeURIComponent(returnTo)}`
+    : `/practice/${question.id}`;
+
   return (
     <article className="flex h-full flex-col rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -45,7 +59,12 @@ export function QuestionCard({ question }: { question: QuestionSummary }) {
         </div>
       ) : null}
 
-      <p className="mt-auto pt-4 text-sm text-[#66736e]">Practice session opens in QP-018.</p>
+      <Link
+        href={practiceHref}
+        className={cn(buttonVariants({ variant: "default", size: "sm" }), "mt-auto w-fit")}
+      >
+        Start practice
+      </Link>
     </article>
   );
 }
