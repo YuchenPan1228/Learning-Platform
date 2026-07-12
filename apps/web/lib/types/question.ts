@@ -36,10 +36,3 @@ export type QuestionDetail = QuestionSummary & {
   prerequisites: string[] | null;
   source_attribution: string | null;
 };
-
-export type SelfCheckResult = {
-  question_id: number;
-  supported: boolean;
-  is_correct: boolean | null;
-  feedback: string;
-};

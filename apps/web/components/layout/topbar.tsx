@@ -1,9 +1,8 @@
 "use client";
 
-import { Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 
-import { Input } from "@/components/ui/input";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { getPageTitle } from "@/lib/navigation";
 
 export function Topbar() {
@@ -20,16 +19,7 @@ export function Topbar() {
         </h1>
       </div>
 
-      <div className="flex h-11 w-full max-w-[420px] items-center gap-2 rounded-lg border border-[#dfe6e1] bg-white px-3">
-        <Search className="size-4 text-[#66736e]" aria-hidden="true" />
-        <Input
-          type="search"
-          placeholder="Search topics, tags, formulas..."
-          className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-          disabled
-          aria-label="Search"
-        />
-      </div>
+      <GlobalSearch />
     </header>
   );
 }

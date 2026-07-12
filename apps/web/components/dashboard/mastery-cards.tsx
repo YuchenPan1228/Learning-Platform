@@ -27,8 +27,7 @@ function MasteryCard({ topic }: { topic: TopicMastery }) {
         </strong>
         <MasteryBar score={topic.mastery_score} className="mt-3" />
         <p className="mt-3 text-sm text-[#66736e]">
-          {topic.solved_count} of {topic.total_questions} solved · {topic.attempts_count} attempt
-          {topic.attempts_count === 1 ? "" : "s"}
+          {topic.solved_count} of {topic.total_questions} solved
         </p>
       </article>
     </Link>
