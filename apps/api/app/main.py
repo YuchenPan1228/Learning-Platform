@@ -13,6 +13,7 @@ from app.routers import (
     learning_paths,
     questions,
     search,
+    tags,
     topics,
 )
 
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     application.include_router(topics.router)
     application.include_router(concepts.router)
     application.include_router(questions.router)
+    application.include_router(tags.router)
     application.include_router(flashcards.router)
     application.include_router(learning_paths.router)
     application.include_router(search.router)

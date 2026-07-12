@@ -2,15 +2,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.dedup.detection import find_question_duplicates
 from app.dependencies import SessionDep
+from app.models.concept import Concept
 from app.models.enums import ContentStatus, Difficulty
 from app.models.question import Question
+from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
+from app.schemas.tag import TagRead
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -20,9 +23,19 @@ LimitQuery = Annotated[int, Query(ge=1, le=100)]
 OffsetQuery = Annotated[int, Query(ge=0)]
 TopicSlugQuery = Annotated[str | None, Query()]
 SubtopicSlugQuery = Annotated[str | None, Query()]
+ConceptSlugQuery = Annotated[str | None, Query()]
+TagSlugQuery = Annotated[str | None, Query()]
+
+
+def _tag_read(tag: Tag) -> TagRead:
+    return TagRead(id=tag.id, slug=tag.slug, name=tag.name, category=tag.category)
 
 
 def _question_summary(question: Question) -> QuestionSummaryRead:
+    tags = sorted(
+        (_tag_read(question_tag.tag) for question_tag in question.question_tags),
+        key=lambda item: (item.category.value, item.name, item.id),
+    )
     return QuestionSummaryRead(
         id=question.id,
         title=question.title,
@@ -34,6 +47,7 @@ def _question_summary(question: Question) -> QuestionSummaryRead:
         estimated_time_seconds=question.estimated_time_seconds,
         company_hint=question.company_hint,
         status=question.status,
+        tags=tags,
     )
 
 
@@ -55,11 +69,21 @@ def _resolve_topic_id(session: Session, slug: str) -> int | None:
     return session.scalar(select(Topic.id).where(Topic.slug == slug))
 
 
+def _resolve_concept_topic_id(session: Session, slug: str) -> int | None:
+    return session.scalar(select(Concept.topic_id).where(Concept.slug == slug))
+
+
+def _resolve_tag_id(session: Session, slug: str) -> int | None:
+    return session.scalar(select(Tag.id).where(Tag.slug == slug))
+
+
 @router.get("")
 def list_questions(
     session: SessionDep,
     topic_slug: TopicSlugQuery = None,
     subtopic_slug: SubtopicSlugQuery = None,
+    concept_slug: ConceptSlugQuery = None,
+    tag_slug: TagSlugQuery = None,
     difficulty: DifficultyQuery = None,
     status: StatusQuery = ContentStatus.APPROVED,
     limit: LimitQuery = 50,
@@ -70,6 +94,7 @@ def list_questions(
         .options(
             joinedload(Question.topic),
             joinedload(Question.subtopic),
+            selectinload(Question.question_tags).joinedload(QuestionTag.tag),
         )
         .where(Question.status == status)
         .order_by(Question.id)
@@ -88,6 +113,18 @@ def list_questions(
         if subtopic_id is None:
             return []
         query = query.where(Question.subtopic_id == subtopic_id)
+
+    if concept_slug is not None:
+        concept_topic_id = _resolve_concept_topic_id(session, concept_slug)
+        if concept_topic_id is None:
+            return []
+        query = query.where(Question.subtopic_id == concept_topic_id)
+
+    if tag_slug is not None:
+        tag_id = _resolve_tag_id(session, tag_slug)
+        if tag_id is None:
+            return []
+        query = query.join(QuestionTag).where(QuestionTag.tag_id == tag_id)
 
     if difficulty is not None:
         query = query.where(Question.difficulty == difficulty)
@@ -125,6 +162,7 @@ def get_question(question_id: int, session: SessionDep) -> QuestionDetailRead:
         .options(
             joinedload(Question.topic),
             joinedload(Question.subtopic),
+            selectinload(Question.question_tags).joinedload(QuestionTag.tag),
         ),
     )
     if question is None:
