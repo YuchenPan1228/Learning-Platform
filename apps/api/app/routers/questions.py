@@ -14,9 +14,9 @@ from app.models.topic import Topic
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.progress import QuestionProgressRead, SetQuestionProgressRequest
+from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.schemas.tag import TagRead
 from app.services.answer_check import grade_short_answer
-from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.services.progress import (
     get_progress_by_question_id,
     get_question_progress,
@@ -152,9 +152,9 @@ def list_questions(
     )
     summaries: list[QuestionSummaryRead] = []
     for question in questions:
-        progress = (
-            progress_by_question_id.get(question.id) if progress_by_question_id is not None else None
-        )
+        progress = None
+        if progress_by_question_id is not None:
+            progress = progress_by_question_id.get(question.id)
         summaries.append(
             _question_summary(
                 question,
