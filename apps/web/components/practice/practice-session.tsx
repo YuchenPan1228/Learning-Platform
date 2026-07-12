@@ -14,18 +14,23 @@ import { cn } from "@/lib/utils";
 type PracticeSessionProps = {
   question: QuestionDetail;
   returnTo: string;
-  previousHref: string | null;
-  nextHref: string | null;
-  positionLabel?: string;
+  questionIds: number[];
 };
 
-export function PracticeSession({
-  question,
-  returnTo,
-  previousHref,
-  nextHref,
-  positionLabel,
-}: PracticeSessionProps) {
+function buildSessionHref(
+  questionId: number,
+  returnTo: string,
+  questionIds: number[],
+): string {
+  const params = new URLSearchParams();
+  params.set("returnTo", returnTo);
+  if (questionIds.length > 0) {
+    params.set("ids", questionIds.join(","));
+  }
+  return `/practice/${questionId}?${params.toString()}`;
+}
+
+export function PracticeSession({ question, returnTo, questionIds }: PracticeSessionProps) {
   const [startedAt] = useState(() => Date.now());
   const [answer, setAnswer] = useState("");
   const [checkResult, setCheckResult] = useState<AttemptResult | null>(null);
@@ -34,6 +39,15 @@ export function PracticeSession({
   const [checkError, setCheckError] = useState<string | null>(null);
 
   const supportsSelfCheck = question.short_answer !== null && question.short_answer.trim() !== "";
+
+  const currentIndex = questionIds.indexOf(question.id);
+  const hasNavigation = questionIds.length > 1 && currentIndex >= 0;
+  const previousQuestionId = hasNavigation
+    ? questionIds[(currentIndex - 1 + questionIds.length) % questionIds.length]
+    : null;
+  const nextQuestionId = hasNavigation
+    ? questionIds[(currentIndex + 1) % questionIds.length]
+    : null;
 
   async function handleSelfCheck() {
     const trimmedAnswer = answer.trim();
@@ -71,23 +85,32 @@ export function PracticeSession({
               {formatDifficulty(question.difficulty)}
             </p>
             <h2 className="mt-1 text-2xl font-semibold text-[#15201c]">{question.title}</h2>
-            {positionLabel ? (
-              <p className="mt-1 text-sm text-[#66736e]">Question {positionLabel}</p>
+            {hasNavigation ? (
+              <p className="mt-1 text-sm text-[#66736e]">
+                Question {currentIndex + 1} of {questionIds.length}
+              </p>
             ) : null}
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {previousHref ? (
-              <Link
-                href={previousHref}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                Previous
-              </Link>
-            ) : null}
-            {nextHref ? (
-              <Link href={nextHref} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-                Next
-              </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {hasNavigation ? (
+              <>
+                {previousQuestionId !== null ? (
+                  <Link
+                    href={buildSessionHref(previousQuestionId, returnTo, questionIds)}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Previous
+                  </Link>
+                ) : null}
+                {nextQuestionId !== null ? (
+                  <Link
+                    href={buildSessionHref(nextQuestionId, returnTo, questionIds)}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Next
+                  </Link>
+                ) : null}
+              </>
             ) : null}
             <Link
               href={returnTo}
