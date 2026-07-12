@@ -145,19 +145,16 @@ export function MentalMathDrill({ categories, questions }: MentalMathDrillProps)
             {checkError ? <p className="mt-3 text-sm text-[#b42318]">{checkError}</p> : null}
 
             {feedback ? (
-              <>
-                <p
-                  className={cn(
-                    "mt-3 text-sm leading-relaxed",
-                    isCorrect ? "text-[#176b54]" : "text-[#66736e]",
-                  )}
-                >
-                  {feedback}
-                </p>
-                <p className="mt-2 text-sm text-[#66736e]">Press Enter again for the next prompt.</p>
-              </>
+              <p
+                className={cn(
+                  "mt-3 text-sm leading-relaxed",
+                  isCorrect ? "text-[#176b54]" : "text-[#66736e]",
+                )}
+              >
+                {feedback}
+              </p>
             ) : (
-              <p className="mt-3 text-sm text-[#66736e]">Type an answer and press Enter to check.</p>
+              <p className="mt-3 text-sm text-[#66736e]">Type an answer and check instantly.</p>
             )}
 
             {feedback ? (
