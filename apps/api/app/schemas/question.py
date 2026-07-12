@@ -19,6 +19,7 @@ class QuestionSummaryRead(BaseModel):
     status: ContentStatus
     tags: list[TagRead]
     progress_status: QuestionProgressStatus | None = None
+    attempt_count: int | None = None
 
 
 class QuestionDetailRead(QuestionSummaryRead):

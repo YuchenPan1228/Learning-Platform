@@ -13,10 +13,12 @@ type PracticePageProps = {
     concept?: string;
     tag?: string;
     difficulty?: string;
+    progress?: string;
   }>;
 };
 
 const DIFFICULTIES = new Set<Difficulty>(["easy", "medium", "hard", "expert"]);
+const PROGRESS_STATUSES = new Set(["not_attempted", "attempted", "solved"]);
 
 function parseDifficulty(value: string | undefined): Difficulty | undefined {
   if (value === undefined) {
@@ -31,6 +33,8 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
   const conceptSlug = params.concept && params.concept !== "all" ? params.concept : undefined;
   const tagSlug = params.tag && params.tag !== "all" ? params.tag : undefined;
   const difficulty = parseDifficulty(params.difficulty);
+  const progress =
+    params.progress && PROGRESS_STATUSES.has(params.progress) ? params.progress : "all";
 
   const [topics, concepts, tags, questions] = await Promise.all([
     fetchTopics(),
@@ -58,6 +62,7 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
           conceptSlug: conceptSlug ?? "all",
           tagSlug: tagSlug ?? "all",
           difficulty: difficulty ?? "all",
+          progress,
         }}
       />
     </Suspense>

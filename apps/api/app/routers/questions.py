@@ -16,7 +16,7 @@ from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.schemas.tag import TagRead
 from app.services.answer_check import grade_short_answer
-from app.services.progress import get_question_progress_map
+from app.services.progress import get_progress_by_question_id
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -39,6 +39,7 @@ def _question_summary(
     question: Question,
     *,
     progress_status: QuestionProgressStatus | None = None,
+    attempt_count: int | None = None,
 ) -> QuestionSummaryRead:
     tags = sorted(
         (_tag_read(question_tag.tag) for question_tag in question.question_tags),
@@ -57,6 +58,7 @@ def _question_summary(
         status=question.status,
         tags=tags,
         progress_status=progress_status,
+        attempt_count=attempt_count,
     )
 
 
@@ -140,18 +142,28 @@ def list_questions(
         query = query.where(Question.difficulty == difficulty)
 
     questions = session.scalars(query).unique().all()
-    progress_map = get_question_progress_map(session) if include_progress else None
-    return [
-        _question_summary(
-            question,
-            progress_status=(
-                progress_map.get(question.id, QuestionProgressStatus.NOT_ATTEMPTED)
-                if progress_map is not None
-                else None
+    progress_by_question_id = (
+        get_progress_by_question_id(session) if include_progress else None
+    )
+    summaries: list[QuestionSummaryRead] = []
+    for question in questions:
+        progress = (
+            progress_by_question_id.get(question.id) if progress_by_question_id is not None else None
+        )
+        summaries.append(
+            _question_summary(
+                question,
+                progress_status=(
+                    progress.status
+                    if progress is not None
+                    else QuestionProgressStatus.NOT_ATTEMPTED
+                )
+                if include_progress
+                else None,
+                attempt_count=progress.attempt_count if progress is not None else None,
             ),
         )
-        for question in questions
-    ]
+    return summaries
 
 
 @router.get("/{question_id}/duplicates")

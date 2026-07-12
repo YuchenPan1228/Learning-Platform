@@ -9,5 +9,5 @@ class QuestionProgressRead(BaseModel):
     attempt_count: int
 
 
-class QuestionProgressMapRead(BaseModel):
-    items: list[QuestionProgressRead]
+class AttemptProgressResponse(BaseModel):
+    questions: list[QuestionProgressRead]

@@ -24,6 +24,7 @@ export type QuestionSummary = {
   status: string;
   tags: Tag[];
   progress_status?: QuestionProgressStatus | null;
+  attempt_count?: number | null;
 };
 
 export type QuestionDetail = QuestionSummary & {
