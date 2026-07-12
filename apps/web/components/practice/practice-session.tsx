@@ -14,9 +14,18 @@ import { cn } from "@/lib/utils";
 type PracticeSessionProps = {
   question: QuestionDetail;
   returnTo: string;
+  previousHref: string | null;
+  nextHref: string | null;
+  positionLabel?: string;
 };
 
-export function PracticeSession({ question, returnTo }: PracticeSessionProps) {
+export function PracticeSession({
+  question,
+  returnTo,
+  previousHref,
+  nextHref,
+  positionLabel,
+}: PracticeSessionProps) {
   const [startedAt] = useState(() => Date.now());
   const [answer, setAnswer] = useState("");
   const [checkResult, setCheckResult] = useState<AttemptResult | null>(null);
@@ -62,13 +71,31 @@ export function PracticeSession({ question, returnTo }: PracticeSessionProps) {
               {formatDifficulty(question.difficulty)}
             </p>
             <h2 className="mt-1 text-2xl font-semibold text-[#15201c]">{question.title}</h2>
+            {positionLabel ? (
+              <p className="mt-1 text-sm text-[#66736e]">Question {positionLabel}</p>
+            ) : null}
           </div>
-          <Link
-            href={returnTo}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
-          >
-            Back to browser
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {previousHref ? (
+              <Link
+                href={previousHref}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                Previous
+              </Link>
+            ) : null}
+            {nextHref ? (
+              <Link href={nextHref} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Next
+              </Link>
+            ) : null}
+            <Link
+              href={returnTo}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Back to browser
+            </Link>
+          </div>
         </div>
 
         <p className="text-sm leading-relaxed text-[#31443d]">{question.body}</p>
