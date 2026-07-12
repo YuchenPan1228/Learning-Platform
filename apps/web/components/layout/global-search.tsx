@@ -1,21 +1,19 @@
 "use client";
 
-import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { searchContent } from "@/lib/api/search";
-import type { SearchResponse } from "@/lib/api/search";
+import type { SearchResponse } from "@/lib/types/search";
 import { cn } from "@/lib/utils";
 
 const MIN_QUERY_LENGTH = 2;
-const DEBOUNCE_MS = 250;
 
 export function GlobalSearch() {
-  const listboxId = useId();
   const router = useRouter();
+  const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResponse | null>(null);
@@ -47,9 +45,11 @@ export function GlobalSearch() {
         .finally(() => {
           setIsLoading(false);
         });
-    }, DEBOUNCE_MS);
+    }, 250);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timeout);
+    };
   }, [query]);
 
   useEffect(() => {
@@ -61,78 +61,73 @@ export function GlobalSearch() {
     }
 
     document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
   }, []);
 
-  function handleQuestionSelect(questionId: number) {
+  function handleSelect(href: string) {
     setIsOpen(false);
     setQuery("");
-    router.push(`/practice/${questionId}`);
+    setResults(null);
+    router.push(href);
   }
 
   const hasResults =
     results !== null && (results.concepts.length > 0 || results.questions.length > 0);
-  const showPanel = isOpen && query.trim().length >= MIN_QUERY_LENGTH;
 
   return (
     <div ref={containerRef} className="relative w-full max-w-[420px]">
-      <div className="flex h-11 items-center gap-2 rounded-lg border border-[#dfe6e1] bg-white px-3">
-        <Search className="size-4 text-[#66736e]" aria-hidden="true" />
-        <Input
-          type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
+      <Input
+        type="search"
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (results !== null) {
             setIsOpen(true);
-          }}
-          onFocus={() => {
-            if (query.trim().length >= MIN_QUERY_LENGTH) {
-              setIsOpen(true);
-            }
-          }}
-          placeholder="Search questions and concepts..."
-          className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-          aria-label="Search questions and concepts"
-          aria-controls={listboxId}
-          aria-expanded={showPanel}
-          aria-autocomplete="list"
-          role="combobox"
-        />
-      </div>
+          }
+        }}
+        placeholder="Search questions and concepts..."
+        aria-label="Search questions and concepts"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        className="h-11 rounded-lg border-[#dfe6e1] bg-white px-3 shadow-none focus-visible:ring-[#0f766e]/20"
+      />
 
-      {showPanel ? (
+      {isOpen && query.trim().length >= MIN_QUERY_LENGTH ? (
         <div
           id={listboxId}
           role="listbox"
-          className="absolute top-[calc(100%+0.5rem)] right-0 left-0 z-20 max-h-[420px] overflow-y-auto rounded-lg border border-[#dfe6e1] bg-white p-2 shadow-[0_16px_42px_rgba(21,32,28,0.12)]"
+          className="absolute top-[calc(100%+0.5rem)] z-20 max-h-[360px] w-full overflow-y-auto rounded-lg border border-[#dfe6e1] bg-white p-2 shadow-[0_16px_42px_rgba(21,32,28,0.12)]"
         >
-          {isLoading ? <p className="px-3 py-2 text-sm text-[#66736e]">Searching…</p> : null}
+          {isLoading ? (
+            <p className="px-3 py-2 text-sm text-[#66736e]">Searching…</p>
+          ) : null}
           {error ? <p className="px-3 py-2 text-sm text-[#b42318]">{error}</p> : null}
           {!isLoading && !error && !hasResults ? (
             <p className="px-3 py-2 text-sm text-[#66736e]">No matches for &ldquo;{query}&rdquo;.</p>
           ) : null}
 
           {results && results.concepts.length > 0 ? (
-            <section className="px-1 py-1">
-              <p className="px-2 py-1 text-xs font-bold tracking-wide text-[#66736e] uppercase">
+            <section className="mb-2">
+              <p className="px-3 py-1 text-xs font-semibold tracking-wide text-[#66736e] uppercase">
                 Concepts
               </p>
               <ul>
                 {results.concepts.map((concept) => (
                   <li key={concept.id}>
-                    <Link
-                      href={`/concepts/${concept.slug}`}
-                      onClick={() => {
-                        setIsOpen(false);
-                        setQuery("");
-                      }}
-                      className="block rounded-md px-2 py-2 text-sm text-[#15201c] hover:bg-[#edf5f1]"
+                    <button
+                      type="button"
+                      role="option"
+                      onClick={() => handleSelect(`/concepts/${concept.slug}`)}
+                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
                     >
-                      <span className="font-medium">{concept.name}</span>
-                      <span className="mt-0.5 block text-xs text-[#66736e]">
-                        {concept.topic_slug}
-                      </span>
-                    </Link>
+                      <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
+                      <span className="text-xs text-[#66736e]">{concept.topic_slug}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -140,8 +135,8 @@ export function GlobalSearch() {
           ) : null}
 
           {results && results.questions.length > 0 ? (
-            <section className="px-1 py-1">
-              <p className="px-2 py-1 text-xs font-bold tracking-wide text-[#66736e] uppercase">
+            <section>
+              <p className="px-3 py-1 text-xs font-semibold tracking-wide text-[#66736e] uppercase">
                 Questions
               </p>
               <ul>
@@ -149,13 +144,14 @@ export function GlobalSearch() {
                   <li key={question.id}>
                     <button
                       type="button"
-                      onClick={() => handleQuestionSelect(question.id)}
-                      className={cn(
-                        "block w-full rounded-md px-2 py-2 text-left text-sm text-[#15201c] hover:bg-[#edf5f1]",
-                      )}
+                      role="option"
+                      onClick={() =>
+                        handleSelect(`/practice/${question.id}?returnTo=${encodeURIComponent("/practice")}`)
+                      }
+                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
                     >
-                      <span className="font-medium">{question.title}</span>
-                      <span className="mt-0.5 block text-xs text-[#66736e]">
+                      <span className="text-sm font-medium text-[#15201c]">{question.title}</span>
+                      <span className="text-xs text-[#66736e]">
                         {question.topic_slug}
                         {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
                       </span>
@@ -164,6 +160,18 @@ export function GlobalSearch() {
                 ))}
               </ul>
             </section>
+          ) : null}
+
+          {hasResults ? (
+            <div className="border-t border-[#edf5f1] px-3 py-2">
+              <Link
+                href={`/practice?q=${encodeURIComponent(query.trim())}`}
+                className="text-sm text-[#176b54] hover:underline"
+                onClick={() => setIsOpen(false)}
+              >
+                Browse all practice questions
+              </Link>
+            </div>
           ) : null}
         </div>
       ) : null}
