@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.db import get_session_factory, reset_db_state
 from app.main import create_app
 from app.seeds.knowledge_graph import seed_knowledge_graph
+from app.seeds.local_user_state import seed_local_user_state
 from app.seeds.mvp_content import seed_mvp_content
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -91,6 +92,7 @@ def seeded_database(
     try:
         seed_knowledge_graph(session)
         seed_mvp_content(session)
+        seed_local_user_state(session)
     finally:
         session.close()
 
