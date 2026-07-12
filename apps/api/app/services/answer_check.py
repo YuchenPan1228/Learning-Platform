@@ -91,3 +91,20 @@ def self_check_feedback(*, supported: bool, is_correct: bool | None) -> str:
     return (
         "Your answer does not match the expected result. Review the solution and common mistakes."
     )
+
+
+def grade_short_answer(
+    *, short_answer: str | None, user_answer: str
+) -> tuple[bool, bool | None, str]:
+    expected_answer = short_answer
+    if expected_answer is None or not expected_answer.strip():
+        return False, None, self_check_feedback(supported=False, is_correct=None)
+
+    is_correct = answers_match(user_answer, expected_answer)
+    return True, is_correct, self_check_feedback(supported=True, is_correct=is_correct)
+
+
+def attempt_score(*, supported: bool, is_correct: bool | None) -> float | None:
+    if not supported or is_correct is None:
+        return None
+    return 1.0 if is_correct else 0.0

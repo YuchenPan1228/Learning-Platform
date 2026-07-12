@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { CategoryFilter, buildCategoryCounts } from "@/components/mental-math/category-filter";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { submitSelfCheck } from "@/lib/api/practice";
+import { recordAttempt } from "@/lib/api/attempts";
 import type { QuestionDetail } from "@/lib/types/question";
 import type { TopicRead } from "@/lib/types/topic";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ type MentalMathDrillProps = {
 };
 
 export function MentalMathDrill({ categories, questions }: MentalMathDrillProps) {
+  const [promptStartedAt, setPromptStartedAt] = useState(() => Date.now());
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [queueIndex, setQueueIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -41,6 +42,7 @@ export function MentalMathDrill({ categories, questions }: MentalMathDrillProps)
     setFeedback(null);
     setIsCorrect(null);
     setCheckError(null);
+    setPromptStartedAt(Date.now());
   }
 
   function handleCategorySelect(slug: string) {
@@ -64,8 +66,13 @@ export function MentalMathDrill({ categories, questions }: MentalMathDrillProps)
     setCheckError(null);
 
     try {
-      const result = await submitSelfCheck(currentQuestion.id, trimmedAnswer);
-      setFeedback(result.feedback);
+      const timeSpentSeconds = Math.max(1, Math.round((Date.now() - promptStartedAt) / 1000));
+      const result = await recordAttempt({
+        questionId: currentQuestion.id,
+        answer: trimmedAnswer,
+        timeSpentSeconds,
+      });
+      setFeedback(result.feedback ?? "Attempt recorded.");
       setIsCorrect(result.is_correct);
     } catch {
       setCheckError("Check is unavailable. Verify the API is running.");

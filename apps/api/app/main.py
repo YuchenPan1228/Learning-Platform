@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
+    attempts,
     concepts,
     dashboard,
     flashcards,
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     application.include_router(topics.router)
     application.include_router(concepts.router)
     application.include_router(questions.router)
+    application.include_router(attempts.router)
     application.include_router(tags.router)
     application.include_router(flashcards.router)
     application.include_router(learning_paths.router)
