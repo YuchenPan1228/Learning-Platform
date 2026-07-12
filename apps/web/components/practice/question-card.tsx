@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 
+import { TopicBadge } from "@/components/ui/topic-badge";
 import type { QuestionProgressStatus, QuestionSummary } from "@/lib/types/question";
 import { formatDifficulty } from "@/lib/questions/format";
+import { getTopicPalette } from "@/lib/topic-colors";
 import { cn } from "@/lib/utils";
 
 const PROGRESS_LABELS: Record<QuestionProgressStatus, string> = {
@@ -29,6 +31,7 @@ export function QuestionCard({
 }) {
   const router = useRouter();
   const progressStatus = question.progress_status ?? "not_attempted";
+  const palette = getTopicPalette(question.topic_slug);
 
   const params = new URLSearchParams();
   if (returnTo) {
@@ -53,15 +56,17 @@ export function QuestionCard({
           router.push(practiceHref);
         }
       }}
-      className="cursor-pointer rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_8px_24px_rgba(21,32,28,0.06)] transition-colors hover:border-[#bdd3ca] hover:bg-[#fbfcfa] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0f766e]/20"
+      className={cn(
+        "cursor-pointer rounded-lg border border-l-4 bg-white p-4 shadow-[0_8px_24px_rgba(21,32,28,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0f766e]/20",
+        palette.border,
+        palette.accent,
+        palette.hoverSurface,
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
-            {question.topic_slug}
-            {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
-          </p>
-          <h3 className="mt-1 line-clamp-2 text-base font-semibold text-[#15201c]">
+          <TopicBadge slug={question.topic_slug} />
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold text-[#15201c]">
             {question.title}
           </h3>
         </div>
