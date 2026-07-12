@@ -47,8 +47,7 @@ export default async function PracticeSessionPage({
   const returnTo = query.returnTo && query.returnTo.startsWith("/") ? query.returnTo : "/practice";
   const explicitIds = parseQuestionIds(query.ids);
 
-  let navigationIds =
-    explicitIds.length > 0 && explicitIds.includes(parsedId) ? explicitIds : [];
+  let navigationIds = explicitIds.length > 0 && explicitIds.includes(parsedId) ? explicitIds : [];
 
   if (navigationIds.length === 0) {
     const browserFilters = parsePracticeBrowserFilters(returnTo);
@@ -60,10 +59,7 @@ export default async function PracticeSessionPage({
       includeProgress: true,
       limit: 100,
     });
-    const visibleQuestions = filterQuestionsByProgress(
-      filteredQuestions,
-      browserFilters.progress,
-    );
+    const visibleQuestions = filterQuestionsByProgress(filteredQuestions, browserFilters.progress);
     navigationIds = buildPracticeNavigationIds(visibleQuestions, parsedId);
   }
 

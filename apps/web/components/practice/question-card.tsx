@@ -35,9 +35,7 @@ export function QuestionCard({
     params.set("ids", questionIds.join(","));
   }
   const query = params.toString();
-  const practiceHref = query
-    ? `/practice/${question.id}?${query}`
-    : `/practice/${question.id}`;
+  const practiceHref = query ? `/practice/${question.id}?${query}` : `/practice/${question.id}`;
 
   return (
     <article

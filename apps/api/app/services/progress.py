@@ -56,9 +56,7 @@ def get_progress_by_question_id(session: Session) -> dict[int, QuestionProgress]
         select(
             Attempt.question_id,
             func.count(Attempt.id).label("attempt_count"),
-            func.count(Attempt.id)
-            .filter(Attempt.is_correct.is_(True))
-            .label("correct_count"),
+            func.count(Attempt.id).filter(Attempt.is_correct.is_(True)).label("correct_count"),
         )
         .where(Attempt.user_id == LOCAL_USER_ID)
         .group_by(Attempt.question_id),

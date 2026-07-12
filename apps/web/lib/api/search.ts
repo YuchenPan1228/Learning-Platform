@@ -1,10 +1,7 @@
 import { getApiBaseUrl } from "@/lib/api/config";
 import type { SearchResponse } from "@/lib/types/search";
 
-export async function searchContent(
-  query: string,
-  limit = 12,
-): Promise<SearchResponse> {
+export async function searchContent(query: string, limit = 12): Promise<SearchResponse> {
   const params = new URLSearchParams({
     q: query,
     limit: String(limit),

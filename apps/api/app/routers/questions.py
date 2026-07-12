@@ -147,9 +147,7 @@ def list_questions(
         query = query.where(Question.difficulty == difficulty)
 
     questions = session.scalars(query).unique().all()
-    progress_by_question_id = (
-        get_progress_by_question_id(session) if include_progress else None
-    )
+    progress_by_question_id = get_progress_by_question_id(session) if include_progress else None
     summaries: list[QuestionSummaryRead] = []
     for question in questions:
         progress = None

@@ -56,10 +56,7 @@ export function ConceptContent({
             </p>
           </div>
           {practiceQuestionCount > 0 ? (
-            <Link
-              href={practiceHref}
-              className={cn(buttonVariants({ size: "sm" }))}
-            >
+            <Link href={practiceHref} className={cn(buttonVariants({ size: "sm" }))}>
               Practice questions
             </Link>
           ) : null}
