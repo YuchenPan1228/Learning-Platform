@@ -1,20 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { QuestionMetadata } from "@/components/practice/question-metadata";
 import { buttonVariants } from "@/components/ui/button";
 import { recordAttempt } from "@/lib/api/attempts";
+import type { QuestionProgress } from "@/lib/api/questions";
+import { setQuestionProgress } from "@/lib/api/questions";
 import { formatDifficulty } from "@/lib/questions/format";
+import {
+  findRelatedConcept,
+  resolvePrerequisiteLinks,
+} from "@/lib/practice/prerequisite-links";
+import {
+  formatQuestionProgressLabel,
+  isQuestionSolved,
+  PROGRESS_BADGE_STYLES,
+} from "@/lib/practice/progress-display";
 import type { AttemptResult } from "@/lib/types/attempt";
-import type { QuestionDetail } from "@/lib/types/question";
+import type { ConceptSummary } from "@/lib/types/concept";
+import type { QuestionDetail, QuestionProgressStatus } from "@/lib/types/question";
 import { cn } from "@/lib/utils";
 
 type PracticeSessionProps = {
   question: QuestionDetail;
   returnTo: string;
   questionIds: number[];
+  concepts: ConceptSummary[];
+  initialProgress: QuestionProgress | null;
 };
 
 function buildSessionHref(
@@ -30,13 +44,24 @@ function buildSessionHref(
   return `/practice/${questionId}?${params.toString()}`;
 }
 
-export function PracticeSession({ question, returnTo, questionIds }: PracticeSessionProps) {
+export function PracticeSession({
+  question,
+  returnTo,
+  questionIds,
+  concepts,
+  initialProgress,
+}: PracticeSessionProps) {
   const [startedAt] = useState(() => Date.now());
   const [answer, setAnswer] = useState("");
   const [checkResult, setCheckResult] = useState<AttemptResult | null>(null);
   const [solutionRevealed, setSolutionRevealed] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
+  const [progressStatus, setProgressStatus] = useState<QuestionProgressStatus>(
+    initialProgress?.status ?? question.progress_status ?? "not_attempted",
+  );
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
 
   const supportsSelfCheck = question.short_answer !== null && question.short_answer.trim() !== "";
 
@@ -48,6 +73,19 @@ export function PracticeSession({ question, returnTo, questionIds }: PracticeSes
   const nextQuestionId = hasNavigation
     ? questionIds[(currentIndex + 1) % questionIds.length]
     : null;
+
+  const relatedConcept = useMemo(
+    () => findRelatedConcept(question.subtopic_slug, concepts),
+    [concepts, question.subtopic_slug],
+  );
+  const prerequisiteLinks = useMemo(
+    () => resolvePrerequisiteLinks(question.prerequisites, concepts),
+    [concepts, question.prerequisites],
+  );
+  const progressLabel = formatQuestionProgressLabel(progressStatus);
+  const progressStyle = isQuestionSolved(progressStatus)
+    ? PROGRESS_BADGE_STYLES.solved
+    : PROGRESS_BADGE_STYLES.unsolved;
 
   async function handleSelfCheck() {
     const trimmedAnswer = answer.trim();
@@ -67,10 +105,28 @@ export function PracticeSession({ question, returnTo, questionIds }: PracticeSes
         timeSpentSeconds,
       });
       setCheckResult(result);
+      if (result.is_correct) {
+        setProgressStatus("solved");
+      } else {
+        setProgressStatus("attempted");
+      }
     } catch {
       setCheckError("Self-check is unavailable. Check that the API is running.");
     } finally {
       setIsChecking(false);
+    }
+  }
+
+  async function handleMarkProgress(status: "solved" | "not_attempted") {
+    setIsUpdatingProgress(true);
+    setProgressError(null);
+    try {
+      const updated = await setQuestionProgress(question.id, status);
+      setProgressStatus(updated.status);
+    } catch {
+      setProgressError("Could not update progress. Check that the API is running.");
+    } finally {
+      setIsUpdatingProgress(false);
     }
   }
 
@@ -190,31 +246,113 @@ export function PracticeSession({ question, returnTo, questionIds }: PracticeSes
 
       <aside className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
         <div className="mb-4">
-          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Feedback</p>
-          <h2 className="text-lg font-semibold text-[#15201c]">Self-check</h2>
-        </div>
-
-        {checkResult ? (
-          <div className="grid gap-3">
-            <p
+          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Progress</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-sm font-medium text-[#15201c]">Status:</span>
+            <span
               className={cn(
-                "text-sm leading-relaxed",
-                checkResult.is_correct ? "text-[#176b54]" : "text-[#66736e]",
+                "rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide uppercase",
+                progressStyle,
               )}
             >
-              {checkResult.feedback ?? "Attempt recorded."}
-            </p>
-            {checkResult.supported && checkResult.is_correct === false ? (
-              <p className="text-sm text-[#66736e]">
-                Reveal the solution to review the full reasoning and common mistakes.
-              </p>
-            ) : null}
+              {progressLabel}
+            </span>
           </div>
-        ) : (
-          <p className="text-sm leading-relaxed text-[#66736e]">
-            Submit an answer to run deterministic self-check. AI tutoring arrives in Phase 3A.
-          </p>
-        )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleMarkProgress("solved")}
+            disabled={isUpdatingProgress || isQuestionSolved(progressStatus)}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "disabled:cursor-not-allowed disabled:opacity-50",
+            )}
+          >
+            Mark solved
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMarkProgress("not_attempted")}
+            disabled={isUpdatingProgress || !isQuestionSolved(progressStatus)}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "disabled:cursor-not-allowed disabled:opacity-50",
+            )}
+          >
+            Mark unsolved
+          </button>
+        </div>
+        {progressError ? <p className="mt-2 text-sm text-[#b42318]">{progressError}</p> : null}
+
+        {relatedConcept ? (
+          <div className="mt-5 border-t border-[#edf5f1] pt-4">
+            <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
+              Related concept
+            </p>
+            <Link
+              href={`/concepts/${relatedConcept.slug}`}
+              className="mt-2 inline-flex text-sm font-medium text-[#176b54] hover:underline"
+            >
+              {relatedConcept.name}
+            </Link>
+          </div>
+        ) : null}
+
+        {prerequisiteLinks.length > 0 ? (
+          <div className="mt-5 border-t border-[#edf5f1] pt-4">
+            <p className="mb-2 text-xs font-bold tracking-wide text-[#66736e] uppercase">
+              Prerequisites
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {prerequisiteLinks.map((prerequisite) =>
+                prerequisite.href ? (
+                  <Link
+                    key={prerequisite.label}
+                    href={prerequisite.href}
+                    className="rounded-full border border-[#bdd3ca] bg-[#edf5f1] px-2.5 py-1 text-xs font-medium text-[#176b54] hover:bg-[#dff0e8]"
+                  >
+                    {prerequisite.label}
+                  </Link>
+                ) : (
+                  <span
+                    key={prerequisite.label}
+                    className="rounded-full border border-[#dfe6e1] bg-[#fbfcfa] px-2.5 py-1 text-xs font-medium text-[#66736e]"
+                  >
+                    {prerequisite.label}
+                  </span>
+                ),
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-5 border-t border-[#edf5f1] pt-4">
+          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Feedback</p>
+          <h3 className="mt-1 text-sm font-semibold text-[#15201c]">Self-check</h3>
+          {checkResult ? (
+            <div className="mt-2 grid gap-3">
+              <p
+                className={cn(
+                  "text-sm leading-relaxed",
+                  checkResult.is_correct ? "text-[#176b54]" : "text-[#66736e]",
+                )}
+              >
+                {checkResult.feedback ?? "Attempt recorded."}
+              </p>
+              {checkResult.supported && checkResult.is_correct === false ? (
+                <p className="text-sm text-[#66736e]">
+                  Reveal the solution to review the full reasoning and common mistakes.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
+              Submit an answer to run deterministic self-check. AI tutoring arrives in Phase 3A.
+            </p>
+          )}
+        </div>
 
         {question.tags.length > 0 ? (
           <div className="mt-5 flex flex-wrap gap-2 border-t border-[#edf5f1] pt-4">

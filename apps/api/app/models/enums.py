@@ -48,3 +48,14 @@ class DuplicateMatchType(StrEnum):
     EXACT_RAW = "exact_raw"
     EXACT_NORMALIZED = "exact_normalized"
     NEAR_NORMALIZED = "near_normalized"
+
+
+class QuestionProgressStatus(StrEnum):
+    NOT_ATTEMPTED = "not_attempted"
+    ATTEMPTED = "attempted"
+    SOLVED = "solved"
+
+
+class ManualQuestionProgressStatus(StrEnum):
+    SOLVED = "solved"
+    NOT_ATTEMPTED = "not_attempted"

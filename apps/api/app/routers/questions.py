@@ -13,10 +13,15 @@ from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
-from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
+from app.schemas.progress import QuestionProgressRead, SetQuestionProgressRequest
 from app.schemas.tag import TagRead
 from app.services.answer_check import grade_short_answer
-from app.services.progress import get_progress_by_question_id
+from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
+from app.services.progress import (
+    get_progress_by_question_id,
+    get_question_progress,
+    set_question_progress,
+)
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -206,6 +211,32 @@ def self_check_question(
         supported=supported,
         is_correct=is_correct,
         feedback=feedback,
+    )
+
+
+@router.post("/{question_id}/progress")
+def update_question_progress(
+    question_id: int,
+    payload: SetQuestionProgressRequest,
+    session: SessionDep,
+) -> QuestionProgressRead:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return set_question_progress(session, question_id=question_id, payload=payload)
+
+
+@router.get("/{question_id}/progress")
+def read_question_progress(question_id: int, session: SessionDep) -> QuestionProgressRead:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+    progress = get_question_progress(session, question_id)
+    return QuestionProgressRead(
+        question_id=question_id,
+        status=progress.status,
+        attempt_count=progress.attempt_count,
+        manually_marked=progress.manually_marked,
     )
 
 

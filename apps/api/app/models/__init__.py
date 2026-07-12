@@ -17,6 +17,7 @@ from app.models.learning_signal import LearningSignal
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
+from app.models.user_question_progress import UserQuestionProgress
 from app.models.user_topic_mastery import UserTopicMastery
 
 __all__ = [
@@ -40,5 +41,6 @@ __all__ = [
     "Tag",
     "TagCategory",
     "Topic",
+    "UserQuestionProgress",
     "UserTopicMastery",
 ]

@@ -3,22 +3,14 @@
 import { useRouter } from "next/navigation";
 
 import { TopicBadge } from "@/components/ui/topic-badge";
-import type { QuestionProgressStatus, QuestionSummary } from "@/lib/types/question";
+import type { QuestionSummary } from "@/lib/types/question";
 import { formatDifficulty } from "@/lib/questions/format";
+import {
+  formatQuestionProgressLabel,
+  PROGRESS_BADGE_STYLES,
+} from "@/lib/practice/progress-display";
 import { getTopicPalette } from "@/lib/topic-colors";
 import { cn } from "@/lib/utils";
-
-const PROGRESS_LABELS: Record<QuestionProgressStatus, string> = {
-  not_attempted: "New",
-  attempted: "Attempted",
-  solved: "Solved",
-};
-
-const PROGRESS_STYLES: Record<QuestionProgressStatus, string> = {
-  not_attempted: "border-[#dfe6e1] bg-[#fbfcfa] text-[#66736e]",
-  attempted: "border-[#f4d9a6] bg-[#fff8eb] text-[#8a5b00]",
-  solved: "border-[#bdd3ca] bg-[#edf5f1] text-[#176b54]",
-};
 
 export function QuestionCard({
   question,
@@ -30,7 +22,9 @@ export function QuestionCard({
   questionIds?: number[];
 }) {
   const router = useRouter();
-  const progressStatus = question.progress_status ?? "not_attempted";
+  const progressLabel = formatQuestionProgressLabel(question.progress_status);
+  const progressStyle =
+    progressLabel === "Solved" ? PROGRESS_BADGE_STYLES.solved : PROGRESS_BADGE_STYLES.unsolved;
   const palette = getTopicPalette(question.topic_slug);
 
   const params = new URLSearchParams();
@@ -84,10 +78,10 @@ export function QuestionCard({
         <span
           className={cn(
             "rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase",
-            PROGRESS_STYLES[progressStatus],
+            progressStyle,
           )}
         >
-          {PROGRESS_LABELS[progressStatus]}
+          {progressLabel}
         </span>
         {question.tags.slice(0, 3).map((tag) => (
           <span

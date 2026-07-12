@@ -18,6 +18,7 @@ def get_attempt_progress(session: SessionDep) -> AttemptProgressResponse:
                 question_id=question_id,
                 status=progress.status,
                 attempt_count=progress.attempt_count,
+                manually_marked=progress.manually_marked,
             )
             for question_id, progress in sorted(progress_by_question_id.items())
         ],
