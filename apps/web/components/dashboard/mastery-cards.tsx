@@ -14,6 +14,10 @@ function MasteryCard({ topic }: { topic: TopicMastery }) {
         {formatMasteryScore(topic.mastery_score)}
       </strong>
       <MasteryBar score={topic.mastery_score} className="mt-3" />
+      <p className="mt-2 text-xs text-[#66736e]">
+        {topic.attempts_count} attempt{topic.attempts_count === 1 ? "" : "s"} ·{" "}
+        {topic.mastery_score.toFixed(0)}% solved
+      </p>
       <Link
         href={`/topics/${topic.slug}`}
         className="mt-3 inline-block text-sm text-[#176b54] hover:underline"
