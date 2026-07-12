@@ -1,4 +1,7 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { notFound } from "next/navigation";
+
+import { ConceptDetailView } from "@/components/concepts/concept-detail-view";
+import { fetchConcept } from "@/lib/api/concepts";
 
 type ConceptPageProps = {
   params: Promise<{ slug: string }>;
@@ -6,11 +9,11 @@ type ConceptPageProps = {
 
 export default async function ConceptPage({ params }: ConceptPageProps) {
   const { slug } = await params;
+  const concept = await fetchConcept(slug);
 
-  return (
-    <PlaceholderPage
-      title={`Concept: ${slug}`}
-      description="Concept pages with definitions, formulas, and graph neighbors arrive in QP-016."
-    />
-  );
+  if (concept === null) {
+    notFound();
+  }
+
+  return <ConceptDetailView concept={concept} />;
 }

@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from "@/lib/api/config";
-import type { ConceptSummary } from "@/lib/types/concept";
+import type { ConceptDetail, ConceptSummary } from "@/lib/types/concept";
 import type { SearchResponse } from "@/lib/types/search";
 
 type SearchConceptsOptions = {
@@ -44,4 +44,20 @@ export async function fetchConcepts(topicSlug?: string): Promise<ConceptSummary[
   }
 
   return response.json() as Promise<ConceptSummary[]>;
+}
+
+export async function fetchConcept(slug: string): Promise<ConceptDetail | null> {
+  const response = await fetch(`${getApiBaseUrl()}/concepts/${slug}`, {
+    cache: "no-store",
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Concept request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<ConceptDetail>;
 }
