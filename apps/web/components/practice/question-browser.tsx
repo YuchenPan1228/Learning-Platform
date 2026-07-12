@@ -18,10 +18,17 @@ type QuestionBrowserProps = {
     conceptSlug: string;
     tagSlug: string;
     difficulty: string;
+    progress: string;
   };
 };
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "expert"];
+const PROGRESS_FILTERS: Array<{ value: string; label: string }> = [
+  { value: "all", label: "All progress" },
+  { value: "not_attempted", label: "New" },
+  { value: "attempted", label: "Attempted" },
+  { value: "solved", label: "Solved" },
+];
 
 function FilterSelect({
   label,
@@ -64,6 +71,20 @@ export function QuestionBrowser({
     return query ? `/practice?${query}` : "/practice";
   }, [searchParams]);
 
+  const filteredQuestions = useMemo(() => {
+    if (filters.progress === "all") {
+      return questions;
+    }
+    return questions.filter(
+      (question) => (question.progress_status ?? "not_attempted") === filters.progress,
+    );
+  }, [filters.progress, questions]);
+
+  const questionIds = useMemo(
+    () => filteredQuestions.map((question) => question.id),
+    [filteredQuestions],
+  );
+
   const conceptOptions = useMemo(() => {
     if (filters.topicSlug === "all") {
       return concepts;
@@ -100,7 +121,7 @@ export function QuestionBrowser({
         aria-label="Question filters"
         className="rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <FilterSelect
             label="Topic"
             value={filters.topicSlug}
@@ -152,24 +173,41 @@ export function QuestionBrowser({
               </option>
             ))}
           </FilterSelect>
+
+          <FilterSelect
+            label="Progress"
+            value={filters.progress}
+            onChange={(value) => updateFilter("progress", value)}
+          >
+            {PROGRESS_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </FilterSelect>
         </div>
 
         <p className="mt-3 text-sm text-[#66736e]">
-          {questions.length} question{questions.length === 1 ? "" : "s"} shown
+          {filteredQuestions.length} question{filteredQuestions.length === 1 ? "" : "s"} shown
           {isPending ? " · updating…" : ""}
         </p>
       </section>
 
-      {questions.length === 0 ? (
+      {filteredQuestions.length === 0 ? (
         <section className="rounded-lg border border-dashed border-[#dfe6e1] bg-white p-8 text-center">
           <p className="text-sm text-[#66736e]">
             No questions matched these filters. Try clearing a filter or choosing a broader topic.
           </p>
         </section>
       ) : (
-        <section aria-label="Question results" className="grid gap-4 md:grid-cols-2">
-          {questions.map((question) => (
-            <QuestionCard key={question.id} question={question} returnTo={returnTo} />
+        <section aria-label="Question results" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filteredQuestions.map((question) => (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              returnTo={returnTo}
+              questionIds={questionIds}
+            />
           ))}
         </section>
       )}
