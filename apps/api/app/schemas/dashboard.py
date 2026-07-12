@@ -7,6 +7,8 @@ class TopicMasteryRead(BaseModel):
     name: str
     mastery_score: float
     attempts_count: int
+    solved_count: int
+    total_questions: int
 
 
 class WeakPrerequisiteRead(BaseModel):

@@ -14,6 +14,10 @@ function MasteryCard({ topic }: { topic: TopicMastery }) {
         {formatMasteryScore(topic.mastery_score)}
       </strong>
       <MasteryBar score={topic.mastery_score} className="mt-3" />
+      <p className="mt-3 text-sm text-[#66736e]">
+        {topic.solved_count} of {topic.total_questions} solved · {topic.attempts_count} attempt
+        {topic.attempts_count === 1 ? "" : "s"}
+      </p>
       <Link
         href={`/topics/${topic.slug}`}
         className="mt-3 inline-block text-sm text-[#176b54] hover:underline"
@@ -30,6 +34,9 @@ export function MasteryCards({ topics }: { topics: TopicMastery[] }) {
       <div className="mb-4">
         <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Progress</p>
         <h2 className="text-xl font-semibold text-[#15201c]">Mastery by topic</h2>
+        <p className="mt-1 text-sm text-[#66736e]">
+          Scores update from your solved practice questions.
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {topics.map((topic) => (
