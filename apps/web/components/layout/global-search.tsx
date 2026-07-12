@@ -109,12 +109,12 @@ export function GlobalSearch() {
           role="listbox"
           className="absolute top-[calc(100%+0.5rem)] z-20 max-h-[360px] w-full overflow-y-auto rounded-lg border border-[#dfe6e1] bg-white p-2 shadow-[0_16px_42px_rgba(21,32,28,0.12)]"
         >
-          {isLoading ? (
-            <p className="px-3 py-2 text-sm text-[#66736e]">Searching…</p>
-          ) : null}
+          {isLoading ? <p className="px-3 py-2 text-sm text-[#66736e]">Searching…</p> : null}
           {error ? <p className="px-3 py-2 text-sm text-[#b42318]">{error}</p> : null}
           {!isLoading && !error && !hasResults ? (
-            <p className="px-3 py-2 text-sm text-[#66736e]">No matches for &ldquo;{query}&rdquo;.</p>
+            <p className="px-3 py-2 text-sm text-[#66736e]">
+              No matches for &ldquo;{query}&rdquo;.
+            </p>
           ) : null}
 
           {results && results.concepts.length > 0 ? (

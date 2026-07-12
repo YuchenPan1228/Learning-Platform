@@ -9,10 +9,7 @@ import { recordAttempt } from "@/lib/api/attempts";
 import type { QuestionProgress } from "@/lib/api/questions";
 import { setQuestionProgress } from "@/lib/api/questions";
 import { formatDifficulty } from "@/lib/questions/format";
-import {
-  findRelatedConcept,
-  resolvePrerequisiteLinks,
-} from "@/lib/practice/prerequisite-links";
+import { findRelatedConcept, resolvePrerequisiteLinks } from "@/lib/practice/prerequisite-links";
 import {
   formatQuestionProgressLabel,
   isQuestionSolved,
@@ -31,11 +28,7 @@ type PracticeSessionProps = {
   initialProgress: QuestionProgress | null;
 };
 
-function buildSessionHref(
-  questionId: number,
-  returnTo: string,
-  questionIds: number[],
-): string {
+function buildSessionHref(questionId: number, returnTo: string, questionIds: number[]): string {
   const params = new URLSearchParams();
   params.set("returnTo", returnTo);
   if (questionIds.length > 0) {

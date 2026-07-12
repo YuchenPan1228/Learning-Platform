@@ -93,7 +93,9 @@ def self_check_feedback(*, supported: bool, is_correct: bool | None) -> str:
     )
 
 
-def grade_short_answer(*, short_answer: str | None, user_answer: str) -> tuple[bool, bool | None, str]:
+def grade_short_answer(
+    *, short_answer: str | None, user_answer: str
+) -> tuple[bool, bool | None, str]:
     expected_answer = short_answer
     if expected_answer is None or not expected_answer.strip():
         return False, None, self_check_feedback(supported=False, is_correct=None)

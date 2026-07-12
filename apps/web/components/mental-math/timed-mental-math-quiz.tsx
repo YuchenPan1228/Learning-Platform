@@ -72,15 +72,12 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
     }
     return questions.filter(
       (question) =>
-        question.subtopic_slug !== null &&
-        selectedCategories.includes(question.subtopic_slug),
+        question.subtopic_slug !== null && selectedCategories.includes(question.subtopic_slug),
     );
   }, [questions, selectedCategories]);
 
   const currentQuestion =
-    phase === "running" && queue.length > 0
-      ? queue[queueIndex % queue.length]
-      : null;
+    phase === "running" && queue.length > 0 ? queue[queueIndex % queue.length] : null;
 
   useEffect(() => {
     if (phase !== "running" || remainingSeconds <= 0) {
@@ -104,9 +101,7 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
 
   function toggleCategory(slug: string) {
     setSelectedCategories((current) =>
-      current.includes(slug)
-        ? current.filter((item) => item !== slug)
-        : [...current, slug],
+      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug],
     );
   }
 
@@ -217,7 +212,9 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
             <dd className="mt-1 text-2xl font-semibold text-[#15201c]">{totalAttempts}</dd>
           </div>
           <div className="rounded-lg border border-[#edf5f1] bg-[#fbfcfa] px-4 py-3">
-            <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">Correct</dt>
+            <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+              Correct
+            </dt>
             <dd className="mt-1 text-2xl font-semibold text-[#15201c]">{totalCorrect}</dd>
           </div>
           <div className="rounded-lg border border-[#edf5f1] bg-[#fbfcfa] px-4 py-3">
@@ -276,7 +273,9 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
             </p>
           </div>
           <div className="rounded-lg border border-[#bdd3ca] bg-[#edf5f1] px-4 py-2 text-center">
-            <p className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">Time left</p>
+            <p className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+              Time left
+            </p>
             <p className="text-2xl font-semibold text-[#176b54]">{remainingSeconds}s</p>
           </div>
         </div>
@@ -357,10 +356,7 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
           type="button"
           onClick={startQuiz}
           disabled={availableQuestions.length === 0}
-          className={cn(
-            buttonVariants(),
-            "mt-5 disabled:cursor-not-allowed disabled:opacity-50",
-          )}
+          className={cn(buttonVariants(), "mt-5 disabled:cursor-not-allowed disabled:opacity-50")}
         >
           Start quiz
         </button>

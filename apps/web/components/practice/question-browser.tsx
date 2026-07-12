@@ -46,9 +46,7 @@ function FilterSelect({
 }) {
   return (
     <label className={cn("grid min-w-0 gap-1 text-sm", className)}>
-      <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-        {label}
-      </span>
+      <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
