@@ -83,17 +83,18 @@ export function TimedMentalMathQuiz({ categories, questions }: TimedMentalMathQu
       : null;
 
   useEffect(() => {
-    if (phase !== "running") {
-      return;
-    }
-
-    if (remainingSeconds <= 0) {
-      setPhase("results");
+    if (phase !== "running" || remainingSeconds <= 0) {
       return;
     }
 
     const timeout = window.setTimeout(() => {
-      setRemainingSeconds((seconds) => seconds - 1);
+      const next = remainingSeconds - 1;
+      if (next <= 0) {
+        setPhase("results");
+        setRemainingSeconds(0);
+      } else {
+        setRemainingSeconds(next);
+      }
     }, 1000);
 
     return () => {

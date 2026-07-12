@@ -26,14 +26,9 @@ export function GlobalSearch() {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < MIN_QUERY_LENGTH) {
-      setResults(null);
-      setIsLoading(false);
-      setError(null);
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
     const timeout = window.setTimeout(() => {
       void searchContent(trimmed)
         .then((payload) => {
@@ -84,8 +79,17 @@ export function GlobalSearch() {
         type="search"
         value={query}
         onChange={(event) => {
-          setQuery(event.target.value);
+          const value = event.target.value;
+          setQuery(value);
           setIsOpen(true);
+          if (value.trim().length < MIN_QUERY_LENGTH) {
+            setResults(null);
+            setIsLoading(false);
+            setError(null);
+          } else {
+            setIsLoading(true);
+            setError(null);
+          }
         }}
         onFocus={() => {
           if (results !== null) {
@@ -126,6 +130,7 @@ export function GlobalSearch() {
                       <button
                         type="button"
                         role="option"
+                        aria-selected={false}
                         onClick={() => handleSelect(`/concepts/${concept.slug}`)}
                         className={cn(
                           "flex w-full items-center justify-between gap-3 rounded-md border border-l-4 px-3 py-2 text-left",
@@ -158,6 +163,7 @@ export function GlobalSearch() {
                       <button
                         type="button"
                         role="option"
+                        aria-selected={false}
                         onClick={() =>
                           handleSelect(
                             `/practice/${question.id}?returnTo=${encodeURIComponent("/practice")}`,
