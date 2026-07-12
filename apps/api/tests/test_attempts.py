@@ -1,8 +1,7 @@
 import pytest
+from app.models.attempt import Attempt
 from fastapi.testclient import TestClient
 from sqlalchemy import select
-
-from app.models.attempt import Attempt
 
 
 @pytest.mark.integration
