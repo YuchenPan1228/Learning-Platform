@@ -75,6 +75,46 @@ def test_list_questions_include_progress_marks_incorrect_as_attempted(
 
 
 @pytest.mark.integration
+def test_manual_question_progress_override(
+    client: TestClient,
+    seeded_database: None,
+    require_postgres: None,
+) -> None:
+    questions_response = client.get("/questions", params={"limit": 1})
+    question_id = questions_response.json()[0]["id"]
+
+    mark_solved = client.post(
+        f"/questions/{question_id}/progress",
+        json={"status": "solved"},
+    )
+    assert mark_solved.status_code == 200
+    assert mark_solved.json()["status"] == "solved"
+    assert mark_solved.json()["manually_marked"] is True
+
+    progress_response = client.get(
+        "/questions",
+        params={"limit": 100, "include_progress": True},
+    )
+    updated = next(item for item in progress_response.json() if item["id"] == question_id)
+    assert updated["progress_status"] == "solved"
+    assert updated["attempt_count"] == 0
+
+    mark_unsolved = client.post(
+        f"/questions/{question_id}/progress",
+        json={"status": "not_attempted"},
+    )
+    assert mark_unsolved.status_code == 200
+    assert mark_unsolved.json()["status"] == "not_attempted"
+
+    progress_response = client.get(
+        "/questions",
+        params={"limit": 100, "include_progress": True},
+    )
+    reset = next(item for item in progress_response.json() if item["id"] == question_id)
+    assert reset["progress_status"] == "not_attempted"
+
+
+@pytest.mark.integration
 def test_dashboard_mastery_updates_after_solved_attempt(
     client: TestClient,
     seeded_database: None,

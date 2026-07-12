@@ -1,5 +1,17 @@
 import { getApiBaseUrl } from "@/lib/api/config";
-import type { Difficulty, QuestionDetail, QuestionSummary } from "@/lib/types/question";
+import type {
+  Difficulty,
+  QuestionDetail,
+  QuestionProgressStatus,
+  QuestionSummary,
+} from "@/lib/types/question";
+
+export type QuestionProgress = {
+  question_id: number;
+  status: QuestionProgressStatus;
+  attempt_count: number;
+  manually_marked: boolean;
+};
 
 export type QuestionListFilters = {
   topicSlug?: string;
@@ -61,4 +73,35 @@ export async function fetchQuestion(questionId: number): Promise<QuestionDetail 
   }
 
   return response.json() as Promise<QuestionDetail>;
+}
+
+export async function fetchQuestionProgress(questionId: number): Promise<QuestionProgress> {
+  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/progress`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Question progress request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<QuestionProgress>;
+}
+
+export async function setQuestionProgress(
+  questionId: number,
+  status: "solved" | "not_attempted",
+): Promise<QuestionProgress> {
+  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/progress`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Set question progress failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<QuestionProgress>;
 }

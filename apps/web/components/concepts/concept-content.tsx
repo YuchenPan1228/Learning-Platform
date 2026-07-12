@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 export function ConceptContent({
   concept,
   practiceQuestionCount,
+  practiceHref,
 }: {
   concept: ConceptDetail;
   practiceQuestionCount: number;
+  practiceHref: string;
 }) {
   const palette = getConceptPalette(concept.slug, concept.topic_slug);
 
@@ -55,7 +57,7 @@ export function ConceptContent({
           </div>
           {practiceQuestionCount > 0 ? (
             <Link
-              href={`/practice?concept=${concept.slug}`}
+              href={practiceHref}
               className={cn(buttonVariants({ size: "sm" }))}
             >
               Practice questions

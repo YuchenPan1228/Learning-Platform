@@ -7,6 +7,7 @@ import { QuestionCard } from "@/components/practice/question-card";
 import type { ConceptSummary } from "@/lib/types/concept";
 import type { Difficulty, QuestionSummary, Tag } from "@/lib/types/question";
 import type { TopicWithSubtopics } from "@/lib/types/topic";
+import { matchesPracticeProgressFilter } from "@/lib/practice/progress-display";
 import { cn } from "@/lib/utils";
 
 type QuestionBrowserProps = {
@@ -26,8 +27,7 @@ type QuestionBrowserProps = {
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "expert"];
 const PROGRESS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "all", label: "All progress" },
-  { value: "not_attempted", label: "New" },
-  { value: "attempted", label: "Attempted" },
+  { value: "unsolved", label: "Unsolved" },
   { value: "solved", label: "Solved" },
 ];
 
@@ -80,8 +80,11 @@ export function QuestionBrowser({
     if (filters.progress === "all") {
       return questions;
     }
-    return questions.filter(
-      (question) => (question.progress_status ?? "not_attempted") === filters.progress,
+    return questions.filter((question) =>
+      matchesPracticeProgressFilter(
+        question.progress_status,
+        filters.progress as "solved" | "unsolved",
+      ),
     );
   }, [filters.progress, questions]);
 
@@ -92,7 +95,7 @@ export function QuestionBrowser({
 
   const conceptOptions = useMemo(() => {
     if (filters.topicSlug === "all") {
-      return concepts;
+      return [];
     }
     const topic = topics.find((item) => item.slug === filters.topicSlug);
     if (topic === undefined) {
@@ -142,15 +145,21 @@ export function QuestionBrowser({
 
           <FilterSelect
             label="Concept"
-            value={filters.conceptSlug}
+            value={filters.topicSlug === "all" ? "all" : filters.conceptSlug}
             onChange={(value) => updateFilter("concept", value)}
           >
-            <option value="all">All concepts</option>
-            {conceptOptions.map((concept) => (
-              <option key={concept.id} value={concept.slug}>
-                {concept.name}
-              </option>
-            ))}
+            {filters.topicSlug === "all" ? (
+              <option value="all">Select a topic first</option>
+            ) : (
+              <>
+                <option value="all">All concepts in topic</option>
+                {conceptOptions.map((concept) => (
+                  <option key={concept.id} value={concept.slug}>
+                    {concept.name}
+                  </option>
+                ))}
+              </>
+            )}
           </FilterSelect>
 
           <FilterSelect

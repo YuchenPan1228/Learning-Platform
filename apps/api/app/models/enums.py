@@ -54,3 +54,8 @@ class QuestionProgressStatus(StrEnum):
     NOT_ATTEMPTED = "not_attempted"
     ATTEMPTED = "attempted"
     SOLVED = "solved"
+
+
+class ManualQuestionProgressStatus(StrEnum):
+    SOLVED = "solved"
+    NOT_ATTEMPTED = "not_attempted"
