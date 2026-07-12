@@ -1,10 +1,8 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { FlashcardReview } from "@/components/flashcards/flashcard-review";
+import { fetchFlashcards } from "@/lib/api/flashcards";
 
-export default function FlashcardsPage() {
-  return (
-    <PlaceholderPage
-      title="Flashcards shell"
-      description="Flip-card review and scheduling will be implemented in QP-020."
-    />
-  );
+export default async function FlashcardsPage() {
+  const flashcards = await fetchFlashcards({ limit: 100 });
+
+  return <FlashcardReview flashcards={flashcards} />;
 }
