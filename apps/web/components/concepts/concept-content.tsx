@@ -1,14 +1,36 @@
 import Link from "next/link";
 
 import { ConceptSection } from "@/components/concepts/concept-section";
+import { TopicBadge } from "@/components/ui/topic-badge";
+import { buttonVariants } from "@/components/ui/button";
 import type { ConceptDetail } from "@/lib/types/concept";
+import { getConceptPalette } from "@/lib/topic-colors";
+import { cn } from "@/lib/utils";
 
-export function ConceptContent({ concept }: { concept: ConceptDetail }) {
+export function ConceptContent({
+  concept,
+  practiceQuestionCount,
+  practiceHref,
+}: {
+  concept: ConceptDetail;
+  practiceQuestionCount: number;
+  practiceHref: string;
+}) {
+  const palette = getConceptPalette(concept.slug, concept.topic_slug);
+
   return (
-    <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
+    <section
+      className={cn(
+        "rounded-lg border border-l-4 bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]",
+        palette.border,
+        palette.accent,
+        palette.surface,
+      )}
+    >
       <div className="mb-5">
         <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Concept page</p>
-        <h2 className="mt-1 text-2xl font-semibold text-[#15201c] sm:text-3xl">{concept.name}</h2>
+        <TopicBadge slug={concept.slug} label={concept.name} className="mt-2" />
+        <h2 className="mt-3 text-2xl font-semibold text-[#15201c] sm:text-3xl">{concept.name}</h2>
         <Link
           href={`/topics/${concept.topic_slug}`}
           className="mt-2 inline-block text-sm text-[#176b54] hover:underline"
@@ -22,6 +44,24 @@ export function ConceptContent({ concept }: { concept: ConceptDetail }) {
           {concept.formula}
         </div>
       ) : null}
+
+      <section className="mb-6 rounded-lg border border-[#edf5f1] bg-[#fbfcfa] px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Practice</p>
+            <p className="mt-1 text-sm text-[#31443d]">
+              {practiceQuestionCount > 0
+                ? `${practiceQuestionCount} question${practiceQuestionCount === 1 ? "" : "s"} available for this concept.`
+                : "No practice questions are linked to this concept yet."}
+            </p>
+          </div>
+          {practiceQuestionCount > 0 ? (
+            <Link href={practiceHref} className={cn(buttonVariants({ size: "sm" }))}>
+              Practice questions
+            </Link>
+          ) : null}
+        </div>
+      </section>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="grid gap-6">
