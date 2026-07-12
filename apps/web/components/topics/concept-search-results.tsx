@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-import { TopicBadge } from "@/components/ui/topic-badge";
 import type { ConceptSummary } from "@/lib/types/concept";
-import { getConceptPalette } from "@/lib/topic-colors";
-import { cn } from "@/lib/utils";
 
 type ConceptSearchResultsProps = {
   query: string;
@@ -44,26 +41,19 @@ export function ConceptSearchResults({
 
       {!isLoading && !error && concepts.length > 0 ? (
         <ul className="grid gap-2">
-          {concepts.map((concept) => {
-            const palette = getConceptPalette(concept.slug, concept.topic_slug);
-            return (
-              <li key={concept.id}>
-                <Link
-                  href={`/concepts/${concept.slug}`}
-                  className={cn(
-                    "flex items-center justify-between gap-3 rounded-lg border border-l-4 px-3 py-2 transition-colors",
-                    palette.border,
-                    palette.accent,
-                    palette.surface,
-                    palette.hoverSurface,
-                  )}
-                >
-                  <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
-                  <TopicBadge slug={concept.slug} />
-                </Link>
-              </li>
-            );
-          })}
+          {concepts.map((concept) => (
+            <li key={concept.id}>
+              <Link
+                href={`/concepts/${concept.slug}`}
+                className="flex items-center justify-between gap-3 rounded-lg border border-[#edf5f1] bg-[#fbfcfa] px-3 py-2 transition-colors hover:border-[#bdd3ca] hover:bg-[#edf5f1]"
+              >
+                <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
+                <span className="shrink-0 text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                  {concept.topic_slug}
+                </span>
+              </Link>
+            </li>
+          ))}
         </ul>
       ) : null}
     </section>

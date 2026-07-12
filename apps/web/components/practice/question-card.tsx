@@ -1,95 +1,70 @@
-"use client";
+import Link from "next/link";
 
-import { useRouter } from "next/navigation";
-
-import { TopicBadge } from "@/components/ui/topic-badge";
 import type { QuestionSummary } from "@/lib/types/question";
-import { formatDifficulty } from "@/lib/questions/format";
-import {
-  formatQuestionProgressLabel,
-  PROGRESS_BADGE_STYLES,
-} from "@/lib/practice/progress-display";
-import { getTopicPalette } from "@/lib/topic-colors";
+import { formatDifficulty, formatEstimatedTime } from "@/lib/questions/format";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function QuestionCard({
   question,
   returnTo,
-  questionIds,
 }: {
   question: QuestionSummary;
   returnTo?: string;
-  questionIds?: number[];
 }) {
-  const router = useRouter();
-  const progressLabel = formatQuestionProgressLabel(question.progress_status);
-  const progressStyle =
-    progressLabel === "Solved" ? PROGRESS_BADGE_STYLES.solved : PROGRESS_BADGE_STYLES.unsolved;
-  const palette = getTopicPalette(question.topic_slug);
-
-  const params = new URLSearchParams();
-  if (returnTo) {
-    params.set("returnTo", returnTo);
-  }
-  if (questionIds && questionIds.length > 0) {
-    params.set("ids", questionIds.join(","));
-  }
-  const query = params.toString();
-  const practiceHref = query ? `/practice/${question.id}?${query}` : `/practice/${question.id}`;
+  const practiceHref = returnTo
+    ? `/practice/${question.id}?returnTo=${encodeURIComponent(returnTo)}`
+    : `/practice/${question.id}`;
 
   return (
-    <article
-      role="link"
-      tabIndex={0}
-      onClick={() => router.push(practiceHref)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          router.push(practiceHref);
-        }
-      }}
-      className={cn(
-        "cursor-pointer rounded-lg border border-l-4 bg-white p-4 shadow-[0_8px_24px_rgba(21,32,28,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0f766e]/20",
-        palette.border,
-        palette.accent,
-        palette.hoverSurface,
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <TopicBadge slug={question.topic_slug} />
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold text-[#15201c]">
-            {question.title}
-          </h3>
+    <article className="flex h-full flex-col rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
+            {question.topic_slug}
+            {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-[#15201c]">{question.title}</h3>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="rounded-full border border-[#dfe6e1] bg-[#fbfcfa] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[#31443d] uppercase">
-            {formatDifficulty(question.difficulty)}
-          </span>
-          <span className="text-[11px] text-[#66736e]">
-            {question.company_hint ?? "General quant"}
-          </span>
-        </div>
+        <span className="rounded-full border border-[#dfe6e1] bg-[#fbfcfa] px-2.5 py-1 text-xs font-semibold tracking-wide text-[#31443d] uppercase">
+          {formatDifficulty(question.difficulty)}
+        </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span
-          className={cn(
-            "rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase",
-            progressStyle,
-          )}
-        >
-          {progressLabel}
-        </span>
-        {question.tags.slice(0, 3).map((tag) => (
-          <span
-            key={tag.id}
-            className="rounded-full border border-[#edf5f1] bg-[#fbfcfa] px-2 py-0.5 text-[11px] font-medium text-[#66736e]"
-          >
-            {tag.name}
-          </span>
-        ))}
-      </div>
+      <dl className="mt-4 grid gap-2 text-sm text-[#66736e] sm:grid-cols-2">
+        <div>
+          <dt className="text-xs font-semibold tracking-wide uppercase">Estimated time</dt>
+          <dd className="mt-1 font-medium text-[#15201c]">
+            {formatEstimatedTime(question.estimated_time_seconds)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold tracking-wide uppercase">Company hint</dt>
+          <dd className="mt-1 font-medium text-[#15201c]">
+            {question.company_hint ?? "General quant"}
+          </dd>
+        </div>
+      </dl>
+
+      {question.tags.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {question.tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="rounded-full border border-[#bdd3ca] bg-[#edf5f1] px-2.5 py-1 text-xs font-medium text-[#176b54]"
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <Link
+        href={practiceHref}
+        className={cn(buttonVariants({ variant: "default", size: "sm" }), "mt-auto w-fit")}
+      >
+        Start practice
+      </Link>
     </article>
   );
 }

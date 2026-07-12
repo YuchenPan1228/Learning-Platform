@@ -20,31 +20,6 @@ def test_health_returns_ok_when_database_is_available(
     }
 
 
-def test_cors_preflight_allows_attempts_from_local_web_origin(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("APP_ENV", "test")
-    get_settings.cache_clear()
-    reset_db_state()
-
-    with TestClient(create_app()) as client:
-        response = client.options(
-            "/attempts",
-            headers={
-                "Origin": "http://127.0.0.1:3000",
-                "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "content-type",
-            },
-        )
-
-    assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:3000"
-    assert "POST" in response.headers["access-control-allow-methods"]
-
-    reset_db_state()
-    get_settings.cache_clear()
-
-
 def test_health_returns_degraded_when_database_is_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

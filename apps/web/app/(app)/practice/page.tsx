@@ -6,7 +6,6 @@ import { fetchQuestions } from "@/lib/api/questions";
 import { fetchTags } from "@/lib/api/tags";
 import { fetchTopics } from "@/lib/api/topics";
 import type { Difficulty } from "@/lib/types/question";
-import { parsePracticeProgressFilter } from "@/lib/practice/progress-display";
 
 type PracticePageProps = {
   searchParams: Promise<{
@@ -14,7 +13,6 @@ type PracticePageProps = {
     concept?: string;
     tag?: string;
     difficulty?: string;
-    progress?: string;
   }>;
 };
 
@@ -30,22 +28,19 @@ function parseDifficulty(value: string | undefined): Difficulty | undefined {
 export default async function PracticePage({ searchParams }: PracticePageProps) {
   const params = await searchParams;
   const topicSlug = params.topic && params.topic !== "all" ? params.topic : undefined;
-  const conceptSlug =
-    topicSlug && params.concept && params.concept !== "all" ? params.concept : undefined;
+  const conceptSlug = params.concept && params.concept !== "all" ? params.concept : undefined;
   const tagSlug = params.tag && params.tag !== "all" ? params.tag : undefined;
   const difficulty = parseDifficulty(params.difficulty);
-  const progress = parsePracticeProgressFilter(params.progress);
 
   const [topics, concepts, tags, questions] = await Promise.all([
     fetchTopics(),
-    topicSlug ? fetchConcepts(topicSlug) : Promise.resolve([]),
+    fetchConcepts(topicSlug),
     fetchTags(),
     fetchQuestions({
       topicSlug,
       conceptSlug,
       tagSlug,
       difficulty,
-      includeProgress: true,
       limit: 100,
     }),
   ]);
@@ -62,7 +57,6 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
           conceptSlug: conceptSlug ?? "all",
           tagSlug: tagSlug ?? "all",
           difficulty: difficulty ?? "all",
-          progress,
         }}
       />
     </Suspense>
