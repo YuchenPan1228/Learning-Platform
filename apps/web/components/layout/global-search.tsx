@@ -1,0 +1,180 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState } from "react";
+
+import { Input } from "@/components/ui/input";
+import { searchContent } from "@/lib/api/search";
+import type { SearchResponse } from "@/lib/types/search";
+import { cn } from "@/lib/utils";
+
+const MIN_QUERY_LENGTH = 2;
+
+export function GlobalSearch() {
+  const router = useRouter();
+  const listboxId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setResults(null);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    const timeout = window.setTimeout(() => {
+      void searchContent(trimmed)
+        .then((payload) => {
+          setResults(payload);
+          setIsOpen(true);
+        })
+        .catch(() => {
+          setError("Search is unavailable.");
+          setResults(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [query]);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (containerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setIsOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
+  function handleSelect(href: string) {
+    setIsOpen(false);
+    setQuery("");
+    setResults(null);
+    router.push(href);
+  }
+
+  const hasResults =
+    results !== null && (results.concepts.length > 0 || results.questions.length > 0);
+
+  return (
+    <div ref={containerRef} className="relative w-full max-w-[420px]">
+      <Input
+        type="search"
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (results !== null) {
+            setIsOpen(true);
+          }
+        }}
+        placeholder="Search questions and concepts..."
+        aria-label="Search questions and concepts"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        className="h-11 rounded-lg border-[#dfe6e1] bg-white px-3 shadow-none focus-visible:ring-[#0f766e]/20"
+      />
+
+      {isOpen && query.trim().length >= MIN_QUERY_LENGTH ? (
+        <div
+          id={listboxId}
+          role="listbox"
+          className="absolute top-[calc(100%+0.5rem)] z-20 max-h-[360px] w-full overflow-y-auto rounded-lg border border-[#dfe6e1] bg-white p-2 shadow-[0_16px_42px_rgba(21,32,28,0.12)]"
+        >
+          {isLoading ? (
+            <p className="px-3 py-2 text-sm text-[#66736e]">Searching…</p>
+          ) : null}
+          {error ? <p className="px-3 py-2 text-sm text-[#b42318]">{error}</p> : null}
+          {!isLoading && !error && !hasResults ? (
+            <p className="px-3 py-2 text-sm text-[#66736e]">No matches for &ldquo;{query}&rdquo;.</p>
+          ) : null}
+
+          {results && results.concepts.length > 0 ? (
+            <section className="mb-2">
+              <p className="px-3 py-1 text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                Concepts
+              </p>
+              <ul>
+                {results.concepts.map((concept) => (
+                  <li key={concept.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      onClick={() => handleSelect(`/concepts/${concept.slug}`)}
+                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
+                    >
+                      <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
+                      <span className="text-xs text-[#66736e]">{concept.topic_slug}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {results && results.questions.length > 0 ? (
+            <section>
+              <p className="px-3 py-1 text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                Questions
+              </p>
+              <ul>
+                {results.questions.map((question) => (
+                  <li key={question.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      onClick={() =>
+                        handleSelect(`/practice/${question.id}?returnTo=${encodeURIComponent("/practice")}`)
+                      }
+                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
+                    >
+                      <span className="text-sm font-medium text-[#15201c]">{question.title}</span>
+                      <span className="text-xs text-[#66736e]">
+                        {question.topic_slug}
+                        {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {hasResults ? (
+            <div className="border-t border-[#edf5f1] px-3 py-2">
+              <Link
+                href={`/practice?q=${encodeURIComponent(query.trim())}`}
+                className="text-sm text-[#176b54] hover:underline"
+                onClick={() => setIsOpen(false)}
+              >
+                Browse all practice questions
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
