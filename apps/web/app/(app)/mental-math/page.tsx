@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { MentalMathModes } from "@/components/mental-math/mental-math-modes";
+import { MentalMathView } from "@/components/mental-math/mental-math-view";
 import { fetchQuestion, fetchQuestions } from "@/lib/api/questions";
 import { fetchTopic } from "@/lib/api/topics";
 
@@ -18,5 +18,5 @@ export default async function MentalMathPage() {
     await Promise.all(summaries.map((summary) => fetchQuestion(summary.id)))
   ).filter((question) => question !== null);
 
-  return <MentalMathModes categories={topic.subtopics} questions={questions} />;
+  return <MentalMathView categories={topic.subtopics} questions={questions} />;
 }
