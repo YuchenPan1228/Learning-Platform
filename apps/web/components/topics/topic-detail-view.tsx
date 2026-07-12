@@ -1,12 +1,9 @@
 import Link from "next/link";
 
-import { TopicBadge } from "@/components/ui/topic-badge";
 import { formatMasteryScore } from "@/lib/mastery";
 import { MasteryBar } from "@/components/ui/mastery-bar";
 import type { ConceptSummary } from "@/lib/types/concept";
 import type { TopicWithSubtopics } from "@/lib/types/topic";
-import { getConceptPalette, getTopicPalette } from "@/lib/topic-colors";
-import { cn } from "@/lib/utils";
 
 type SubtopicGridProps = {
   subtopics: TopicWithSubtopics["subtopics"];
@@ -18,34 +15,35 @@ export function SubtopicGrid({ subtopics, conceptsBySlug }: SubtopicGridProps) {
     <section aria-label="Subtopics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {subtopics.map((subtopic) => {
         const concept = conceptsBySlug[subtopic.slug];
-        const palette = getConceptPalette(subtopic.slug, subtopic.slug);
 
         return (
-          <Link
+          <article
             key={subtopic.id}
-            href={`/concepts/${subtopic.slug}`}
-            className={cn(
-              "block rounded-lg border border-l-4 bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)] transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#0f766e]/20",
-              palette.border,
-              palette.accent,
-              palette.hoverSurface,
-            )}
+            className="rounded-lg border border-[#dfe6e1] bg-white p-4 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
           >
-            <article>
-              <TopicBadge slug={subtopic.slug} label={subtopic.name} />
-              <h4 className="mt-3 text-base font-semibold text-[#15201c]">{subtopic.name}</h4>
-              {concept ? (
-                <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
-                  Study the <span className="font-medium text-[#31443d]">{concept.name}</span>{" "}
-                  concept in this section.
-                </p>
-              ) : (
-                <p className="mt-2 text-sm text-[#66736e]">
-                  Open this subtopic to study the linked concept.
-                </p>
-              )}
-            </article>
-          </Link>
+            <Link
+              href={`/concepts/${subtopic.slug}`}
+              className="text-base font-semibold text-[#15201c] hover:text-[#176b54] hover:underline"
+            >
+              {subtopic.name}
+            </Link>
+            {concept ? (
+              <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
+                Study the <span className="font-medium text-[#31443d]">{concept.name}</span> concept
+                in this section.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-[#66736e]">
+                Open the linked concept to study this area.
+              </p>
+            )}
+            <Link
+              href={`/concepts/${subtopic.slug}`}
+              className="mt-3 inline-block text-sm text-[#176b54] hover:underline"
+            >
+              Open concept
+            </Link>
+          </article>
         );
       })}
     </section>
@@ -59,27 +57,17 @@ type TopicDetailViewProps = {
 };
 
 export function TopicDetailView({ topic, masteryScore, conceptsBySlug }: TopicDetailViewProps) {
-  const palette = getTopicPalette(topic.slug);
-
   return (
     <div className="grid gap-6">
-      <section
-        className={cn(
-          "rounded-lg border border-l-4 bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]",
-          palette.border,
-          palette.accent,
-          palette.surface,
-        )}
-      >
+      <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
               Topic section
             </p>
-            <TopicBadge slug={topic.slug} label={topic.name} className="mt-2" />
-            <h2 className="mt-3 text-2xl font-semibold text-[#15201c]">{topic.name}</h2>
+            <h2 className="text-2xl font-semibold text-[#15201c]">{topic.name}</h2>
           </div>
-          <span className={cn("text-sm font-semibold", palette.badgeText)}>
+          <span className="text-sm font-semibold text-[#176b54]">
             {formatMasteryScore(masteryScore)} mastery
           </span>
         </div>

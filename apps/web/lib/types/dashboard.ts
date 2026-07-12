@@ -4,8 +4,6 @@ export type TopicMastery = {
   name: string;
   mastery_score: number;
   attempts_count: number;
-  solved_count: number;
-  total_questions: number;
 };
 
 export type WeakPrerequisite = {

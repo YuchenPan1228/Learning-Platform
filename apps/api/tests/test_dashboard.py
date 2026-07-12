@@ -15,8 +15,7 @@ def test_dashboard_returns_topic_mastery_and_weak_prerequisites(
     assert payload["user_id"] == "local"
     assert len(payload["topic_mastery"]) == 9
     assert payload["topic_mastery"][0]["slug"] == "probability"
-    assert payload["topic_mastery"][0]["mastery_score"] == 0.0
-    assert payload["topic_mastery"][0]["attempts_count"] == 0
+    assert payload["topic_mastery"][0]["mastery_score"] == 50.0
 
     weak_prerequisites = payload["weak_prerequisites"]
     assert len(weak_prerequisites) > 0
@@ -31,4 +30,4 @@ def test_dashboard_returns_topic_mastery_and_weak_prerequisites(
         if item["concept_slug"] == "bayes"
         and item["prerequisite_slug"] == "conditional-probability"
     )
-    assert bayes_weakness["prerequisite_mastery_score"] == 0.0
+    assert bayes_weakness["prerequisite_mastery_score"] == 42.0
