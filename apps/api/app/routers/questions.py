@@ -12,8 +12,10 @@ from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
+from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.schemas.tag import TagRead
+from app.services.answer_check import answers_match, self_check_feedback
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -151,6 +153,34 @@ def get_question_duplicates(question_id: int, session: SessionDep) -> QuestionDu
             )
             for match in matches
         ],
+    )
+
+
+@router.post("/{question_id}/self-check")
+def self_check_question(
+    question_id: int,
+    payload: SelfCheckRequest,
+    session: SessionDep,
+) -> SelfCheckResponse:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    expected_answer = question.short_answer
+    if expected_answer is None or not expected_answer.strip():
+        return SelfCheckResponse(
+            question_id=question_id,
+            supported=False,
+            is_correct=None,
+            feedback=self_check_feedback(supported=False, is_correct=None),
+        )
+
+    is_correct = answers_match(payload.answer, expected_answer)
+    return SelfCheckResponse(
+        question_id=question_id,
+        supported=True,
+        is_correct=is_correct,
+        feedback=self_check_feedback(supported=True, is_correct=is_correct),
     )
 
 
