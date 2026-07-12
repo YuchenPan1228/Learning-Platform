@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { TopicBadge } from "@/components/ui/topic-badge";
 import { searchContent } from "@/lib/api/search";
 import type { SearchResponse } from "@/lib/types/search";
+import { getConceptPalette, getTopicPalette } from "@/lib/topic-colors";
 import { cn } from "@/lib/utils";
 
 const MIN_QUERY_LENGTH = 2;
@@ -117,19 +119,28 @@ export function GlobalSearch() {
                 Concepts
               </p>
               <ul>
-                {results.concepts.map((concept) => (
-                  <li key={concept.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      onClick={() => handleSelect(`/concepts/${concept.slug}`)}
-                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
-                    >
-                      <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
-                      <span className="text-xs text-[#66736e]">{concept.topic_slug}</span>
-                    </button>
-                  </li>
-                ))}
+                {results.concepts.map((concept) => {
+                  const palette = getConceptPalette(concept.slug, concept.topic_slug);
+                  return (
+                    <li key={concept.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        onClick={() => handleSelect(`/concepts/${concept.slug}`)}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 rounded-md border border-l-4 px-3 py-2 text-left",
+                          palette.border,
+                          palette.accent,
+                          palette.surface,
+                          palette.hoverSurface,
+                        )}
+                      >
+                        <span className="text-sm font-medium text-[#15201c]">{concept.name}</span>
+                        <TopicBadge slug={concept.slug} />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ) : null}
@@ -140,24 +151,32 @@ export function GlobalSearch() {
                 Questions
               </p>
               <ul>
-                {results.questions.map((question) => (
-                  <li key={question.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      onClick={() =>
-                        handleSelect(`/practice/${question.id}?returnTo=${encodeURIComponent("/practice")}`)
-                      }
-                      className="flex w-full flex-col rounded-md px-3 py-2 text-left hover:bg-[#edf5f1]"
-                    >
-                      <span className="text-sm font-medium text-[#15201c]">{question.title}</span>
-                      <span className="text-xs text-[#66736e]">
-                        {question.topic_slug}
-                        {question.subtopic_slug ? ` · ${question.subtopic_slug}` : ""}
-                      </span>
-                    </button>
-                  </li>
-                ))}
+                {results.questions.map((question) => {
+                  const palette = getTopicPalette(question.topic_slug);
+                  return (
+                    <li key={question.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        onClick={() =>
+                          handleSelect(
+                            `/practice/${question.id}?returnTo=${encodeURIComponent("/practice")}`,
+                          )
+                        }
+                        className={cn(
+                          "flex w-full flex-col gap-2 rounded-md border border-l-4 px-3 py-2 text-left",
+                          palette.border,
+                          palette.accent,
+                          palette.surface,
+                          palette.hoverSurface,
+                        )}
+                      >
+                        <span className="text-sm font-medium text-[#15201c]">{question.title}</span>
+                        <TopicBadge slug={question.topic_slug} />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ) : null}
