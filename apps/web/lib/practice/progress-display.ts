@@ -2,8 +2,6 @@ import type { QuestionProgressStatus } from "@/lib/types/question";
 
 export type PracticeProgressFilter = "all" | "solved" | "unsolved";
 
-const PROGRESS_FILTER_VALUES = new Set<PracticeProgressFilter>(["all", "solved", "unsolved"]);
-
 export function isQuestionSolved(status: QuestionProgressStatus | null | undefined): boolean {
   return status === "solved";
 }
@@ -22,12 +20,6 @@ export function parsePracticeProgressFilter(value: string | undefined): Practice
     return "unsolved";
   }
   return "all";
-}
-
-export function isValidPracticeProgressFilter(
-  value: string | undefined,
-): value is PracticeProgressFilter {
-  return value !== undefined && PROGRESS_FILTER_VALUES.has(value as PracticeProgressFilter);
 }
 
 export function matchesPracticeProgressFilter(

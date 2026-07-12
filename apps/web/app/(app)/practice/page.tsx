@@ -45,6 +45,7 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
       conceptSlug,
       tagSlug,
       difficulty,
+      includeProgress: true,
       limit: 100,
     }),
   ]);
