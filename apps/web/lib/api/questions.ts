@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from "@/lib/api/config";
-import type { Difficulty, QuestionSummary } from "@/lib/types/question";
+import type { Difficulty, QuestionDetail, QuestionSummary } from "@/lib/types/question";
 
 export type QuestionListFilters = {
   topicSlug?: string;
@@ -41,4 +41,20 @@ export async function fetchQuestions(
   }
 
   return response.json() as Promise<QuestionSummary[]>;
+}
+
+export async function fetchQuestion(questionId: number): Promise<QuestionDetail | null> {
+  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}`, {
+    cache: "no-store",
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Question request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<QuestionDetail>;
 }
