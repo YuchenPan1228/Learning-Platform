@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { adminNavItems, isNavItemActive, mainNavItems } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
+import { SidebarDailyPlan } from "@/components/dashboard/sidebar-daily-plan";
 
 function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -51,13 +52,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="mt-auto rounded-lg border border-[#dfe6e1] bg-white p-4">
-        <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">Today</span>
-        <strong className="mt-1 block text-sm text-[#15201c]">90 min plan</strong>
-        <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
-          Study planner content arrives in Phase 2.
-        </p>
-      </div>
+      <SidebarDailyPlan />
     </aside>
   );
 }

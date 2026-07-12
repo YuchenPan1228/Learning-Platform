@@ -1,10 +1,8 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { DashboardView } from "@/components/dashboard/dashboard-view";
+import { fetchDashboard } from "@/lib/api/dashboard";
 
-export default function DashboardPage() {
-  return (
-    <PlaceholderPage
-      title="Dashboard shell"
-      description="Daily plan, mastery cards, and weak-area diagnosis will be implemented in QP-014."
-    />
-  );
+export default async function DashboardPage() {
+  const dashboard = await fetchDashboard();
+
+  return <DashboardView dashboard={dashboard} />;
 }
