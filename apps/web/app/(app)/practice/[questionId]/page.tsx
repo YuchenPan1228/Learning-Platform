@@ -5,8 +5,18 @@ import { fetchQuestion } from "@/lib/api/questions";
 
 type PracticeSessionPageProps = {
   params: Promise<{ questionId: string }>;
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; ids?: string }>;
 };
+
+function parseQuestionIds(value: string | undefined): number[] {
+  if (!value) {
+    return [];
+  }
+  return value
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((id) => Number.isInteger(id) && id > 0);
+}
 
 export default async function PracticeSessionPage({
   params,
@@ -25,6 +35,11 @@ export default async function PracticeSessionPage({
   }
 
   const returnTo = query.returnTo && query.returnTo.startsWith("/") ? query.returnTo : "/practice";
+  const questionIds = parseQuestionIds(query.ids);
+  const navigationIds =
+    questionIds.length > 0 && questionIds.includes(parsedId) ? questionIds : [parsedId];
 
-  return <PracticeSession question={question} returnTo={returnTo} />;
+  return (
+    <PracticeSession question={question} returnTo={returnTo} questionIds={navigationIds} />
+  );
 }
