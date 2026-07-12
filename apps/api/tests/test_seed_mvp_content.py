@@ -35,9 +35,17 @@ def test_seed_mvp_content_is_idempotent(
         assert first.finance_questions == 10
         assert first.market_game_questions == 5
         assert first.flashcards == 15
+        assert first.tags >= 1
         assert second == first
         assert question_count == 65
         assert flashcard_count == 15
+
+        from app.models.tag import QuestionTag, Tag
+
+        tag_count = session.scalar(select(func.count()).select_from(Tag))
+        link_count = session.scalar(select(func.count()).select_from(QuestionTag))
+        assert tag_count == first.tags
+        assert link_count is not None and link_count >= 1
 
         mental_math = session.scalar(
             select(Question).where(Question.extraction_method == "hand_seed:mm-001")

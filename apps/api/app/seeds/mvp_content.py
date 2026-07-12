@@ -5,12 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.db import get_session_factory
 from app.dedup.fingerprints import apply_question_fingerprints
+from app.models.enums import TagCategory
 from app.models.flashcard import Flashcard
 from app.models.question import Question
+from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
 from app.seeds.data.flashcard_seed import FlashcardSeed, flashcard_source_id
 from app.seeds.data.mvp import ALL_MVP_FLASHCARDS, ALL_MVP_QUESTIONS
 from app.seeds.data.question_seed import QuestionSeed, seed_extraction_method
+from app.seeds.utils import slugify
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +24,7 @@ class MvpContentSummary:
     finance_questions: int
     market_game_questions: int
     flashcards: int
+    tags: int
 
     @property
     def total(self) -> int:
@@ -36,6 +40,75 @@ class MvpContentSummary:
 def _load_topics_by_slug(session: Session) -> dict[str, Topic]:
     topics = session.scalars(select(Topic)).all()
     return {topic.slug: topic for topic in topics}
+
+
+def _upsert_tag(
+    session: Session,
+    *,
+    slug: str,
+    name: str,
+    category: TagCategory,
+) -> Tag:
+    tag = session.scalar(select(Tag).where(Tag.slug == slug))
+    if tag is None:
+        tag = Tag(slug=slug, name=name, category=category)
+        session.add(tag)
+        session.flush()
+    else:
+        tag.name = name
+        tag.category = category
+    return tag
+
+
+def _ensure_question_tag(session: Session, *, question: Question, tag: Tag) -> None:
+    existing = session.scalar(
+        select(QuestionTag).where(
+            QuestionTag.question_id == question.id,
+            QuestionTag.tag_id == tag.id,
+        )
+    )
+    if existing is None:
+        session.add(QuestionTag(question_id=question.id, tag_id=tag.id))
+
+
+def _sync_question_tags(
+    session: Session,
+    *,
+    question: Question,
+    seed: QuestionSeed,
+    topics_by_slug: dict[str, Topic],
+) -> None:
+    desired_tag_ids: set[int] = set()
+
+    if seed.subtopic_slug is not None:
+        subtopic = topics_by_slug.get(seed.subtopic_slug)
+        if subtopic is not None:
+            tag = _upsert_tag(
+                session,
+                slug=subtopic.slug,
+                name=subtopic.name,
+                category=TagCategory.CONCEPT,
+            )
+            desired_tag_ids.add(tag.id)
+            _ensure_question_tag(session, question=question, tag=tag)
+
+    if seed.company_hint is not None and seed.company_hint.strip():
+        company_slug = slugify(seed.company_hint)
+        tag = _upsert_tag(
+            session,
+            slug=company_slug,
+            name=seed.company_hint.strip(),
+            category=TagCategory.COMPANY,
+        )
+        desired_tag_ids.add(tag.id)
+        _ensure_question_tag(session, question=question, tag=tag)
+
+    existing_links = session.scalars(
+        select(QuestionTag).where(QuestionTag.question_id == question.id)
+    ).all()
+    for link in existing_links:
+        if link.tag_id not in desired_tag_ids:
+            session.delete(link)
 
 
 def _upsert_question(
@@ -86,6 +159,8 @@ def _upsert_question(
             setattr(question, field, value)
 
     apply_question_fingerprints(question)
+    session.flush()
+    _sync_question_tags(session, question=question, seed=seed, topics_by_slug=topics_by_slug)
 
 
 def _upsert_flashcard(
@@ -146,6 +221,7 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
         _upsert_flashcard(session, flashcard_seed, topics_by_slug)
 
     session.commit()
+    tag_count = len(session.scalars(select(Tag)).all())
     return MvpContentSummary(
         probability_questions=counts["probability"],
         mental_math_questions=counts["mental_math"],
@@ -153,6 +229,7 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
         finance_questions=counts["finance"],
         market_game_questions=counts["market_game"],
         flashcards=len(ALL_MVP_FLASHCARDS),
+        tags=tag_count,
     )
 
 
@@ -173,7 +250,8 @@ def main() -> None:
         f"{summary.coding_questions} coding,",
         f"{summary.finance_questions} finance,",
         f"{summary.market_game_questions} market games,",
-        f"{summary.flashcards} flashcards",
+        f"{summary.flashcards} flashcards,",
+        f"{summary.tags} tags",
         f"({summary.total} questions).",
     )
 
