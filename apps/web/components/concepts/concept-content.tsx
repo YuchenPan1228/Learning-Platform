@@ -1,9 +1,17 @@
 import Link from "next/link";
 
 import { ConceptSection } from "@/components/concepts/concept-section";
+import { buttonVariants } from "@/components/ui/button";
 import type { ConceptDetail } from "@/lib/types/concept";
+import { cn } from "@/lib/utils";
 
-export function ConceptContent({ concept }: { concept: ConceptDetail }) {
+export function ConceptContent({
+  concept,
+  practiceQuestionCount,
+}: {
+  concept: ConceptDetail;
+  practiceQuestionCount: number;
+}) {
   return (
     <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
       <div className="mb-5">
@@ -22,6 +30,27 @@ export function ConceptContent({ concept }: { concept: ConceptDetail }) {
           {concept.formula}
         </div>
       ) : null}
+
+      <section className="mb-6 rounded-lg border border-[#edf5f1] bg-[#fbfcfa] px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Practice</p>
+            <p className="mt-1 text-sm text-[#31443d]">
+              {practiceQuestionCount > 0
+                ? `${practiceQuestionCount} question${practiceQuestionCount === 1 ? "" : "s"} available for this concept.`
+                : "No practice questions are linked to this concept yet."}
+            </p>
+          </div>
+          {practiceQuestionCount > 0 ? (
+            <Link
+              href={`/practice?concept=${concept.slug}`}
+              className={cn(buttonVariants({ size: "sm" }))}
+            >
+              Practice questions
+            </Link>
+          ) : null}
+        </div>
+      </section>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="grid gap-6">
