@@ -57,7 +57,7 @@ jobs:
         run: mypy
 
       - name: Pytest with coverage
-        run: pytest
+        run: pytest --cov-fail-under=70
 
   frontend:
     name: Frontend quality gates
