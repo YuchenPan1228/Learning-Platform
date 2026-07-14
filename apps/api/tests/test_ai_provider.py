@@ -14,15 +14,21 @@ from app.config import Settings, get_settings
 
 
 def _ollama_settings(**overrides: str | float) -> Settings:
-    values: dict[str, str | float] = {
-        "AI_PROVIDER": "ollama",
-        "OLLAMA_BASE_URL": "http://localhost:11434",
-        "OLLAMA_CHAT_MODEL": "qwen2.5:3b",
-        "OLLAMA_EMBEDDING_MODEL": "",
-        "OLLAMA_REQUEST_TIMEOUT_SECONDS": 30.0,
+    defaults: dict[str, str | float] = {
+        "ai_provider": "ollama",
+        "ollama_base_url": "http://localhost:11434",
+        "ollama_chat_model": "qwen2.5:3b",
+        "ollama_embedding_model": "",
+        "ollama_request_timeout_seconds": 30.0,
     }
-    values.update(overrides)
-    return Settings(**values)
+    merged = {**defaults, **overrides}
+    return Settings.model_construct(
+        ai_provider=str(merged["ai_provider"]),
+        ollama_base_url=str(merged["ollama_base_url"]),
+        ollama_chat_model=str(merged["ollama_chat_model"]),
+        ollama_embedding_model=str(merged["ollama_embedding_model"]),
+        ollama_request_timeout_seconds=float(merged["ollama_request_timeout_seconds"]),
+    )
 
 
 def test_settings_load_ai_provider_configuration(
@@ -52,7 +58,7 @@ def test_create_ai_provider_defaults_to_ollama() -> None:
 
 
 def test_create_ai_provider_rejects_unsupported_provider() -> None:
-    settings = _ollama_settings(AI_PROVIDER="openai")
+    settings = _ollama_settings(ai_provider="openai")
 
     with pytest.raises(UnsupportedAIProviderError, match="openai"):
         create_ai_provider(settings)
@@ -65,6 +71,26 @@ def test_ollama_provider_requires_chat_model() -> None:
             chat_model="",
             request_timeout_seconds=30.0,
         )
+
+
+def test_ollama_provider_requires_base_url() -> None:
+    with pytest.raises(AIProviderConfigurationError, match="OLLAMA_BASE_URL"):
+        OllamaProvider(
+            base_url="",
+            chat_model="qwen2.5:3b",
+            request_timeout_seconds=30.0,
+        )
+
+
+def test_ollama_provider_rejects_blank_model_override() -> None:
+    provider = OllamaProvider(
+        base_url="http://localhost:11434",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+    )
+
+    with pytest.raises(AIProviderConfigurationError, match="chat model"):
+        provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")], model="  ")
 
 
 def test_ollama_provider_chat_parses_success_response() -> None:
@@ -129,6 +155,23 @@ def test_ollama_provider_chat_raises_on_http_error() -> None:
         provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")])
 
 
+def test_ollama_provider_chat_raises_on_transport_error() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused")
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+        http_client=client,
+    )
+
+    with pytest.raises(AIProviderRequestError, match="request failed"):
+        provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")])
+
+
 def test_ollama_provider_chat_raises_on_missing_content() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -147,6 +190,63 @@ def test_ollama_provider_chat_raises_on_missing_content() -> None:
 
     with pytest.raises(AIProviderRequestError, match="message content"):
         provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")])
+
+
+def test_ollama_provider_chat_raises_when_message_is_not_dict() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"model": "qwen2.5:3b", "message": "invalid"})
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+        http_client=client,
+    )
+
+    with pytest.raises(AIProviderRequestError, match="did not include a message"):
+        provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")])
+
+
+def test_ollama_provider_ignores_invalid_token_counts() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": "qwen2.5:3b",
+                "message": {"role": "assistant", "content": "Done."},
+                "prompt_eval_count": True,
+                "eval_count": -1,
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+        http_client=client,
+    )
+
+    result = provider.chat([AIMessage(role=AIMessageRole.USER, content="Hello")])
+
+    assert result.token_usage.input_tokens is None
+    assert result.token_usage.output_tokens is None
+
+
+def test_ollama_provider_close_disposes_owned_client() -> None:
+    provider = OllamaProvider(
+        base_url="http://localhost:11434",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+    )
+
+    provider._get_client()
+    provider.close()
+
+    assert provider._http_client is None
 
 
 def test_get_ai_provider_is_cached(monkeypatch: pytest.MonkeyPatch) -> None:

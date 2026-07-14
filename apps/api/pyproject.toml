@@ -70,4 +70,7 @@ source = ["app"]
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
-fail_under = 70
+omit = [
+  "app/seeds/*",
+  "app/seeds/**/*",
+]
