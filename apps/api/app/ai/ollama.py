@@ -49,7 +49,11 @@ class OllamaProvider(AIProvider):
         *,
         model: str | None = None,
         temperature: float | None = None,
+        cache_hit: bool = False,
+        prompt_hash: str | None = None,
+        input_object_version: str | None = None,
     ) -> AIChatResult:
+        del cache_hit, prompt_hash, input_object_version
         resolved_model = (model or self._chat_model).strip()
         if not resolved_model:
             raise AIProviderConfigurationError("A chat model must be configured.")
