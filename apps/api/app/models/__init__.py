@@ -1,3 +1,4 @@
+from app.models.ai_usage_log import AIUsageLog
 from app.models.attempt import Attempt
 from app.models.base import Base
 from app.models.concept import Concept, ConceptEdge
@@ -21,6 +22,7 @@ from app.models.user_question_progress import UserQuestionProgress
 from app.models.user_topic_mastery import UserTopicMastery
 
 __all__ = [
+    "AIUsageLog",
     "Attempt",
     "Base",
     "Concept",
