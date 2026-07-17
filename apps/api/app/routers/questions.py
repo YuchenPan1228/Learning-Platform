@@ -13,6 +13,7 @@ from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
 from app.schemas.ai_explanation import AIExplanationRequest, AIExplanationResponse
+from app.schemas.ai_similar_question import SimilarQuestionResponse
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.progress import QuestionProgressRead, SetQuestionProgressRequest
@@ -21,6 +22,11 @@ from app.schemas.tag import TagRead
 from app.services.ai_explanation import (
     AIExplanationResponseError,
     generate_question_explanation,
+)
+from app.services.ai_similar_question import (
+    AISimilarQuestionResponseError,
+    SimilarQuestionDuplicateError,
+    generate_similar_question,
 )
 from app.services.answer_check import grade_short_answer
 from app.services.progress import (
@@ -194,6 +200,24 @@ def explain_question(
             user_answer=payload.answer,
         )
     except (AIProviderRequestError, AIExplanationResponseError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/{question_id}/similar")
+def create_similar_question(
+    question_id: int,
+    session: SessionDep,
+    provider: AIProviderDep,
+) -> SimilarQuestionResponse:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    try:
+        return generate_similar_question(session, provider, question=question)
+    except SimilarQuestionDuplicateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (AIProviderRequestError, AISimilarQuestionResponseError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
