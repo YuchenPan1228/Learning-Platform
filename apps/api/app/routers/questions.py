@@ -4,18 +4,24 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.ai.errors import AIProviderRequestError
 from app.dedup.detection import find_question_duplicates
-from app.dependencies import SessionDep
+from app.dependencies import AIProviderDep, SessionDep
 from app.models.concept import Concept
 from app.models.enums import ContentStatus, Difficulty, QuestionProgressStatus
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
+from app.schemas.ai_explanation import AIExplanationRequest, AIExplanationResponse
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.progress import QuestionProgressRead, SetQuestionProgressRequest
 from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
 from app.schemas.tag import TagRead
+from app.services.ai_explanation import (
+    AIExplanationResponseError,
+    generate_question_explanation,
+)
 from app.services.answer_check import grade_short_answer
 from app.services.progress import (
     get_progress_by_question_id,
@@ -167,6 +173,28 @@ def list_questions(
             ),
         )
     return summaries
+
+
+@router.post("/{question_id}/explanation")
+def explain_question(
+    question_id: int,
+    payload: AIExplanationRequest,
+    session: SessionDep,
+    provider: AIProviderDep,
+) -> AIExplanationResponse:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    try:
+        return generate_question_explanation(
+            session,
+            provider,
+            question=question,
+            user_answer=payload.answer,
+        )
+    except (AIProviderRequestError, AIExplanationResponseError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.get("/{question_id}/duplicates")
