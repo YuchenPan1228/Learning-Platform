@@ -59,3 +59,10 @@ class QuestionProgressStatus(StrEnum):
 class ManualQuestionProgressStatus(StrEnum):
     SOLVED = "solved"
     NOT_ATTEMPTED = "not_attempted"
+
+
+class AICacheResultKind(StrEnum):
+    EXPLANATION = "explanation"
+    HINT = "hint"
+    SUMMARY = "summary"
+    GENERATED_QUESTION = "generated_question"

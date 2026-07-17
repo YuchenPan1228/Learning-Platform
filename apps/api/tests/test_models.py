@@ -14,6 +14,7 @@ EXPECTED_TABLES = {
     "attempts",
     "user_topic_mastery",
     "ai_usage_logs",
+    "ai_cache_entries",
 }
 
 
