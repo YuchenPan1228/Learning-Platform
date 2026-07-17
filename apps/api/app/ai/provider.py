@@ -24,5 +24,8 @@ class AIProvider(ABC):
         *,
         model: str | None = None,
         temperature: float | None = None,
+        cache_hit: bool = False,
+        prompt_hash: str | None = None,
+        input_object_version: str | None = None,
     ) -> AIChatResult:
         """Run a non-streaming chat completion."""

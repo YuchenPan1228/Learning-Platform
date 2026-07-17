@@ -56,9 +56,18 @@ def postgres_available(database_url: str) -> bool:
 
 
 @pytest.fixture
+def require_postgres(postgres_available: bool) -> None:
+    if not postgres_available:
+        pytest.skip(
+            "PostgreSQL is not available. Run ./scripts/start-services.sh from the repo root.",
+        )
+
+
+@pytest.fixture
 def migrated_database(
     database_url: str,
     monkeypatch: pytest.MonkeyPatch,
+    require_postgres: None,
 ) -> None:
     monkeypatch.setenv("DATABASE_URL", database_url)
     get_settings.cache_clear()
@@ -68,14 +77,6 @@ def migrated_database(
     except CommandError:
         reset_database_schema(database_url)
     command.upgrade(alembic_config, "head")
-
-
-@pytest.fixture
-def require_postgres(postgres_available: bool) -> None:
-    if not postgres_available:
-        pytest.skip(
-            "PostgreSQL is not available. Run ./scripts/start-services.sh from the repo root.",
-        )
 
 
 @pytest.fixture

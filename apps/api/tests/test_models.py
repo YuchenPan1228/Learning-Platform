@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "learning_signals",
     "attempts",
     "user_topic_mastery",
+    "ai_usage_logs",
 }
 
 
