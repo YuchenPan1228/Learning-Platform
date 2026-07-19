@@ -1,9 +1,12 @@
 from collections.abc import AsyncIterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai.warmup import warmup_configured_models
 from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
@@ -19,11 +22,25 @@ from app.routers import (
     topics,
 )
 
+logger = logging.getLogger(__name__)
+_warmup_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ai-warmup")
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     get_engine()
+    settings = get_settings()
+    if settings.ai_warmup_on_startup:
+        _warmup_executor.submit(_safe_warmup)
     yield
+    _warmup_executor.shutdown(wait=False, cancel_futures=True)
+
+
+def _safe_warmup() -> None:
+    try:
+        warmup_configured_models()
+    except Exception:
+        logger.exception("AI model warmup failed")
 
 
 def create_app() -> FastAPI:

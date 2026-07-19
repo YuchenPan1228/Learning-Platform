@@ -1,11 +1,15 @@
 import type { Difficulty } from "@/lib/types/question";
 
+export type AIHintsResult = {
+  question_id: number;
+  cache_hit: boolean;
+  hints: string[];
+};
+
 export type AIExplanationResult = {
   question_id: number;
   cache_hit: boolean;
   explanation: string;
-  hints: string[];
-  common_mistakes: string[];
 };
 
 export type SimilarQuestionResult = {

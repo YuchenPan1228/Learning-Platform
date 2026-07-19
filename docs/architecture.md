@@ -78,7 +78,7 @@ Route requests by workload instead of using one model for everything:
 User / API
    │
 AI Router (AITask)
-   ├── tutor      → general tutoring, lessons, quizzes, similar questions
+   ├── general    → general tutoring, lessons, quizzes, similar questions
    ├── coding     → Java/Python/SQL, LeetCode-style help, debugging
    ├── reasoning  → quant interview problems, multi-step math
    └── embedding  → semantic search over learning content (deferred to QP-047)
@@ -86,22 +86,32 @@ AI Router (AITask)
 
 Production Ollama targets:
 
-| Task | Model |
-| --- | --- |
-| tutor | Qwen3 32B (`qwen3:32b`) |
-| coding | Qwen2.5-Coder 32B (`qwen2.5-coder:32b`) |
-| reasoning | DeepSeek-R1 (`deepseek-r1`) |
-| embedding | `nomic-embed-text` |
+| Task | Env override | Model |
+| --- | --- | --- |
+| general | `OLLAMA_MODEL_GENERAL` | Qwen3 32B (`qwen3:32b`) |
+| coding | `OLLAMA_MODEL_CODING` | Qwen2.5-Coder 32B (`qwen2.5-coder:32b`) |
+| reasoning | `OLLAMA_MODEL_REASONING` | DeepSeek-R1 (`deepseek-r1`) |
+| embedding | `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` |
 
 Local MVP defaults stay small and pullable. `OLLAMA_CHAT_MODEL` is the fallback for every chat task when a specialized `OLLAMA_MODEL_*` override is empty. A practical local starting point is `qwen2.5:3b` (or larger quantized stand-ins when hardware allows).
 
-If you can only run one chat model, use the tutor/general model and leave coding/reasoning overrides blank so they fall back.
+If you can only run one chat model, use the general model and leave coding/reasoning overrides blank so they fall back.
+
+### Performance defaults
+
+- Keep prompts short; generate only the fields the current UI action needs (hints vs explanation).
+- Prefer JSON Schema constrained generation and schema validation.
+- Keep `AI_JSON_REPAIR_ATTEMPTS=0` once outputs are stable (fail fast).
+- Cache by provider, model, prompt hash, template/schema version, and input object version.
+- Warm the default chat model on API startup (`AI_WARMUP_ON_STARTUP`).
+- Response streaming is deferred (next performance pass).
+- Parallel multi-artifact generation is deferred until lesson/quiz/flashcard AI jobs exist.
 
 ### Structured outputs
 
 - Prefer JSON Schema constrained generation (`format: <schema>` via Ollama) over free-form "return JSON" prompts.
 - Validate every response against the Pydantic/app schema.
-- Automatically retry/repair malformed JSON (`AI_JSON_REPAIR_ATTEMPTS`).
+- Optional JSON repair retries remain configurable via `AI_JSON_REPAIR_ATTEMPTS` (default `0`).
 
 Possible later providers:
 

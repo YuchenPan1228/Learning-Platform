@@ -156,10 +156,11 @@ Status: Accepted
 Decision:
 
 - Keep Ollama as the default local AI provider behind `AIProvider`.
-- Route chat workloads by `AITask`: `tutor`, `coding`, `reasoning` (plus `embedding` later).
-- Document production targets as Qwen3 32B (tutor), Qwen2.5-Coder 32B (coding), DeepSeek-R1 (reasoning), and `nomic-embed-text` (embeddings).
+- Route chat workloads by `AITask`: `general`, `coding`, `reasoning` (plus `embedding` later).
+- Document production targets as Qwen3 32B (general), Qwen2.5-Coder 32B (coding), DeepSeek-R1 (reasoning), and `nomic-embed-text` (embeddings).
 - Keep local defaults small via `OLLAMA_CHAT_MODEL`, with optional `OLLAMA_MODEL_*` overrides.
-- Prefer JSON Schema structured outputs, Pydantic validation, and automatic JSON repair retries.
+- Prefer JSON Schema structured outputs and Pydantic validation; keep repair retries off by default for latency.
+- Warm the default chat model on API startup; stream responses and parallel multi-artifact generation in a later pass.
 
 Rationale:
 

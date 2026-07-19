@@ -1,5 +1,25 @@
 import { getApiBaseUrl } from "@/lib/api/config";
-import type { AIExplanationResult, SimilarQuestionResult } from "@/lib/types/ai-tutor";
+import type {
+  AIExplanationResult,
+  AIHintsResult,
+  SimilarQuestionResult,
+} from "@/lib/types/ai-tutor";
+
+export async function requestHints(questionId: number, answer: string): Promise<AIHintsResult> {
+  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/hints`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ answer }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hints request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<AIHintsResult>;
+}
 
 export async function requestExplanation(
   questionId: number,

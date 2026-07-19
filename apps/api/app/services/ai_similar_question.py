@@ -25,7 +25,7 @@ from app.services.ai_cache import (
 from app.services.ai_usage import AIUsageRecordInput, record_ai_usage
 
 SIMILAR_QUESTION_PROMPT_TEMPLATE_VERSION = "similar-question:v2"
-SIMILAR_QUESTION_TASK = AITask.TUTOR
+SIMILAR_QUESTION_TASK = AITask.GENERAL
 _EXTRACTION_METHOD = "ai_similar_generation"
 
 

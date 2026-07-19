@@ -5,8 +5,16 @@ import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { shouldShowAiCacheState } from "@/lib/ai/cache-state";
-import { requestExplanation, requestSimilarQuestion } from "@/lib/api/ai-tutor";
-import type { AIExplanationResult, SimilarQuestionResult } from "@/lib/types/ai-tutor";
+import {
+  requestExplanation,
+  requestHints,
+  requestSimilarQuestion,
+} from "@/lib/api/ai-tutor";
+import type {
+  AIExplanationResult,
+  AIHintsResult,
+  SimilarQuestionResult,
+} from "@/lib/types/ai-tutor";
 import { cn } from "@/lib/utils";
 
 type AiTutorPanelProps = {
@@ -29,17 +37,35 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
   const showCacheState = shouldShowAiCacheState();
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hints, setHints] = useState<AIHintsResult | null>(null);
+  const [hintsAnswer, setHintsAnswer] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<AIExplanationResult | null>(null);
   const [explanationAnswer, setExplanationAnswer] = useState<string | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [similar, setSimilar] = useState<SimilarQuestionResult | null>(null);
 
-  async function ensureExplanation() {
+  function requireAnswer() {
     const trimmedAnswer = answer.trim();
     if (!trimmedAnswer) {
       throw new Error("Write an answer before requesting AI help.");
     }
+    return trimmedAnswer;
+  }
+
+  async function ensureHints() {
+    const trimmedAnswer = requireAnswer();
+    if (hints !== null && hintsAnswer === trimmedAnswer) {
+      return hints;
+    }
+    const result = await requestHints(questionId, trimmedAnswer);
+    setHints(result);
+    setHintsAnswer(trimmedAnswer);
+    return result;
+  }
+
+  async function ensureExplanation() {
+    const trimmedAnswer = requireAnswer();
     if (explanation !== null && explanationAnswer === trimmedAnswer) {
       return explanation;
     }
@@ -53,7 +79,7 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
     setPendingAction("hint");
     setError(null);
     try {
-      await ensureExplanation();
+      await ensureHints();
       setShowHints(true);
     } catch (caught) {
       setError(
@@ -71,7 +97,6 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
     setError(null);
     try {
       await ensureExplanation();
-      setShowHints(true);
       setShowExplanation(true);
     } catch (caught) {
       setError(
@@ -144,14 +169,14 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
 
       {error ? <p className="mt-3 text-sm text-[#b42318]">{error}</p> : null}
 
-      {explanation && showHints ? (
+      {hints && showHints ? (
         <div className="mt-4 rounded-lg border border-[#bdd3ca] bg-[#edf5f1] p-3">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-[#15201c]">Hints</h4>
-            {showCacheState ? <CacheStateBadge cacheHit={explanation.cache_hit} /> : null}
+            {showCacheState ? <CacheStateBadge cacheHit={hints.cache_hit} /> : null}
           </div>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-[#31443d]">
-            {explanation.hints.map((hint) => (
+            {hints.hints.map((hint) => (
               <li key={hint}>{hint}</li>
             ))}
           </ul>
@@ -165,18 +190,6 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
             {showCacheState ? <CacheStateBadge cacheHit={explanation.cache_hit} /> : null}
           </div>
           <p className="mt-2 text-sm leading-relaxed text-[#31443d]">{explanation.explanation}</p>
-          {explanation.common_mistakes.length > 0 ? (
-            <div className="mt-3">
-              <p className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-                Common mistakes
-              </p>
-              <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-[#31443d]">
-                {explanation.common_mistakes.map((mistake) => (
-                  <li key={mistake}>{mistake}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </div>
       ) : null}
 

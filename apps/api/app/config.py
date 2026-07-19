@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_chat_model: str = Field(default="", alias="OLLAMA_CHAT_MODEL")
+    ollama_model_general: str = Field(default="", alias="OLLAMA_MODEL_GENERAL")
+    # Deprecated alias for OLLAMA_MODEL_GENERAL (still accepted).
     ollama_model_tutor: str = Field(default="", alias="OLLAMA_MODEL_TUTOR")
     ollama_model_coding: str = Field(default="", alias="OLLAMA_MODEL_CODING")
     ollama_model_reasoning: str = Field(default="", alias="OLLAMA_MODEL_REASONING")
@@ -43,9 +45,14 @@ class Settings(BaseSettings):
         gt=0,
     )
     ai_json_repair_attempts: int = Field(
-        default=1,
+        default=0,
         alias="AI_JSON_REPAIR_ATTEMPTS",
         ge=0,
+    )
+    ai_warmup_on_startup: bool = Field(default=True, alias="AI_WARMUP_ON_STARTUP")
+    ai_warmup_specialized_models: bool = Field(
+        default=False,
+        alias="AI_WARMUP_SPECIALIZED_MODELS",
     )
 
     @field_validator("cors_origins", mode="before")

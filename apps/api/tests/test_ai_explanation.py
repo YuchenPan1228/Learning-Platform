@@ -11,6 +11,7 @@ from app.models.question import Question
 from app.services.ai_explanation import (
     AIExplanationResponseError,
     generate_question_explanation,
+    generate_question_hints,
 )
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -30,17 +31,13 @@ def _question() -> Question:
     )
 
 
-def _provider() -> MagicMock:
+def _provider(*, content: str) -> MagicMock:
     provider = MagicMock()
     provider.provider_name = "ollama"
     provider.chat_model = "qwen2.5:3b"
     provider.model_for_task.return_value = "qwen2.5:3b"
     provider.chat.return_value = AIChatResult(
-        content=(
-            '{"explanation":"Condition on the reduced sample space.",'
-            '"hints":["List equally likely outcomes after conditioning."],'
-            '"common_mistakes":["Keeping TT in the sample space."]}'
-        ),
+        content=content,
         provider="ollama",
         model="qwen2.5:3b",
         token_usage=AITokenUsage(input_tokens=80, output_tokens=35),
@@ -49,17 +46,36 @@ def _provider() -> MagicMock:
     return provider
 
 
-def test_generate_question_explanation_calls_provider_and_caches_result(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("AI_JSON_REPAIR_ATTEMPTS", "0")
-    from app.config import get_settings
-
-    get_settings.cache_clear()
+def test_generate_question_hints_calls_provider_and_caches_result() -> None:
     session = MagicMock()
     session.scalar.return_value = None
     session.refresh.side_effect = lambda row: row
-    provider = _provider()
+    provider = _provider(content='{"hints":["List the reduced sample space."]}')
+
+    response = generate_question_hints(
+        session,
+        provider,
+        question=_question(),
+        user_answer="I think it is 1/2.",
+    )
+
+    assert response.question_id == 42
+    assert response.cache_hit is False
+    assert response.hints == ["List the reduced sample space."]
+    provider.chat.assert_called_once()
+    assert provider.chat.call_args.kwargs["response_schema"] is not None
+    cached = session.add.call_args.args[0]
+    assert isinstance(cached, AICacheEntry)
+    assert cached.result_kind == AICacheResultKind.HINT
+
+
+def test_generate_question_explanation_calls_provider_and_caches_result() -> None:
+    session = MagicMock()
+    session.scalar.return_value = None
+    session.refresh.side_effect = lambda row: row
+    provider = _provider(
+        content='{"explanation":"Condition on HH, HT, TH. Only HH works, so 1/3."}',
+    )
 
     response = generate_question_explanation(
         session,
@@ -70,20 +86,17 @@ def test_generate_question_explanation_calls_provider_and_caches_result(
 
     assert response.question_id == 42
     assert response.cache_hit is False
-    assert response.explanation == "Condition on the reduced sample space."
-    assert response.hints == ["List equally likely outcomes after conditioning."]
+    assert "1/3" in response.explanation
     provider.chat.assert_called_once()
-    assert provider.chat.call_args.kwargs["response_schema"] is not None
     assert provider.chat.call_args.kwargs["model"] == "qwen2.5:3b"
     system_message = provider.chat.call_args.args[0][0]
-    assert "teach the correct answer step by step" in system_message.content
-    assert "final answer" in system_message.content
+    assert "canonical solution" in system_message.content
+    assert "common mistakes" in system_message.content.lower()
 
     cached = session.add.call_args.args[0]
     assert isinstance(cached, AICacheEntry)
     assert cached.result_kind == AICacheResultKind.EXPLANATION
-    assert cached.response_json["common_mistakes"] == ["Keeping TT in the sample space."]
-    get_settings.cache_clear()
+    assert "common_mistakes" not in cached.response_json
 
 
 def test_generate_question_explanation_uses_cached_result() -> None:
@@ -93,16 +106,14 @@ def test_generate_question_explanation_uses_cached_result() -> None:
         provider="ollama",
         model="qwen2.5:3b",
         result_kind=AICacheResultKind.EXPLANATION,
-        prompt_template_version="question-explanation:v4",
+        prompt_template_version="question-explanation:v5",
         prompt_hash="a" * 64,
         input_object_version="question:42:v1",
         response_json={
             "explanation": "Cached explanation.",
-            "hints": ["Cached hint."],
-            "common_mistakes": ["Cached mistake."],
         },
     )
-    provider = _provider()
+    provider = _provider(content='{"explanation":"unused"}')
 
     response = generate_question_explanation(
         session,
@@ -128,8 +139,7 @@ def test_generate_question_explanation_rejects_invalid_provider_payload(
     get_settings.cache_clear()
     session = MagicMock()
     session.scalar.return_value = None
-    provider = _provider()
-    provider.chat.return_value.content = "not-json"
+    provider = _provider(content="not-json")
 
     with pytest.raises(AIExplanationResponseError, match="invalid structured JSON"):
         generate_question_explanation(
@@ -147,7 +157,9 @@ def test_explanation_endpoint_generates_then_uses_cache(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    provider = _provider()
+    provider = _provider(
+        content='{"explanation":"Use the binomial coefficient C(10,7)/2^10."}',
+    )
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:
@@ -166,10 +178,34 @@ def test_explanation_endpoint_generates_then_uses_cache(
 
     assert first.status_code == 200
     assert first.json()["cache_hit"] is False
-    assert first.json()["hints"]
+    assert first.json()["explanation"]
+    assert "common_mistakes" not in first.json()
     assert second.status_code == 200
     assert second.json()["cache_hit"] is True
     provider.chat.assert_called_once()
+
+
+@pytest.mark.integration
+def test_hints_endpoint_generates(
+    client: TestClient,
+    seeded_database: None,
+    require_postgres: None,
+) -> None:
+    provider = _provider(content='{"hints":["Count equally likely outcomes."]}')
+    app = cast(FastAPI, client.app)
+    app.dependency_overrides[get_ai_provider] = lambda: provider
+    try:
+        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        response = client.post(
+            f"/questions/{question_id}/hints",
+            json={"answer": "My attempted answer"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_ai_provider, None)
+
+    assert response.status_code == 200
+    assert response.json()["hints"]
+    assert response.json()["cache_hit"] is False
 
 
 @pytest.mark.integration
@@ -178,7 +214,7 @@ def test_explanation_endpoint_rejects_empty_answer(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    provider = _provider()
+    provider = _provider(content='{"explanation":"unused"}')
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:

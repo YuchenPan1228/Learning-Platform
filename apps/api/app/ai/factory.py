@@ -17,7 +17,7 @@ def create_ai_provider(settings: Settings | None = None) -> AIProvider:
     if provider_name == "ollama":
         model_by_task = {
             task: resolve_chat_model(task, resolved)
-            for task in (AITask.TUTOR, AITask.CODING, AITask.REASONING)
+            for task in (AITask.GENERAL, AITask.CODING, AITask.REASONING)
         }
         return OllamaProvider(
             base_url=resolved.ollama_base_url,

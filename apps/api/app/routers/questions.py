@@ -12,7 +12,11 @@ from app.models.enums import ContentStatus, Difficulty, QuestionProgressStatus
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
-from app.schemas.ai_explanation import AIExplanationRequest, AIExplanationResponse
+from app.schemas.ai_explanation import (
+    AIExplanationRequest,
+    AIExplanationResponse,
+    AIHintsResponse,
+)
 from app.schemas.ai_similar_question import SimilarQuestionResponse
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
@@ -22,6 +26,7 @@ from app.schemas.tag import TagRead
 from app.services.ai_explanation import (
     AIExplanationResponseError,
     generate_question_explanation,
+    generate_question_hints,
 )
 from app.services.ai_similar_question import (
     AISimilarQuestionResponseError,
@@ -179,6 +184,28 @@ def list_questions(
             ),
         )
     return summaries
+
+
+@router.post("/{question_id}/hints")
+def hint_question(
+    question_id: int,
+    payload: AIExplanationRequest,
+    session: SessionDep,
+    provider: AIProviderDep,
+) -> AIHintsResponse:
+    question = session.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    try:
+        return generate_question_hints(
+            session,
+            provider,
+            question=question,
+            user_answer=payload.answer,
+        )
+    except (AIProviderRequestError, AIExplanationResponseError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.post("/{question_id}/explanation")

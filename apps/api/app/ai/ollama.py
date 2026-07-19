@@ -42,9 +42,9 @@ class OllamaProvider(AIProvider):
                 "OLLAMA_CHAT_MODEL must be set before using the Ollama provider.",
             )
         if not self._chat_model:
-            # Prefer tutor, then any configured task model, as the default identity.
+            # Prefer general, then any configured task model, as the default identity.
             self._chat_model = (
-                self._model_by_task.get(AITask.TUTOR)
+                self._model_by_task.get(AITask.GENERAL)
                 or next(iter(self._model_by_task.values()))
             )
 

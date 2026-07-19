@@ -387,8 +387,9 @@ Tasks:
 - Add Ollama as default local provider.
 - Add provider configuration.
 - Leave OpenAI/Anthropic as later adapters.
-- Route chat requests by task (`tutor`, `coding`, `reasoning`) with `OLLAMA_CHAT_MODEL` as the local fallback.
-- Prefer JSON Schema structured outputs, schema validation, and automatic JSON repair.
+- Route chat requests by task (`general`, `coding`, `reasoning`) with `OLLAMA_CHAT_MODEL` as the local fallback.
+- Prefer JSON Schema structured outputs and schema validation; keep repair retries off by default.
+- Split hint and explanation generation so each UI action only pays for what it needs.
 
 Depends on: `QP-003`.
 
