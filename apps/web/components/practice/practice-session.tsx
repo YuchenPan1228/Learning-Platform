@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { AiTutorPanel } from "@/components/practice/ai-tutor-panel";
 import { QuestionMetadata } from "@/components/practice/question-metadata";
 import { buttonVariants } from "@/components/ui/button";
 import { recordAttempt } from "@/lib/api/attempts";
@@ -342,10 +343,12 @@ export function PracticeSession({
             </div>
           ) : (
             <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
-              Submit an answer to run deterministic self-check. AI tutoring arrives in Phase 3A.
+              Submit an answer to run deterministic self-check.
             </p>
           )}
         </div>
+
+        <AiTutorPanel questionId={question.id} answer={answer} returnTo={returnTo} />
 
         {question.tags.length > 0 ? (
           <div className="mt-5 flex flex-wrap gap-2 border-t border-[#edf5f1] pt-4">
