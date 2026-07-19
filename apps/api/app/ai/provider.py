@@ -33,6 +33,7 @@ class AIProvider(ABC):
         temperature: float | None = None,
         json_mode: bool = False,
         response_schema: Mapping[str, Any] | None = None,
+        max_tokens: int | None = None,
         cache_hit: bool = False,
         prompt_hash: str | None = None,
         input_object_version: str | None = None,

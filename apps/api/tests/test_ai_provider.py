@@ -236,6 +236,54 @@ def test_ollama_provider_chat_sends_response_schema_when_provided() -> None:
     assert result.content == '{"answer":"42"}'
 
 
+def test_ollama_provider_chat_sends_num_predict_when_configured() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["options"]["num_predict"] == 256
+        assert body["options"]["temperature"] == 0.1
+        return httpx.Response(
+            200,
+            json={
+                "model": "qwen2.5:3b",
+                "message": {"role": "assistant", "content": '{"ok":true}'},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+        default_num_predict=512,
+        http_client=client,
+    )
+
+    result = provider.chat(
+        [AIMessage(role=AIMessageRole.USER, content="Return JSON")],
+        temperature=0.1,
+        max_tokens=256,
+    )
+    assert result.content == '{"ok":true}'
+
+
+def test_ollama_provider_chat_raises_clear_timeout_error() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out")
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="deepseek-r1",
+        request_timeout_seconds=120.0,
+        http_client=client,
+    )
+
+    with pytest.raises(AIProviderRequestError, match="timed out after 120s"):
+        provider.chat([AIMessage(role=AIMessageRole.USER, content="Explain")])
+
+
 def test_ollama_provider_chat_raises_on_http_error() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(500, json={"error": "model unavailable"})

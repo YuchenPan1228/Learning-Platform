@@ -44,6 +44,11 @@ class Settings(BaseSettings):
         alias="OLLAMA_REQUEST_TIMEOUT_SECONDS",
         gt=0,
     )
+    ollama_num_predict: int = Field(
+        default=512,
+        alias="OLLAMA_NUM_PREDICT",
+        gt=0,
+    )
     ai_json_repair_attempts: int = Field(
         default=0,
         alias="AI_JSON_REPAIR_ATTEMPTS",

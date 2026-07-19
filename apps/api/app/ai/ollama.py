@@ -19,6 +19,7 @@ class OllamaProvider(AIProvider):
         base_url: str,
         chat_model: str,
         request_timeout_seconds: float,
+        default_num_predict: int | None = None,
         model_by_task: Mapping[AITask, str] | None = None,
         http_client: httpx.Client | None = None,
     ) -> None:
@@ -29,6 +30,7 @@ class OllamaProvider(AIProvider):
         self._base_url = normalized_base_url
         self._chat_model = chat_model.strip()
         self._request_timeout_seconds = request_timeout_seconds
+        self._default_num_predict = default_num_predict
         self._model_by_task = {
             task: model.strip()
             for task, model in (model_by_task or {}).items()
@@ -71,6 +73,7 @@ class OllamaProvider(AIProvider):
         temperature: float | None = None,
         json_mode: bool = False,
         response_schema: Mapping[str, Any] | None = None,
+        max_tokens: int | None = None,
         cache_hit: bool = False,
         prompt_hash: str | None = None,
         input_object_version: str | None = None,
@@ -91,8 +94,15 @@ class OllamaProvider(AIProvider):
             payload["format"] = dict(response_schema)
         elif json_mode:
             payload["format"] = "json"
+
+        options: dict[str, Any] = {}
         if temperature is not None:
-            payload["options"] = {"temperature": temperature}
+            options["temperature"] = temperature
+        num_predict = max_tokens if max_tokens is not None else self._default_num_predict
+        if num_predict is not None:
+            options["num_predict"] = num_predict
+        if options:
+            payload["options"] = options
 
         started_at = time.perf_counter()
         try:
@@ -103,12 +113,22 @@ class OllamaProvider(AIProvider):
             )
             response.raise_for_status()
             body = response.json()
+        except httpx.TimeoutException as exc:
+            raise AIProviderRequestError(
+                f"Ollama timed out after {self._request_timeout_seconds:.0f}s "
+                f"using model '{resolved_model}'. "
+                "For local use, clear heavy OLLAMA_MODEL_* overrides or raise "
+                "OLLAMA_REQUEST_TIMEOUT_SECONDS.",
+            ) from exc
         except httpx.HTTPStatusError as exc:
             raise AIProviderRequestError(
-                f"Ollama returned HTTP {exc.response.status_code}.",
+                f"Ollama returned HTTP {exc.response.status_code} "
+                f"using model '{resolved_model}'.",
             ) from exc
         except httpx.HTTPError as exc:
-            raise AIProviderRequestError("Ollama request failed.") from exc
+            raise AIProviderRequestError(
+                f"Ollama request failed using model '{resolved_model}'.",
+            ) from exc
 
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         message = body.get("message")

@@ -91,6 +91,7 @@ def generate_similar_question(
             response_model=GeneratedQuestionContent,
             model=model,
             temperature=0.4,
+            max_tokens=500,
             cache_hit=False,
             prompt_hash=prompt_hash,
             input_object_version=input_object_version,

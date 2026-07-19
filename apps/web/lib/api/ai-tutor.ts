@@ -5,22 +5,6 @@ import type {
   SimilarQuestionResult,
 } from "@/lib/types/ai-tutor";
 
-export async function requestHints(questionId: number, answer: string): Promise<AIHintsResult> {
-  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/hints`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ answer }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Hints request failed with status ${response.status}`);
-  }
-
-  return response.json() as Promise<AIHintsResult>;
-}
-
 export async function requestExplanation(
   questionId: number,
   answer: string,
@@ -34,10 +18,26 @@ export async function requestExplanation(
   });
 
   if (!response.ok) {
-    throw new Error(`Explanation request failed with status ${response.status}`);
+    throw new Error(await readApiError(response, "Explanation request failed"));
   }
 
   return response.json() as Promise<AIExplanationResult>;
+}
+
+export async function requestHints(questionId: number, answer: string): Promise<AIHintsResult> {
+  const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/hints`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ answer }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readApiError(response, "Hints request failed"));
+  }
+
+  return response.json() as Promise<AIHintsResult>;
 }
 
 export async function requestSimilarQuestion(questionId: number): Promise<SimilarQuestionResult> {
@@ -46,8 +46,20 @@ export async function requestSimilarQuestion(questionId: number): Promise<Simila
   });
 
   if (!response.ok) {
-    throw new Error(`Similar question request failed with status ${response.status}`);
+    throw new Error(await readApiError(response, "Similar question request failed"));
   }
 
   return response.json() as Promise<SimilarQuestionResult>;
+}
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: unknown };
+    if (typeof payload.detail === "string" && payload.detail.trim()) {
+      return payload.detail;
+    }
+  } catch {
+    // Ignore non-JSON error bodies.
+  }
+  return `${fallback} with status ${response.status}`;
 }

@@ -73,6 +73,7 @@ def test_tracking_provider_records_usage_after_chat() -> None:
         temperature=None,
         json_mode=False,
         response_schema=None,
+        max_tokens=None,
         cache_hit=True,
         prompt_hash="deadbeef",
         input_object_version="attempt:v1",

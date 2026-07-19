@@ -23,6 +23,7 @@ def create_ai_provider(settings: Settings | None = None) -> AIProvider:
             base_url=resolved.ollama_base_url,
             chat_model=resolved.ollama_chat_model,
             request_timeout_seconds=resolved.ollama_request_timeout_seconds,
+            default_num_predict=resolved.ollama_num_predict,
             model_by_task=model_by_task,
         )
 

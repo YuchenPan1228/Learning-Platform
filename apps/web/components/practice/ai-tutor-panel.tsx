@@ -83,7 +83,7 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
       setShowHints(true);
     } catch (caught) {
       setError(
-        caught instanceof Error && caught.message.startsWith("Write an answer")
+        caught instanceof Error
           ? caught.message
           : "AI hint is unavailable. Check that the API and Ollama are running.",
       );
@@ -100,7 +100,7 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
       setShowExplanation(true);
     } catch (caught) {
       setError(
-        caught instanceof Error && caught.message.startsWith("Write an answer")
+        caught instanceof Error
           ? caught.message
           : "AI explanation is unavailable. Check that the API and Ollama are running.",
       );
@@ -115,9 +115,11 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
     try {
       const result = await requestSimilarQuestion(questionId);
       setSimilar(result);
-    } catch {
+    } catch (caught) {
       setError(
-        "Similar question generation is unavailable. Check that the API and Ollama are running.",
+        caught instanceof Error
+          ? caught.message
+          : "Similar question generation is unavailable. Check that the API and Ollama are running.",
       );
     } finally {
       setPendingAction(null);
