@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.ai.prompt_hash import compute_prompt_hash
 from app.ai.provider import AIProvider
+from app.ai.structured import StructuredOutputError, chat_structured
+from app.ai.tasks import AITask
 from app.ai.types import AIMessage, AIMessageRole
 from app.dedup.detection import find_duplicate_matches
 from app.dedup.fingerprints import apply_question_fingerprints
@@ -22,7 +24,8 @@ from app.services.ai_cache import (
 )
 from app.services.ai_usage import AIUsageRecordInput, record_ai_usage
 
-SIMILAR_QUESTION_PROMPT_TEMPLATE_VERSION = "similar-question:v1"
+SIMILAR_QUESTION_PROMPT_TEMPLATE_VERSION = "similar-question:v2"
+SIMILAR_QUESTION_TASK = AITask.TUTOR
 _EXTRACTION_METHOD = "ai_similar_generation"
 
 
@@ -40,6 +43,7 @@ def generate_similar_question(
     *,
     question: Question,
 ) -> SimilarQuestionResponse:
+    model = provider.model_for_task(SIMILAR_QUESTION_TASK)
     prompt_payload = _prompt_payload(question)
     prompt_hash = compute_prompt_hash(
         prompt_template_version=SIMILAR_QUESTION_PROMPT_TEMPLATE_VERSION,
@@ -48,7 +52,7 @@ def generate_similar_question(
     input_object_version = f"question:{question.id}:{question.updated_at.isoformat()}"
     cache_key = AICacheLookupKey(
         provider=provider.provider_name,
-        model=provider.chat_model,
+        model=model,
         result_kind=AICacheResultKind.GENERATED_QUESTION,
         prompt_template_version=SIMILAR_QUESTION_PROMPT_TEMPLATE_VERSION,
         prompt_hash=prompt_hash,
@@ -63,7 +67,7 @@ def generate_similar_question(
                 session,
                 AIUsageRecordInput(
                     provider=provider.provider_name,
-                    model=provider.chat_model,
+                    model=model,
                     input_tokens=None,
                     output_tokens=None,
                     latency_ms=0,
@@ -74,27 +78,33 @@ def generate_similar_question(
             )
             return _to_response(source=question, draft=draft, cache_hit=True)
 
-    result = provider.chat(
-        [
-            AIMessage(role=AIMessageRole.SYSTEM, content=_system_prompt()),
-            AIMessage(
-                role=AIMessageRole.USER,
-                content=json.dumps(prompt_payload, sort_keys=True),
-            ),
-        ],
-        temperature=0.4,
-        cache_hit=False,
-        prompt_hash=prompt_hash,
-        input_object_version=input_object_version,
-    )
-    content = _parse_provider_content(result.content)
+    try:
+        content, _result = chat_structured(
+            provider,
+            [
+                AIMessage(role=AIMessageRole.SYSTEM, content=_system_prompt()),
+                AIMessage(
+                    role=AIMessageRole.USER,
+                    content=json.dumps(prompt_payload, sort_keys=True),
+                ),
+            ],
+            response_model=GeneratedQuestionContent,
+            model=model,
+            temperature=0.4,
+            cache_hit=False,
+            prompt_hash=prompt_hash,
+            input_object_version=input_object_version,
+        )
+    except StructuredOutputError as exc:
+        raise AISimilarQuestionResponseError(str(exc)) from exc
+
     _ensure_original_variant(session, content=content)
 
     draft = _create_draft_question(
         session,
         source=question,
         content=content,
-        model_version=provider.chat_model,
+        model_version=model,
     )
     store_cached_ai_result(
         session,
@@ -126,24 +136,9 @@ def _system_prompt() -> str:
         "You are a quant interview question author. Create one original practice "
         "variant of the supplied question. Change numbers, framing, or surface "
         "details while testing the same core concept. Do not copy proprietary "
-        "wording. Return only a JSON object with exactly these keys: "
-        '"title" (string), "body" (string), "short_answer" (string or null), '
-        '"canonical_solution" (string or null), "difficulty" (one of easy, medium, '
-        'hard, expert), "common_mistakes" (array of strings), '
-        '"expected_solution_pattern" (string or null), and '
-        '"estimated_time_seconds" (positive integer or null). '
-        "Do not include markdown fences."
+        "wording. Respond with a JSON object matching the provided schema. "
+        "difficulty must be one of easy, medium, hard, expert."
     )
-
-
-def _parse_provider_content(content: str) -> GeneratedQuestionContent:
-    try:
-        payload = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise AISimilarQuestionResponseError(
-            "AI provider returned invalid similar-question JSON.",
-        ) from exc
-    return _validate_content(payload)
 
 
 def _validate_content(payload: object) -> GeneratedQuestionContent:

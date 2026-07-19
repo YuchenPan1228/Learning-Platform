@@ -70,12 +70,38 @@ Default provider:
 
 - Ollama
 
-Likely local models:
+### Task-based model routing
 
-- Qwen
-- Gemma
-- Llama
-- Mistral
+Route requests by workload instead of using one model for everything:
+
+```text
+User / API
+   │
+AI Router (AITask)
+   ├── tutor      → general tutoring, lessons, quizzes, similar questions
+   ├── coding     → Java/Python/SQL, LeetCode-style help, debugging
+   ├── reasoning  → quant interview problems, multi-step math
+   └── embedding  → semantic search over learning content (deferred to QP-047)
+```
+
+Production Ollama targets:
+
+| Task | Model |
+| --- | --- |
+| tutor | Qwen3 32B (`qwen3:32b`) |
+| coding | Qwen2.5-Coder 32B (`qwen2.5-coder:32b`) |
+| reasoning | DeepSeek-R1 (`deepseek-r1`) |
+| embedding | `nomic-embed-text` |
+
+Local MVP defaults stay small and pullable. `OLLAMA_CHAT_MODEL` is the fallback for every chat task when a specialized `OLLAMA_MODEL_*` override is empty. A practical local starting point is `qwen2.5:3b` (or larger quantized stand-ins when hardware allows).
+
+If you can only run one chat model, use the tutor/general model and leave coding/reasoning overrides blank so they fall back.
+
+### Structured outputs
+
+- Prefer JSON Schema constrained generation (`format: <schema>` via Ollama) over free-form "return JSON" prompts.
+- Validate every response against the Pydantic/app schema.
+- Automatically retry/repair malformed JSON (`AI_JSON_REPAIR_ATTEMPTS`).
 
 Possible later providers:
 

@@ -1,11 +1,12 @@
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import httpx
 
 from app.ai.errors import AIProviderConfigurationError, AIProviderRequestError
 from app.ai.provider import AIProvider
+from app.ai.tasks import AITask
 from app.ai.types import AIChatResult, AIMessage, AITokenUsage
 
 
@@ -18,6 +19,7 @@ class OllamaProvider(AIProvider):
         base_url: str,
         chat_model: str,
         request_timeout_seconds: float,
+        model_by_task: Mapping[AITask, str] | None = None,
         http_client: httpx.Client | None = None,
     ) -> None:
         normalized_base_url = base_url.rstrip("/")
@@ -27,12 +29,23 @@ class OllamaProvider(AIProvider):
         self._base_url = normalized_base_url
         self._chat_model = chat_model.strip()
         self._request_timeout_seconds = request_timeout_seconds
+        self._model_by_task = {
+            task: model.strip()
+            for task, model in (model_by_task or {}).items()
+            if model.strip()
+        }
         self._http_client = http_client
         self._owns_http_client = http_client is None
 
-        if not self._chat_model:
+        if not self._chat_model and not self._model_by_task:
             raise AIProviderConfigurationError(
                 "OLLAMA_CHAT_MODEL must be set before using the Ollama provider.",
+            )
+        if not self._chat_model:
+            # Prefer tutor, then any configured task model, as the default identity.
+            self._chat_model = (
+                self._model_by_task.get(AITask.TUTOR)
+                or next(iter(self._model_by_task.values()))
             )
 
     @property
@@ -43,12 +56,21 @@ class OllamaProvider(AIProvider):
     def chat_model(self) -> str:
         return self._chat_model
 
+    def model_for_task(self, task: AITask) -> str:
+        if task is AITask.EMBEDDING:
+            raise AIProviderConfigurationError(
+                "OllamaProvider.model_for_task does not resolve embedding models.",
+            )
+        return self._model_by_task.get(task) or self._chat_model
+
     def chat(
         self,
         messages: Sequence[AIMessage],
         *,
         model: str | None = None,
         temperature: float | None = None,
+        json_mode: bool = False,
+        response_schema: Mapping[str, Any] | None = None,
         cache_hit: bool = False,
         prompt_hash: str | None = None,
         input_object_version: str | None = None,
@@ -65,6 +87,10 @@ class OllamaProvider(AIProvider):
             ],
             "stream": False,
         }
+        if response_schema is not None:
+            payload["format"] = dict(response_schema)
+        elif json_mode:
+            payload["format"] = "json"
         if temperature is not None:
             payload["options"] = {"temperature": temperature}
 

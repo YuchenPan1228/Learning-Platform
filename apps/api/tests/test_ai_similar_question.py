@@ -40,6 +40,7 @@ def _provider() -> MagicMock:
     provider = MagicMock()
     provider.provider_name = "ollama"
     provider.chat_model = "qwen2.5:3b"
+    provider.model_for_task.return_value = "qwen2.5:3b"
     provider.chat.return_value = AIChatResult(
         content=(
             '{"title":"Exactly 6 Heads",'
@@ -112,7 +113,7 @@ def test_generate_similar_question_uses_cached_draft() -> None:
         provider="ollama",
         model="qwen2.5:3b",
         result_kind=AICacheResultKind.GENERATED_QUESTION,
-        prompt_template_version="similar-question:v1",
+        prompt_template_version="similar-question:v2",
         prompt_hash="b" * 64,
         input_object_version="question:42:v1",
         response_json={"draft_question_id": 99},
@@ -129,14 +130,21 @@ def test_generate_similar_question_uses_cached_draft() -> None:
     provider.chat.assert_not_called()
 
 
-def test_generate_similar_question_rejects_invalid_json() -> None:
+def test_generate_similar_question_rejects_invalid_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AI_JSON_REPAIR_ATTEMPTS", "0")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     session = MagicMock()
     session.scalar.return_value = None
     provider = _provider()
     provider.chat.return_value.content = "not-json"
 
-    with pytest.raises(AISimilarQuestionResponseError, match="invalid similar-question JSON"):
+    with pytest.raises(AISimilarQuestionResponseError, match="invalid structured JSON"):
         generate_similar_question(session, provider, question=_question())
+    get_settings.cache_clear()
 
 
 @patch(

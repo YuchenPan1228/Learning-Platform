@@ -71,6 +71,8 @@ def test_tracking_provider_records_usage_after_chat() -> None:
         [AIMessage(role=AIMessageRole.USER, content="Need a hint.")],
         model=None,
         temperature=None,
+        json_mode=False,
+        response_schema=None,
         cache_hit=True,
         prompt_hash="deadbeef",
         input_object_version="attempt:v1",

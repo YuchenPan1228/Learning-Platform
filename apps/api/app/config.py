@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(REPO_ROOT / ".env", REPO_ROOT / ".env.example"),
+        # Load example defaults first; `.env` must win on key collisions.
+        env_file=(REPO_ROOT / ".env.example", REPO_ROOT / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -32,11 +33,19 @@ class Settings(BaseSettings):
     ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_chat_model: str = Field(default="", alias="OLLAMA_CHAT_MODEL")
+    ollama_model_tutor: str = Field(default="", alias="OLLAMA_MODEL_TUTOR")
+    ollama_model_coding: str = Field(default="", alias="OLLAMA_MODEL_CODING")
+    ollama_model_reasoning: str = Field(default="", alias="OLLAMA_MODEL_REASONING")
     ollama_embedding_model: str = Field(default="", alias="OLLAMA_EMBEDDING_MODEL")
     ollama_request_timeout_seconds: float = Field(
         default=120.0,
         alias="OLLAMA_REQUEST_TIMEOUT_SECONDS",
         gt=0,
+    )
+    ai_json_repair_attempts: int = Field(
+        default=1,
+        alias="AI_JSON_REPAIR_ATTEMPTS",
+        ge=0,
     )
 
     @field_validator("cors_origins", mode="before")

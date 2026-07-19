@@ -34,6 +34,7 @@ def _provider() -> MagicMock:
     provider = MagicMock()
     provider.provider_name = "ollama"
     provider.chat_model = "qwen2.5:3b"
+    provider.model_for_task.return_value = "qwen2.5:3b"
     provider.chat.return_value = AIChatResult(
         content=(
             '{"explanation":"Condition on the reduced sample space.",'
@@ -48,7 +49,13 @@ def _provider() -> MagicMock:
     return provider
 
 
-def test_generate_question_explanation_calls_provider_and_caches_result() -> None:
+def test_generate_question_explanation_calls_provider_and_caches_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AI_JSON_REPAIR_ATTEMPTS", "0")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     session = MagicMock()
     session.scalar.return_value = None
     session.refresh.side_effect = lambda row: row
@@ -66,11 +73,17 @@ def test_generate_question_explanation_calls_provider_and_caches_result() -> Non
     assert response.explanation == "Condition on the reduced sample space."
     assert response.hints == ["List equally likely outcomes after conditioning."]
     provider.chat.assert_called_once()
+    assert provider.chat.call_args.kwargs["response_schema"] is not None
+    assert provider.chat.call_args.kwargs["model"] == "qwen2.5:3b"
+    system_message = provider.chat.call_args.args[0][0]
+    assert "teach the correct answer step by step" in system_message.content
+    assert "final answer" in system_message.content
 
     cached = session.add.call_args.args[0]
     assert isinstance(cached, AICacheEntry)
     assert cached.result_kind == AICacheResultKind.EXPLANATION
     assert cached.response_json["common_mistakes"] == ["Keeping TT in the sample space."]
+    get_settings.cache_clear()
 
 
 def test_generate_question_explanation_uses_cached_result() -> None:
@@ -80,7 +93,7 @@ def test_generate_question_explanation_uses_cached_result() -> None:
         provider="ollama",
         model="qwen2.5:3b",
         result_kind=AICacheResultKind.EXPLANATION,
-        prompt_template_version="question-explanation:v1",
+        prompt_template_version="question-explanation:v4",
         prompt_hash="a" * 64,
         input_object_version="question:42:v1",
         response_json={
@@ -106,19 +119,26 @@ def test_generate_question_explanation_uses_cached_result() -> None:
     assert usage_log.latency_ms == 0
 
 
-def test_generate_question_explanation_rejects_invalid_provider_payload() -> None:
+def test_generate_question_explanation_rejects_invalid_provider_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AI_JSON_REPAIR_ATTEMPTS", "0")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     session = MagicMock()
     session.scalar.return_value = None
     provider = _provider()
     provider.chat.return_value.content = "not-json"
 
-    with pytest.raises(AIExplanationResponseError, match="invalid explanation JSON"):
+    with pytest.raises(AIExplanationResponseError, match="invalid structured JSON"):
         generate_question_explanation(
             session,
             provider,
             question=_question(),
             user_answer="1/2",
         )
+    get_settings.cache_clear()
 
 
 @pytest.mark.integration

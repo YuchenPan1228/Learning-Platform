@@ -27,7 +27,7 @@ The initial MVP should be:
 - No paid crawler services.
 - No vector embeddings until there is enough approved content to justify them.
 
-Use Ollama as the default AI provider behind an `AIProvider` interface. OpenAI, Anthropic, and other providers can be added later as adapters.
+Use Ollama as the default AI provider behind an `AIProvider` interface. Route chat workloads by task (`tutor`, `coding`, `reasoning`) with small local defaults and documented production targets (Qwen3 32B, Qwen2.5-Coder 32B, DeepSeek-R1). Prefer JSON Schema structured outputs with validation and repair. OpenAI, Anthropic, and other providers can be added later as adapters.
 
 Use PostgreSQL Full Text Search, hash-based duplicate detection, and normalized text comparison during the MVP. Add local embeddings and pgvector later.
 
@@ -498,7 +498,10 @@ Use:
 
 - Ollama as the default local provider
 - `AIProvider` interface for future OpenAI, Anthropic, or other adapters
-- Local models such as Qwen, Gemma, Llama, or Mistral
+- Task-based model routing: tutor / coding / reasoning / embedding
+- Production targets: Qwen3 32B, Qwen2.5-Coder 32B, DeepSeek-R1, `nomic-embed-text`
+- Local defaults via `OLLAMA_CHAT_MODEL` (for example `qwen2.5:3b`) with optional `OLLAMA_MODEL_*` overrides
+- JSON Schema structured outputs, Pydantic validation, and JSON repair retries
 - Structured outputs for classification and extraction
 - Cached AI outputs for summaries, explanations, and generated questions
 - LangGraph later if multi-step workflows become complex

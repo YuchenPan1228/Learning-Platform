@@ -7,7 +7,9 @@ These assumptions apply through Phases 0-2 unless the roadmap is explicitly revi
 - Authentication is not implemented.
 - Hosted deployment is not required.
 - Local development should be free to run.
-- Ollama is the default AI provider behind the future `AIProvider` interface.
+- Ollama is the default AI provider behind the `AIProvider` interface.
+- Chat workloads are routed by task (`tutor` / `coding` / `reasoning`), with small local model defaults and larger production targets documented in architecture/ADR-011.
+- Structured AI responses use JSON Schema + validation, with optional repair retries.
 - PostgreSQL Full Text Search is used before embeddings.
 - Hash-based and normalized-text duplicate detection are used before vector similarity.
 - Paid crawler services are not used in the MVP.
