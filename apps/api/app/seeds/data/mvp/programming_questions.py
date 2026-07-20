@@ -62,18 +62,14 @@ PROGRAMMING_QUESTIONS: tuple[QuestionSeed, ...] = (
         subtopic_slug="cpp",
         difficulty=Difficulty.EASY,
         short_answer="yes",
-        canonical_solution=(
-            "`auto x` copies; use `const auto& x` (or `auto&`) to avoid copies."
-        ),
+        canonical_solution=("`auto x` copies; use `const auto& x` (or `auto&`) to avoid copies."),
         estimated_time_seconds=60,
         prerequisites=("C++ references",),
     ),
     QuestionSeed(
         seed_key="prog-005",
         title="unordered_map Average Lookup",
-        body=(
-            "Average-case lookup complexity in `std::unordered_map`? Enter like O(1)."
-        ),
+        body=("Average-case lookup complexity in `std::unordered_map`? Enter like O(1)."),
         topic_slug="programming",
         subtopic_slug="cpp",
         difficulty=Difficulty.EASY,
@@ -140,7 +136,10 @@ PROGRAMMING_QUESTIONS: tuple[QuestionSeed, ...] = (
         short_answer="heap",
         canonical_solution="Size-$k$ heap is $O(n\\log k)$, better than $O(n\\log n)$ full sort when $k\\ll n$.",
         estimated_time_seconds=120,
-        prerequisites=("Heaps", "top-k",),
+        prerequisites=(
+            "Heaps",
+            "top-k",
+        ),
     ),
     # --- Complexity & Core Algorithms ---
     QuestionSeed(
@@ -162,8 +161,7 @@ PROGRAMMING_QUESTIONS: tuple[QuestionSeed, ...] = (
         seed_key="prog-011",
         title="Binary Search Need",
         body=(
-            "Binary search requires what property of the search space? "
-            "Answer sorted or monotonic."
+            "Binary search requires what property of the search space? Answer sorted or monotonic."
         ),
         topic_slug="programming",
         subtopic_slug="algorithms",
@@ -195,9 +193,7 @@ PROGRAMMING_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="prog-013",
         title="NULL Comparison",
-        body=(
-            "In SQL, does `WHERE x = NULL` match NULL rows? Answer yes or no."
-        ),
+        body=("In SQL, does `WHERE x = NULL` match NULL rows? Answer yes or no."),
         topic_slug="programming",
         subtopic_slug="sql",
         difficulty=Difficulty.EASY,

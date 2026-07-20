@@ -1,7 +1,6 @@
 import katex from "katex";
 
-const MATH_SEGMENT_RE =
-  /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
+const MATH_SEGMENT_RE = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\))/g;
 
 function stripDelimiters(segment: string): { math: string; displayMode: boolean } {
   if (segment.startsWith("$$") && segment.endsWith("$$")) {
@@ -67,9 +66,6 @@ type MathTextProps = {
 export function MathText({ text, className, as = "span" }: MathTextProps) {
   const Tag = as;
   return (
-    <Tag
-      className={className}
-      dangerouslySetInnerHTML={{ __html: renderMathTextHtml(text) }}
-    />
+    <Tag className={className} dangerouslySetInnerHTML={{ __html: renderMathTextHtml(text) }} />
   );
 }

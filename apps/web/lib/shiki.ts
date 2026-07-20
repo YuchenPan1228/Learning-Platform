@@ -31,7 +31,8 @@ export function normalizeCodeLang(lang: string | undefined): BundledLanguage {
     plaintext: "text",
     txt: "text",
   };
-  const resolved = aliases[raw] ?? (LANGS.includes(raw as SupportedLang) ? (raw as SupportedLang) : "text");
+  const resolved =
+    aliases[raw] ?? (LANGS.includes(raw as SupportedLang) ? (raw as SupportedLang) : "text");
   return resolved as BundledLanguage;
 }
 

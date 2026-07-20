@@ -94,9 +94,7 @@ def seed_topics(session: Session) -> dict[str, Topic]:
             ).all()
             for flashcard in flashcards:
                 session.delete(flashcard)
-            concepts = session.scalars(
-                select(Concept).where(Concept.topic_id == obsolete.id)
-            ).all()
+            concepts = session.scalars(select(Concept).where(Concept.topic_id == obsolete.id)).all()
             concept_ids = [concept.id for concept in concepts]
             if concept_ids:
                 edges = session.scalars(

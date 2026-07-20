@@ -252,9 +252,7 @@ BRAIN_TEASER_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="oth-013",
         title="Birthday Months",
-        body=(
-            "In a group of 13 people, must at least two share a birth month? Answer yes or no."
-        ),
+        body=("In a group of 13 people, must at least two share a birth month? Answer yes or no."),
         topic_slug="other-sections",
         subtopic_slug="brain-teasers",
         difficulty=Difficulty.EASY,
@@ -347,8 +345,7 @@ BRAIN_TEASER_QUESTIONS: tuple[QuestionSeed, ...] = (
         seed_key="oth-018",
         title="Hourglasses for 15 Minutes",
         body=(
-            "You have 7-minute and 11-minute hourglasses. "
-            "How do you measure exactly 15 minutes?"
+            "You have 7-minute and 11-minute hourglasses. How do you measure exactly 15 minutes?"
         ),
         topic_slug="other-sections",
         subtopic_slug="brain-teasers",

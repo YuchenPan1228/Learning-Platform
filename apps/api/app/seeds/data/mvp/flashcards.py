@@ -26,7 +26,7 @@ MVP_FLASHCARDS: tuple[FlashcardSeed, ...] = (
     ),
     FlashcardSeed(
         seed_key="fc-018",
-        front="Fast approach for \"at least one\"?",
+        front='Fast approach for "at least one"?',
         back="Complement: 1 − P(none).",
         topic_slug="counting",
         difficulty=Difficulty.EASY,
@@ -48,7 +48,7 @@ MVP_FLASHCARDS: tuple[FlashcardSeed, ...] = (
     ),
     FlashcardSeed(
         seed_key="fc-020",
-        front="Why doesn't \"disjoint\" mean independent?",
+        front='Why doesn\'t "disjoint" mean independent?',
         back="If A occurred, B cannot have — information changed, so they are dependent.",
         topic_slug="independence",
         difficulty=Difficulty.EASY,

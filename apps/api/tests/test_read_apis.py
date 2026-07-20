@@ -78,7 +78,8 @@ def test_list_concepts_and_get_detail_with_neighbors(
     assert len(programming_response.json()) == 5
     assert any(item["slug"] == "python" for item in programming_response.json())
     assert any(item["name"] == "C++ for Quant" for item in programming_response.json())
-    assert all(item["slug"] != "programming-coding-patterns" for item in programming_response.json())
+    programming_concepts = programming_response.json()
+    assert all(item["slug"] != "programming-coding-patterns" for item in programming_concepts)
     detail_response = client.get("/concepts/counting")
     assert detail_response.status_code == 200
     counting = detail_response.json()

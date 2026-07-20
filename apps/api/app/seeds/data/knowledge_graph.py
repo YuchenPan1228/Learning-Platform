@@ -31,235 +31,235 @@ def default_concept_definition(name: str, parent_name: str) -> str:
 
 CONCEPT_DETAILS: dict[str, ConceptSeed] = {
     "counting": ConceptSeed(
-        slug='counting',
-        name='Counting & Sample Spaces',
-        topic_slug='counting',
-        definition='A finite probability problem starts by fixing the sample space $\\Omega$ — the set of equally likely outcomes you treat as atomic — then counting the favorable outcomes. Permutations count ordered arrangements; combinations count unordered selections. Almost every classic interview probability question is $|\\mathrm{favorable}| / |\\Omega|$ once $\\Omega$ is chosen correctly.',
-        formula='$P(A) = |A| / |\\Omega|$\n$P(n,k) = n! / (n-k)!$\n$C(n,k) = n! / (k!(n-k)!)$\nWith repetition / independent trials: often $|\\Omega| = n^k$',
+        slug="counting",
+        name="Counting & Sample Spaces",
+        topic_slug="counting",
+        definition="A finite probability problem starts by fixing the sample space $\\Omega$ — the set of equally likely outcomes you treat as atomic — then counting the favorable outcomes. Permutations count ordered arrangements; combinations count unordered selections. Almost every classic interview probability question is $|\\mathrm{favorable}| / |\\Omega|$ once $\\Omega$ is chosen correctly.",
+        formula="$P(A) = |A| / |\\Omega|$\n$P(n,k) = n! / (n-k)!$\n$C(n,k) = n! / (k!(n-k)!)$\nWith repetition / independent trials: often $|\\Omega| = n^k$",
         intuition="Before writing a formula, ask: what are the atoms I'm counting? If outcomes are not equally likely, either reweight them or rebuild $\\Omega$ so they are. Order matters only when the experiment distinguishes sequences (dealing in order, sequences of flips). If the problem only cares about the set of items, use combinations.",
-        worked_example='Q: Two fair six-sided dice are rolled. Probability the sum is 7?\n\nSolve: Take $\\Omega$ = all ordered pairs $(i,j)$ with $i,j \\in \\{1,\\ldots,6\\}$ → $|\\Omega| = 36$. Favorable: $(1,6)$, $(2,5)$, $(3,4)$, $(4,3)$, $(5,2)$, $(6,1)$ → 6 outcomes. $P = 6/36 = 1/6$.\n\nOrdered pairs are safer in interviews than unordered pairs with ad-hoc weights.',
+        worked_example="Q: Two fair six-sided dice are rolled. Probability the sum is 7?\n\nSolve: Take $\\Omega$ = all ordered pairs $(i,j)$ with $i,j \\in \\{1,\\ldots,6\\}$ → $|\\Omega| = 36$. Favorable: $(1,6)$, $(2,5)$, $(3,4)$, $(4,3)$, $(5,2)$, $(6,1)$ → 6 outcomes. $P = 6/36 = 1/6$.\n\nOrdered pairs are safer in interviews than unordered pairs with ad-hoc weights.",
         interview_tips='1. Say out loud: "I\'ll take $\\Omega$ to be …" and whether outcomes are equally likely.\n2. State whether order/repetition matter before picking $P$, $C$, or $n^k$.\n3. Prefer complement for "at least one" / birthday-style problems.\n4. Sanity-check: probability in $[0,1]$, and small cases ($n=2$) you can enumerate by hand.',
-        prerequisites='None — first concept on the Probability path.',
+        prerequisites="None — first concept on the Probability path.",
     ),
     "independence": ConceptSeed(
-        slug='independence',
-        name='Independence',
-        topic_slug='independence',
+        slug="independence",
+        name="Independence",
+        topic_slug="independence",
         definition="Two events are independent if learning that one occurred does not change the probability of the other: $P(A \\mid B) = P(A)$ (when $P(B) > 0$). Equivalently, $P(A \\cap B) = P(A)P(B)$. For random variables, independence means the joint distribution factors into the product of the margins — knowing one variable's value gives no information about the other.",
-        formula='Events: $P(A \\cap B) = P(A)P(B) \\iff P(A \\mid B) = P(A)$\nFinite collection: $P(A_1 \\cap \\cdots \\cap A_n) = P(A_1)\\cdots P(A_n)$ (mutual; pairwise is weaker)\nDiscrete RVs: $P(X = x, Y = y) = P(X = x)P(Y = y)$\nContinuous RVs: $f_{X,Y}(x,y) = f_X(x)f_Y(y)$',
+        formula="Events: $P(A \\cap B) = P(A)P(B) \\iff P(A \\mid B) = P(A)$\nFinite collection: $P(A_1 \\cap \\cdots \\cap A_n) = P(A_1)\\cdots P(A_n)$ (mutual; pairwise is weaker)\nDiscrete RVs: $P(X = x, Y = y) = P(X = x)P(Y = y)$\nContinuous RVs: $f_{X,Y}(x,y) = f_X(x)f_Y(y)$",
         intuition='Independence is a modeling assumption about information, not about "looking unrelated." Disjoint events with positive probability are dependent (if $A$ happened, $B$ cannot have). Coin flips and dice rolls are independent when the physical process does not couple them. In interviews, independence is what lets you multiply probabilities and what fails when sampling without replacement or conditioning on a shared constraint.',
         worked_example="Q: Three fair coins are flipped independently. Probability all three are heads?\n\nSolve: Independence ⇒ $P(HHH) = P(H)P(H)P(H) = (1/2)^3 = 1/8$.\n\nContrast (dependence): Draw two cards without replacement from a 52-card deck. $P(\\text{both aces}) \\neq (4/52)^2$ — use $P = (4/52)\\cdot(3/51)$ because the second draw's odds change after the first ace.",
-        interview_tips='1. Say explicitly whether trials are independent before multiplying.\n2. Check the experiment: with replacement / separate coins → usually independent; without replacement / shared totals → usually not.\n3. Pairwise independence $\\neq$ mutual independence — if the problem needs $P(\\text{all})$, verify the full product (or enumerate a small $\\Omega$).\n4. After conditioning, previously independent events can become dependent (and vice versa) — re-check on the new sample space.',
-        prerequisites='Counting & Sample Spaces',
+        interview_tips="1. Say explicitly whether trials are independent before multiplying.\n2. Check the experiment: with replacement / separate coins → usually independent; without replacement / shared totals → usually not.\n3. Pairwise independence $\\neq$ mutual independence — if the problem needs $P(\\text{all})$, verify the full product (or enumerate a small $\\Omega$).\n4. After conditioning, previously independent events can become dependent (and vice versa) — re-check on the new sample space.",
+        prerequisites="Counting & Sample Spaces",
     ),
     "conditional-probability": ConceptSeed(
-        slug='conditional-probability',
-        name='Conditional Probability',
-        topic_slug='conditional-probability',
-        definition='$P(A \\mid B)$ is the probability of $A$ given that $B$ occurred: restrict attention to outcomes in $B$ and renormalize. Formally $P(A \\mid B) = P(A \\cap B) / P(B)$ when $P(B) > 0$. Conditioning updates the sample space; it does not change the underlying experiment after the fact — it changes what you treat as possible.',
-        formula='$P(A \\mid B) = P(A \\cap B) / P(B)$\n$P(A \\cap B) = P(A \\mid B)P(B)$  (chain rule)\nFor partitions: often easier via tables or enumeration than raw formula',
+        slug="conditional-probability",
+        name="Conditional Probability",
+        topic_slug="conditional-probability",
+        definition="$P(A \\mid B)$ is the probability of $A$ given that $B$ occurred: restrict attention to outcomes in $B$ and renormalize. Formally $P(A \\mid B) = P(A \\cap B) / P(B)$ when $P(B) > 0$. Conditioning updates the sample space; it does not change the underlying experiment after the fact — it changes what you treat as possible.",
+        formula="$P(A \\mid B) = P(A \\cap B) / P(B)$\n$P(A \\cap B) = P(A \\mid B)P(B)$  (chain rule)\nFor partitions: often easier via tables or enumeration than raw formula",
         intuition='Think "of the worlds consistent with $B$, what fraction also have $A$?" The classic trap is treating "given at least one heads" as if a specific coin were heads. Always rebuild $\\Omega$ under the condition before counting.',
-        worked_example='Q: Two fair coins. Given at least one heads, $P(\\text{both heads})$?\n\nSolve: Unconditional $\\Omega = \\{HH, HT, TH, TT\\}$. Condition on $\\{HH, HT, TH\\}$. Only $HH$ works → $1/3$, not $1/2$.',
+        worked_example="Q: Two fair coins. Given at least one heads, $P(\\text{both heads})$?\n\nSolve: Unconditional $\\Omega = \\{HH, HT, TH, TT\\}$. Condition on $\\{HH, HT, TH\\}$. Only $HH$ works → $1/3$, not $1/2$.",
         interview_tips='1. Name $A$ and $B$ in words before writing symbols.\n2. Prefer listing the conditional sample space when $|\\Omega|$ is small.\n3. Never swap $P(A\\mid B)$ and $P(B\\mid A)$.\n4. Ask whether the information is "at least one" vs "a specific one."',
-        prerequisites='Counting & Sample Spaces',
+        prerequisites="Counting & Sample Spaces",
     ),
     "bayes": ConceptSeed(
-        slug='bayes',
+        slug="bayes",
         name="Bayes' Rule",
-        topic_slug='bayes',
+        topic_slug="bayes",
         definition="Bayes' rule converts a likelihood $P(\\text{evidence} \\mid \\text{hypothesis})$ and a prior $P(\\text{hypothesis})$ into a posterior $P(\\text{hypothesis} \\mid \\text{evidence})$. The denominator is the law of total probability — sum (or integrate) over all ways the evidence could arise.",
-        formula='$P(H \\mid E) = P(E \\mid H)P(H) / P(E)$\n$P(E) = \\sum_i P(E \\mid H_i)P(H_i)$  (discrete partition)\nOdds form: posterior odds = likelihood ratio $\\times$ prior odds',
-        intuition='Rare diseases + accurate tests still yield modest posteriors when the base rate is tiny. Interviewers care that you respect the prior and expand $P(\\text{evidence})$ over competing hypotheses — not that you memorize a slogan.',
-        worked_example='Q: Disease rate 1%. Test 95% sensitive and 95% specific. Given positive, $P(\\text{disease})$?\n\nSolve: Among 10,000 people: 100 diseased → 95 true +, 9,900 healthy → $\\sim$495 false +. Posterior $\\approx 95 / (95+495) \\approx 16\\%$, not $95\\%$.',
-        interview_tips='1. Write prior, likelihood, then expand the denominator.\n2. Use counts (10,000 people) when percentages confuse.\n3. Sanity-check: posterior moves toward hypotheses that explain the data better.\n4. State independence assumptions when multiplying observations.',
-        prerequisites='Conditional Probability, Independence',
+        formula="$P(H \\mid E) = P(E \\mid H)P(H) / P(E)$\n$P(E) = \\sum_i P(E \\mid H_i)P(H_i)$  (discrete partition)\nOdds form: posterior odds = likelihood ratio $\\times$ prior odds",
+        intuition="Rare diseases + accurate tests still yield modest posteriors when the base rate is tiny. Interviewers care that you respect the prior and expand $P(\\text{evidence})$ over competing hypotheses — not that you memorize a slogan.",
+        worked_example="Q: Disease rate 1%. Test 95% sensitive and 95% specific. Given positive, $P(\\text{disease})$?\n\nSolve: Among 10,000 people: 100 diseased → 95 true +, 9,900 healthy → $\\sim$495 false +. Posterior $\\approx 95 / (95+495) \\approx 16\\%$, not $95\\%$.",
+        interview_tips="1. Write prior, likelihood, then expand the denominator.\n2. Use counts (10,000 people) when percentages confuse.\n3. Sanity-check: posterior moves toward hypotheses that explain the data better.\n4. State independence assumptions when multiplying observations.",
+        prerequisites="Conditional Probability, Independence",
     ),
     "random-variables": ConceptSeed(
-        slug='random-variables',
-        name='Random Variables',
-        topic_slug='random-variables',
-        definition='A random variable is a numerical function of the outcome: $X: \\Omega \\to \\mathbb{R}$. Discrete RVs take countable values with a PMF $p(x) = P(X=x)$. Continuous RVs have a density $f$ with $P(X \\in A) = \\int_A f$. The CDF $F(x) = P(X \\leq x)$ always exists and is the common language between discrete and continuous.',
+        slug="random-variables",
+        name="Random Variables",
+        topic_slug="random-variables",
+        definition="A random variable is a numerical function of the outcome: $X: \\Omega \\to \\mathbb{R}$. Discrete RVs take countable values with a PMF $p(x) = P(X=x)$. Continuous RVs have a density $f$ with $P(X \\in A) = \\int_A f$. The CDF $F(x) = P(X \\leq x)$ always exists and is the common language between discrete and continuous.",
         formula="PMF: $P(X = x)$ · CDF: $F(x) = P(X \\le x)$\nContinuous: $P(a < X \\le b) = \\int_a^b f(x)\\,dx$, $f = F'$ when $F$ is absolutely continuous\nIndicator: $1_A(\\omega) = 1$ if $\\omega\\in A$ else $0$ — the bridge to expectation tricks",
-        intuition='Outcomes can be messy (cards, paths); RVs extract the number you care about (profit, waiting time, count of successes). Once $X$ is defined, stop narrating the story and work with its distribution.',
-        worked_example='Q: Flip a fair coin twice. Let $X$ = number of heads.\n\nSolve: $X \\in \\{0,1,2\\}$ with PMF $1/4$, $1/2$, $1/4$. CDF jumps at $0,1,2$. Same experiment, different RV: $Y = 1$ if first flip heads else $0$ — Bernoulli$(1/2)$.',
+        intuition="Outcomes can be messy (cards, paths); RVs extract the number you care about (profit, waiting time, count of successes). Once $X$ is defined, stop narrating the story and work with its distribution.",
+        worked_example="Q: Flip a fair coin twice. Let $X$ = number of heads.\n\nSolve: $X \\in \\{0,1,2\\}$ with PMF $1/4$, $1/2$, $1/4$. CDF jumps at $0,1,2$. Same experiment, different RV: $Y = 1$ if first flip heads else $0$ — Bernoulli$(1/2)$.",
         interview_tips='1. Define $X$ in one sentence before computing anything.\n2. Discrete vs continuous changes tools (sums vs integrals), not the story.\n3. Indicators turn events into RVs — often the cleanest setup.\n4. For "distribution of $X$," give PMF/PDF or CDF, not just $E[X]$.',
-        prerequisites='Counting & Sample Spaces',
+        prerequisites="Counting & Sample Spaces",
     ),
     "expectation": ConceptSeed(
-        slug='expectation',
-        name='Expectation',
-        topic_slug='expectation',
-        definition='Expectation is the probability-weighted average of a random variable: for discrete $X$, $E[X] = \\sum x\\, P(X=x)$. It is linear always: $E[aX+bY] = aE[X]+bE[Y]$ with no independence required. Indicator and linearity tricks solve many interview problems without expanding the full distribution.',
-        formula='Discrete: $E[X] = \\sum x\\, p(x)$ · Continuous: $E[X] = \\int x f(x)\\,dx$\n$E[g(X)] = \\sum g(x)p(x)$  (LOTUS)\n$E[1_A] = P(A)$ · Linearity always · If independent: $E[XY]=E[X]E[Y]$\nGeometric (trials until first success, success prob $p$): $E[N] = 1/p$',
+        slug="expectation",
+        name="Expectation",
+        topic_slug="expectation",
+        definition="Expectation is the probability-weighted average of a random variable: for discrete $X$, $E[X] = \\sum x\\, P(X=x)$. It is linear always: $E[aX+bY] = aE[X]+bE[Y]$ with no independence required. Indicator and linearity tricks solve many interview problems without expanding the full distribution.",
+        formula="Discrete: $E[X] = \\sum x\\, p(x)$ · Continuous: $E[X] = \\int x f(x)\\,dx$\n$E[g(X)] = \\sum g(x)p(x)$  (LOTUS)\n$E[1_A] = P(A)$ · Linearity always · If independent: $E[XY]=E[X]E[Y]$\nGeometric (trials until first success, success prob $p$): $E[N] = 1/p$",
         intuition='$E[X]$ is the long-run average per trial, not the "most likely" value and not something that must be a possible outcome. Geometric waiting times and coupon collector are expectation problems first, distribution problems second.',
-        worked_example='Q: Expected fair die rolls until first six?\n\nSolve: Geometric with $p=1/6$ → $E[N]=6$.\nCoupon flavor: $n$ coupons, $E[\\text{time to collect all}] = n(1 + 1/2 + \\cdots + 1/n) \\approx n \\log n$.',
-        interview_tips='1. Reach for linearity + indicators before enumerating $\\Omega$.\n2. State whether geometric counts trials-until-success or failures-before-success.\n3. Linearity does not need independence — say that out loud when useful.\n4. $E[X]$ need not be in the support (e.g. die mean $3.5$).',
-        prerequisites='Random Variables, Counting & Sample Spaces',
+        worked_example="Q: Expected fair die rolls until first six?\n\nSolve: Geometric with $p=1/6$ → $E[N]=6$.\nCoupon flavor: $n$ coupons, $E[\\text{time to collect all}] = n(1 + 1/2 + \\cdots + 1/n) \\approx n \\log n$.",
+        interview_tips="1. Reach for linearity + indicators before enumerating $\\Omega$.\n2. State whether geometric counts trials-until-success or failures-before-success.\n3. Linearity does not need independence — say that out loud when useful.\n4. $E[X]$ need not be in the support (e.g. die mean $3.5$).",
+        prerequisites="Random Variables, Counting & Sample Spaces",
     ),
     "conditional-expectation": ConceptSeed(
-        slug='conditional-expectation',
-        name='Conditional Expectation',
-        topic_slug='conditional-expectation',
-        definition='$E[X \\mid Y=y]$ is the expectation of $X$ under the conditional law of $X$ given $Y=y$. As a random variable, $E[X \\mid Y]$ is a function of $Y$. Tower property: $E[E[X \\mid Y]] = E[X]$. Known information can be pulled out: if $Z$ is $Y$-measurable, $E[ZX \\mid Y] = Z\\, E[X \\mid Y]$.',
-        formula='Discrete: $E[X \\mid Y=y] = \\sum x\\, P(X=x \\mid Y=y)$\nTower: $E[E[X \\mid \\mathcal{G}]] = E[X]$\nTake out what’s known: $E[g(Y)X \\mid Y] = g(Y)E[X \\mid Y]$\nIf $X \\perp Y$: $E[X \\mid Y] = E[X]$',
-        intuition='Conditioning replaces $X$ with its best mean-square predictor given what you know. In trading/interview language: update your fair value when news arrives; take out of the conditional expectation anything already determined by that news.',
-        worked_example='Q: Fair die $X$. Let $Y = 1$ if $X$ even, else $0$. Find $E[X \\mid Y]$.\n\nSolve: Given $Y=1$ (even): uniform on $\\{2,4,6\\}$ → mean $4$. Given $Y=0$ (odd): uniform on $\\{1,3,5\\}$ → mean $3$. So $E[X \\mid Y] = 4Y + 3(1-Y)$. Check tower: $E[E[X\\mid Y]] = 4\\cdot(1/2)+3\\cdot(1/2)=3.5=E[X]$.',
+        slug="conditional-expectation",
+        name="Conditional Expectation",
+        topic_slug="conditional-expectation",
+        definition="$E[X \\mid Y=y]$ is the expectation of $X$ under the conditional law of $X$ given $Y=y$. As a random variable, $E[X \\mid Y]$ is a function of $Y$. Tower property: $E[E[X \\mid Y]] = E[X]$. Known information can be pulled out: if $Z$ is $Y$-measurable, $E[ZX \\mid Y] = Z\\, E[X \\mid Y]$.",
+        formula="Discrete: $E[X \\mid Y=y] = \\sum x\\, P(X=x \\mid Y=y)$\nTower: $E[E[X \\mid \\mathcal{G}]] = E[X]$\nTake out what’s known: $E[g(Y)X \\mid Y] = g(Y)E[X \\mid Y]$\nIf $X \\perp Y$: $E[X \\mid Y] = E[X]$",
+        intuition="Conditioning replaces $X$ with its best mean-square predictor given what you know. In trading/interview language: update your fair value when news arrives; take out of the conditional expectation anything already determined by that news.",
+        worked_example="Q: Fair die $X$. Let $Y = 1$ if $X$ even, else $0$. Find $E[X \\mid Y]$.\n\nSolve: Given $Y=1$ (even): uniform on $\\{2,4,6\\}$ → mean $4$. Given $Y=0$ (odd): uniform on $\\{1,3,5\\}$ → mean $3$. So $E[X \\mid Y] = 4Y + 3(1-Y)$. Check tower: $E[E[X\\mid Y]] = 4\\cdot(1/2)+3\\cdot(1/2)=3.5=E[X]$.",
         interview_tips='1. First compute $E[X \\mid Y=y]$ as a number, then assemble the RV.\n2. Use tower to reduce hard expectations to iterated ones.\n3. "Take out what\'s known" is the main algebraic move.\n4. Independence ⇒ conditional expectation collapses to the unconditional mean.',
-        prerequisites='Expectation, Conditional Probability',
+        prerequisites="Expectation, Conditional Probability",
     ),
     "variance": ConceptSeed(
-        slug='variance',
-        name='Variance & Covariance',
-        topic_slug='variance',
-        definition='$\\mathrm{Var}(X) = E[(X-E[X])^2] = E[X^2]-(E[X])^2$ measures spread. Covariance $\\mathrm{Cov}(X,Y)=E[(X-E[X])(Y-E[Y])]$ measures co-movement; $\\mathrm{Corr} = \\mathrm{Cov}/(\\sigma_X \\sigma_Y)$. Variance of sums expands with covariances; independence (or uncorrelatedness) kills cross terms.',
-        formula='$\\mathrm{Var}(aX+b) = a^2\\mathrm{Var}(X)$\n$\\mathrm{Var}(X+Y) = \\mathrm{Var}(X)+\\mathrm{Var}(Y)+2\\mathrm{Cov}(X,Y)$\nIndependent $\\Rightarrow$ $\\mathrm{Var}(X+Y)=\\mathrm{Var}(X)+\\mathrm{Var}(Y)$\n$\\mathrm{Cov}(X,Y)=E[XY]-E[X]E[Y]$\nChebyshev: $P(|X-\\mu| \\ge k\\sigma) \\le 1/k^2$\nMarkov: $P(X \\ge a) \\le E[X]/a$ for $X\\ge 0$, $a>0$',
-        intuition='Mean alone does not capture risk. Uncorrelated $\\neq$ independent, but independent ⇒ uncorrelated. Markov/Chebyshev bound probabilities using only mean/variance when the full distribution is unknown.',
-        worked_example='Q: $X \\sim \\mathrm{Binomial}(n,p)$. $\\mathrm{Var}(X)$?\n\nSolve: $X$ = sum of $n$ independent Bernoullis ⇒ $\\mathrm{Var}(X)=np(1-p)$.\nCompare: For fixed mean, Bernoulli variance is maximized at $p=1/2$.',
-        interview_tips='1. Expand $\\mathrm{Var}(\\mathrm{sum})$ and ask which covariances are zero.\n2. Compute $E[X^2]$ carefully — most algebra mistakes live there.\n3. Use Chebyshev only when you lack a full distribution; it is often loose.\n4. Correlation is scale-free; covariance is not.',
-        prerequisites='Expectation',
+        slug="variance",
+        name="Variance & Covariance",
+        topic_slug="variance",
+        definition="$\\mathrm{Var}(X) = E[(X-E[X])^2] = E[X^2]-(E[X])^2$ measures spread. Covariance $\\mathrm{Cov}(X,Y)=E[(X-E[X])(Y-E[Y])]$ measures co-movement; $\\mathrm{Corr} = \\mathrm{Cov}/(\\sigma_X \\sigma_Y)$. Variance of sums expands with covariances; independence (or uncorrelatedness) kills cross terms.",
+        formula="$\\mathrm{Var}(aX+b) = a^2\\mathrm{Var}(X)$\n$\\mathrm{Var}(X+Y) = \\mathrm{Var}(X)+\\mathrm{Var}(Y)+2\\mathrm{Cov}(X,Y)$\nIndependent $\\Rightarrow$ $\\mathrm{Var}(X+Y)=\\mathrm{Var}(X)+\\mathrm{Var}(Y)$\n$\\mathrm{Cov}(X,Y)=E[XY]-E[X]E[Y]$\nChebyshev: $P(|X-\\mu| \\ge k\\sigma) \\le 1/k^2$\nMarkov: $P(X \\ge a) \\le E[X]/a$ for $X\\ge 0$, $a>0$",
+        intuition="Mean alone does not capture risk. Uncorrelated $\\neq$ independent, but independent ⇒ uncorrelated. Markov/Chebyshev bound probabilities using only mean/variance when the full distribution is unknown.",
+        worked_example="Q: $X \\sim \\mathrm{Binomial}(n,p)$. $\\mathrm{Var}(X)$?\n\nSolve: $X$ = sum of $n$ independent Bernoullis ⇒ $\\mathrm{Var}(X)=np(1-p)$.\nCompare: For fixed mean, Bernoulli variance is maximized at $p=1/2$.",
+        interview_tips="1. Expand $\\mathrm{Var}(\\mathrm{sum})$ and ask which covariances are zero.\n2. Compute $E[X^2]$ carefully — most algebra mistakes live there.\n3. Use Chebyshev only when you lack a full distribution; it is often loose.\n4. Correlation is scale-free; covariance is not.",
+        prerequisites="Expectation",
     ),
     "continuous-distributions": ConceptSeed(
-        slug='continuous-distributions',
-        name='Common Distributions',
-        topic_slug='continuous-distributions',
-        definition='Interview distribution fluency means recognizing the named family, knowing mean/variance, and knowing which story generates it. Core discrete: Bernoulli, Binomial, Geometric, Poisson. Core continuous: Uniform, Exponential, Normal. Everything else is usually a transformation or approximation of these.',
-        formula='$\\mathrm{Bern}(p)$: $E=p$, $\\mathrm{Var}=p(1-p)$\n$\\mathrm{Bin}(n,p)$: $E=np$, $\\mathrm{Var}=np(1-p)$\n$\\mathrm{Geo}(p)$ trials-until-success: $E=1/p$, $\\mathrm{Var}=(1-p)/p^2$\n$\\mathrm{Poisson}(\\lambda)$: $E=\\mathrm{Var}=\\lambda$\n$\\mathrm{Unif}[a,b]$: $E=(a+b)/2$, $\\mathrm{Var}=(b-a)^2/12$\n$\\mathrm{Exp}(\\lambda)$: $E=1/\\lambda$, memoryless\n$N(\\mu,\\sigma^2)$: sums of independents stay normal; standardize $(X-\\mu)/\\sigma$',
-        intuition='Match the story first: fixed trials with success/fail → Binomial; waiting for first success → Geometric; rare events in continuum → Poisson; memoryless waits → Exponential; noise / CLT limits → Normal.',
-        worked_example='Q: $P(U > 0.7)$ for $U \\sim \\mathrm{Unif}[0,1]$?\n\nSolve: Length of favorable interval → $0.3$.\nPoisson setup: $n$ large, $p$ small, $np=\\lambda$ → Binomial $\\approx$ Poisson$(\\lambda)$.',
+        slug="continuous-distributions",
+        name="Common Distributions",
+        topic_slug="continuous-distributions",
+        definition="Interview distribution fluency means recognizing the named family, knowing mean/variance, and knowing which story generates it. Core discrete: Bernoulli, Binomial, Geometric, Poisson. Core continuous: Uniform, Exponential, Normal. Everything else is usually a transformation or approximation of these.",
+        formula="$\\mathrm{Bern}(p)$: $E=p$, $\\mathrm{Var}=p(1-p)$\n$\\mathrm{Bin}(n,p)$: $E=np$, $\\mathrm{Var}=np(1-p)$\n$\\mathrm{Geo}(p)$ trials-until-success: $E=1/p$, $\\mathrm{Var}=(1-p)/p^2$\n$\\mathrm{Poisson}(\\lambda)$: $E=\\mathrm{Var}=\\lambda$\n$\\mathrm{Unif}[a,b]$: $E=(a+b)/2$, $\\mathrm{Var}=(b-a)^2/12$\n$\\mathrm{Exp}(\\lambda)$: $E=1/\\lambda$, memoryless\n$N(\\mu,\\sigma^2)$: sums of independents stay normal; standardize $(X-\\mu)/\\sigma$",
+        intuition="Match the story first: fixed trials with success/fail → Binomial; waiting for first success → Geometric; rare events in continuum → Poisson; memoryless waits → Exponential; noise / CLT limits → Normal.",
+        worked_example="Q: $P(U > 0.7)$ for $U \\sim \\mathrm{Unif}[0,1]$?\n\nSolve: Length of favorable interval → $0.3$.\nPoisson setup: $n$ large, $p$ small, $np=\\lambda$ → Binomial $\\approx$ Poisson$(\\lambda)$.",
         interview_tips="1. Name the distribution and parameters before computing.\n2. Confirm geometric/exponential convention (trials vs failures; rate vs scale).\n3. Use Poisson/Normal approximations only when asymptotics are plausible — say the regime.\n4. Memoryless ⇒ past wait doesn't help; that's Exponential/Geometric.",
-        prerequisites='Random Variables, Expectation, Variance & Covariance',
+        prerequisites="Random Variables, Expectation, Variance & Covariance",
     ),
     "limit-theorems": ConceptSeed(
-        slug='limit-theorems',
-        name='Limit Theorems (LLN & CLT)',
-        topic_slug='limit-theorems',
-        definition='LLN: sample averages converge to the mean (law of large numbers) — intuition for long-run frequency. CLT: properly scaled averages become approximately Normal — the reason $\\sqrt{n}$ rates and $z$-scores appear everywhere. Interviews want correct statements and when approximations apply, not measure-theoretic proofs.',
-        formula='IID $X_i$ with $E[X_i]=\\mu$, $\\mathrm{Var}=\\sigma^2\\in(0,\\infty)$:\n$\\bar{X}_n \\to \\mu$  (LLN)\n$\\sqrt{n}(\\bar{X}_n - \\mu)/\\sigma \\xrightarrow{d} N(0,1)$  (CLT)\nBinomial/Poisson Normal approximations are CLT special cases',
-        intuition='More independent noise averages out (LLN). Fluctuations around the mean are typically Gaussian on the $1/\\sqrt{n}$ scale (CLT). Dependence, heavy tails, or tiny $n$ break the slogan — say so.',
-        worked_example='Q: 100 fair coin flips. Approx $P(\\text{more than 60 heads})$?\n\nSolve: $X\\sim\\mathrm{Bin}(100,1/2)$, mean $50$, sd $5$. $P(X>60) \\approx P\\big(Z > (60.5-50)/5\\big) \\approx P(Z>2.1) \\approx 1.8\\%$ (continuity correction optional but impressive if stated).',
+        slug="limit-theorems",
+        name="Limit Theorems (LLN & CLT)",
+        topic_slug="limit-theorems",
+        definition="LLN: sample averages converge to the mean (law of large numbers) — intuition for long-run frequency. CLT: properly scaled averages become approximately Normal — the reason $\\sqrt{n}$ rates and $z$-scores appear everywhere. Interviews want correct statements and when approximations apply, not measure-theoretic proofs.",
+        formula="IID $X_i$ with $E[X_i]=\\mu$, $\\mathrm{Var}=\\sigma^2\\in(0,\\infty)$:\n$\\bar{X}_n \\to \\mu$  (LLN)\n$\\sqrt{n}(\\bar{X}_n - \\mu)/\\sigma \\xrightarrow{d} N(0,1)$  (CLT)\nBinomial/Poisson Normal approximations are CLT special cases",
+        intuition="More independent noise averages out (LLN). Fluctuations around the mean are typically Gaussian on the $1/\\sqrt{n}$ scale (CLT). Dependence, heavy tails, or tiny $n$ break the slogan — say so.",
+        worked_example="Q: 100 fair coin flips. Approx $P(\\text{more than 60 heads})$?\n\nSolve: $X\\sim\\mathrm{Bin}(100,1/2)$, mean $50$, sd $5$. $P(X>60) \\approx P\\big(Z > (60.5-50)/5\\big) \\approx P(Z>2.1) \\approx 1.8\\%$ (continuity correction optional but impressive if stated).",
         interview_tips="1. State IID + finite variance assumptions.\n2. Continuity correction for discrete→Normal when $n$ is moderate.\n3. LLN is about averages converging; CLT is about $\\sqrt{n}$ fluctuations.\n4. Don't invoke CLT for $n=2$ unless joking — and don't.",
-        prerequisites='Expectation, Variance & Covariance',
+        prerequisites="Expectation, Variance & Covariance",
     ),
     "markov-chains": ConceptSeed(
-        slug='markov-chains',
-        name='Markov Chains',
-        topic_slug='markov-chains',
-        definition='A Markov chain is a process where the next state depends only on the present: $P(X_{n+1}\\mid X_n,\\ldots,X_0)=P(X_{n+1}\\mid X_n)$. Finite-state chains are described by a transition matrix $P$. Stationary distributions $\\pi$ satisfy $\\pi^{\\top}P = \\pi^{\\top}$ (row-vector convention varies — pick one and stick to it).',
-        formula='$P_{ij} = P(\\text{go to } j \\mid \\text{at } i)$\nn-step: $P^{(n)} = P^n$\nStationary: $\\pi = \\pi P$, $\\sum_i \\pi_i = 1$\nFirst-step: condition on the first transition to get hitting-time expectations',
-        intuition='Memoryless given the present state. Long-run fraction of time in a state is the stationary mass (when the chain is irreducible + aperiodic on a finite space). Interviews love two-state chains and first-step equations.',
-        worked_example='Q: States $\\{0,1\\}$, $P(0\\to 1)=p$, $P(1\\to 0)=q$. Stationary?\n\nSolve: $\\pi_0 p = \\pi_1 q$ and $\\pi_0+\\pi_1=1$ ⇒ $\\pi_0 = q/(p+q)$, $\\pi_1 = p/(p+q)$.',
-        interview_tips='1. Draw the state diagram before algebra.\n2. Write balance equations + normalize.\n3. First-step analysis for expected hitting times.\n4. Say irreducible/aperiodic when claiming a unique long-run limit.',
-        prerequisites='Random Variables, Conditional Probability',
+        slug="markov-chains",
+        name="Markov Chains",
+        topic_slug="markov-chains",
+        definition="A Markov chain is a process where the next state depends only on the present: $P(X_{n+1}\\mid X_n,\\ldots,X_0)=P(X_{n+1}\\mid X_n)$. Finite-state chains are described by a transition matrix $P$. Stationary distributions $\\pi$ satisfy $\\pi^{\\top}P = \\pi^{\\top}$ (row-vector convention varies — pick one and stick to it).",
+        formula="$P_{ij} = P(\\text{go to } j \\mid \\text{at } i)$\nn-step: $P^{(n)} = P^n$\nStationary: $\\pi = \\pi P$, $\\sum_i \\pi_i = 1$\nFirst-step: condition on the first transition to get hitting-time expectations",
+        intuition="Memoryless given the present state. Long-run fraction of time in a state is the stationary mass (when the chain is irreducible + aperiodic on a finite space). Interviews love two-state chains and first-step equations.",
+        worked_example="Q: States $\\{0,1\\}$, $P(0\\to 1)=p$, $P(1\\to 0)=q$. Stationary?\n\nSolve: $\\pi_0 p = \\pi_1 q$ and $\\pi_0+\\pi_1=1$ ⇒ $\\pi_0 = q/(p+q)$, $\\pi_1 = p/(p+q)$.",
+        interview_tips="1. Draw the state diagram before algebra.\n2. Write balance equations + normalize.\n3. First-step analysis for expected hitting times.\n4. Say irreducible/aperiodic when claiming a unique long-run limit.",
+        prerequisites="Random Variables, Conditional Probability",
     ),
     "martingales": ConceptSeed(
-        slug='martingales',
-        name='Martingales',
-        topic_slug='martingales',
-        definition='A process $M_n$ is a martingale if it is integrable and $E[M_{n+1} \\mid \\text{past}] = M_n$ — fair game: conditional on what you know, tomorrow\'s expectation equals today\'s value. Optional stopping theorems need conditions; naive "stopped martingale stays fair" is a common interview trap (e.g. betting until you win).',
-        formula='$E[M_{n+1} \\mid \\mathcal{F}_n] = M_n$\n$\\Rightarrow E[M_n] = E[M_0]$ for all $n$\nDoob: $M_n = E[X \\mid \\mathcal{F}_n]$ is a martingale\nStopped process: need bounded time / bounded increments / UI hypotheses for $E[M_\\tau]=E[M_0]$',
+        slug="martingales",
+        name="Martingales",
+        topic_slug="martingales",
+        definition="A process $M_n$ is a martingale if it is integrable and $E[M_{n+1} \\mid \\text{past}] = M_n$ — fair game: conditional on what you know, tomorrow's expectation equals today's value. Optional stopping theorems need conditions; naive \"stopped martingale stays fair\" is a common interview trap (e.g. betting until you win).",
+        formula="$E[M_{n+1} \\mid \\mathcal{F}_n] = M_n$\n$\\Rightarrow E[M_n] = E[M_0]$ for all $n$\nDoob: $M_n = E[X \\mid \\mathcal{F}_n]$ is a martingale\nStopped process: need bounded time / bounded increments / UI hypotheses for $E[M_\\tau]=E[M_0]$",
         intuition='Martingales formalize "no free lunch given current information." Random walks with mean-zero steps are the basic example. Stopping rules can break fairness if the stopping time is unbounded or increments are uncontrolled.',
-        worked_example='Q: Fair coin: win $+1$ or $-1$ each bet. Fortune after $n$ bets is $S_n$. Martingale?\n\nSolve: $E[S_{n+1}\\mid S_n] = S_n + E[\\text{next}]=S_n$, so yes.\nTrap: Stop at first time you are ahead by $1$ — stopping time may be unbounded; you must check optional-stopping conditions before claiming $E[S_\\tau]=E[S_0]$.',
+        worked_example="Q: Fair coin: win $+1$ or $-1$ each bet. Fortune after $n$ bets is $S_n$. Martingale?\n\nSolve: $E[S_{n+1}\\mid S_n] = S_n + E[\\text{next}]=S_n$, so yes.\nTrap: Stop at first time you are ahead by $1$ — stopping time may be unbounded; you must check optional-stopping conditions before claiming $E[S_\\tau]=E[S_0]$.",
         interview_tips='1. Verify the conditional-expectation definition, don\'t just say "fair."\n2. Construct examples from conditional expectations: $M_n = E[X \\mid \\mathcal{F}_n]$.\n3. Before optional stopping, check bounded time / bounded increments / UI.\n4. Related to Markov: functions of Markov chains can be martingales under the right setup.',
-        prerequisites='Conditional Expectation, Markov Chains',
+        prerequisites="Conditional Expectation, Markov Chains",
     ),
     "vectors-matrices": ConceptSeed(
-        slug='vectors-matrices',
-        name='Vectors & Matrices',
-        topic_slug='vectors-matrices',
-        definition='A vector is an ordered tuple of numbers — both a point and a direction in $\\mathbb{R}^n$. A matrix is a rectangular array encoding a linear map: $x \\mapsto Ax$. Interview work is mostly about (1) shapes and legal multiplications, (2) reading $Ax$ as a mix of columns, (3) using transpose to move between row/column views and write dot products, (4) special structure (symmetric, diagonal, outer products), and (5) the cross product in $\\mathbb{R}^3$ for geometry / perpendicular-to-both questions.',
-        formula='Dot: $u \\cdot v = u^{\\top}v = \\sum_i u_i v_i$\nMatrix–vector: $(Ax)_i = \\sum_j A_{ij} x_j$ · $A$ is $m\\times n$, $x$ is $n\\times 1 \\to m\\times 1$\nMatrix–matrix: $(AB)_{ij} = \\sum_k A_{ik} B_{kj}$ · need inner dim match\nOuter product: $uv^{\\top}$ (rank $\\le 1$)\nTranspose: $(A^{\\top})_{ij} = A_{ji}$ · $(AB)^{\\top} = B^{\\top}A^{\\top}$ · $(A^{\\top})^{\\top} = A$\nSymmetric: $A = A^{\\top}$ · Skew: $A^{\\top} = -A$ · Inverse: $AA^{-1} = A^{-1}A = I$ when it exists\nCross ($\\mathbb{R}^3$): $u \\times v = (u_2v_3-u_3v_2,\\, u_3v_1-u_1v_3,\\, u_1v_2-u_2v_1)$\n$\\|u \\times v\\| = \\|u\\|\\|v\\|\\lvert\\sin\\theta\\rvert$ · $u \\times v = 0 \\iff$ parallel',
+        slug="vectors-matrices",
+        name="Vectors & Matrices",
+        topic_slug="vectors-matrices",
+        definition="A vector is an ordered tuple of numbers — both a point and a direction in $\\mathbb{R}^n$. A matrix is a rectangular array encoding a linear map: $x \\mapsto Ax$. Interview work is mostly about (1) shapes and legal multiplications, (2) reading $Ax$ as a mix of columns, (3) using transpose to move between row/column views and write dot products, (4) special structure (symmetric, diagonal, outer products), and (5) the cross product in $\\mathbb{R}^3$ for geometry / perpendicular-to-both questions.",
+        formula="Dot: $u \\cdot v = u^{\\top}v = \\sum_i u_i v_i$\nMatrix–vector: $(Ax)_i = \\sum_j A_{ij} x_j$ · $A$ is $m\\times n$, $x$ is $n\\times 1 \\to m\\times 1$\nMatrix–matrix: $(AB)_{ij} = \\sum_k A_{ik} B_{kj}$ · need inner dim match\nOuter product: $uv^{\\top}$ (rank $\\le 1$)\nTranspose: $(A^{\\top})_{ij} = A_{ji}$ · $(AB)^{\\top} = B^{\\top}A^{\\top}$ · $(A^{\\top})^{\\top} = A$\nSymmetric: $A = A^{\\top}$ · Skew: $A^{\\top} = -A$ · Inverse: $AA^{-1} = A^{-1}A = I$ when it exists\nCross ($\\mathbb{R}^3$): $u \\times v = (u_2v_3-u_3v_2,\\, u_3v_1-u_1v_3,\\, u_1v_2-u_2v_1)$\n$\\|u \\times v\\| = \\|u\\|\\|v\\|\\lvert\\sin\\theta\\rvert$ · $u \\times v = 0 \\iff$ parallel",
         intuition='$Ax$ is a linear combination of the columns of $A$ with weights from $x$; the $i$-th entry is the $i$-th row of $A$ dotted with $x$. Transpose swaps rows and columns and turns row actions into column actions — if $A$ maps $\\mathbb{R}^n \\to \\mathbb{R}^m$, then $A^{\\top}$ maps $\\mathbb{R}^m \\to \\mathbb{R}^n$. Symmetric matrices ($A=A^{\\top}$) are the ones quadratic forms $x^{\\top}Ax$ "see" (replace $A$ by $(A+A^{\\top})/2$ if needed). Cross product $u \\times v$ in $\\mathbb{R}^3$ is orthogonal to both, with length $\\|u\\|\\|v\\|\\sin\\theta$ and right-hand orientation; it vanishes iff the vectors are parallel.',
-        worked_example='Example 1 — columns of $A$:\n$A = \\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}$, $v = \\begin{bmatrix}1\\\\0\\end{bmatrix}$ → $Av = \\begin{bmatrix}1\\\\3\\end{bmatrix}$ (first column). $w = \\begin{bmatrix}0\\\\1\\end{bmatrix}$ → $Aw = \\begin{bmatrix}2\\\\4\\end{bmatrix}$ (second column). Knowing $A$ on the standard basis is knowing its columns.\n\nExample 2 — transpose, symmetry, quadratic form:\n$B = \\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}$ ⇒ $B^{\\top} = \\begin{bmatrix}1&3\\\\2&4\\end{bmatrix} \\neq B$ (not symmetric). $S = (B+B^{\\top})/2 = \\begin{bmatrix}1&2.5\\\\2.5&4\\end{bmatrix}$. For $x = \\begin{bmatrix}1\\\\1\\end{bmatrix}$, $x^{\\top}Bx = x^{\\top}Sx = 10$ — same quadratic form. Transpose swaps orientation; symmetry is what quadratic forms see.\n\nExample 3 — outer product:\n$u = \\begin{bmatrix}1\\\\2\\end{bmatrix}$, $v = \\begin{bmatrix}3\\\\4\\end{bmatrix}$ ⇒ $uv^{\\top} = \\begin{bmatrix}3&4\\\\6&8\\end{bmatrix}$. Every column is a multiple of $u$; rank $\\leq 1$.\n\nExample 4 — cross product:\n$u = \\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}$, $v = \\begin{bmatrix}0\\\\1\\\\0\\end{bmatrix}$ ⇒ $u \\times v = \\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}$. If $v = \\begin{bmatrix}2\\\\0\\\\0\\end{bmatrix}$ (parallel) ⇒ $u \\times v = 0$.',
-        interview_tips='1. Announce shapes before any product ($m \\times n$ times $n \\times p$).\n2. Say "$Ax$ = combination of columns" early in matrix questions.\n3. Use $u^{\\top}v$ for dots; use $uv^{\\top}$ when you need a matrix — don\'t mix them up.\n4. If you see $x^{\\top}Ax$, assume $A$ symmetric / replace by $(A+A^{\\top})/2$.\n5. Cross product only in $\\mathbb{R}^3$ — don\'t invent one in other dimensions.\n6. Left-multiply $PA$ vs right-multiply $AP$ do different things (row vs column ops).',
-        prerequisites='None — first concept on the Mathematics path.',
+        worked_example="Example 1 — columns of $A$:\n$A = \\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}$, $v = \\begin{bmatrix}1\\\\0\\end{bmatrix}$ → $Av = \\begin{bmatrix}1\\\\3\\end{bmatrix}$ (first column). $w = \\begin{bmatrix}0\\\\1\\end{bmatrix}$ → $Aw = \\begin{bmatrix}2\\\\4\\end{bmatrix}$ (second column). Knowing $A$ on the standard basis is knowing its columns.\n\nExample 2 — transpose, symmetry, quadratic form:\n$B = \\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}$ ⇒ $B^{\\top} = \\begin{bmatrix}1&3\\\\2&4\\end{bmatrix} \\neq B$ (not symmetric). $S = (B+B^{\\top})/2 = \\begin{bmatrix}1&2.5\\\\2.5&4\\end{bmatrix}$. For $x = \\begin{bmatrix}1\\\\1\\end{bmatrix}$, $x^{\\top}Bx = x^{\\top}Sx = 10$ — same quadratic form. Transpose swaps orientation; symmetry is what quadratic forms see.\n\nExample 3 — outer product:\n$u = \\begin{bmatrix}1\\\\2\\end{bmatrix}$, $v = \\begin{bmatrix}3\\\\4\\end{bmatrix}$ ⇒ $uv^{\\top} = \\begin{bmatrix}3&4\\\\6&8\\end{bmatrix}$. Every column is a multiple of $u$; rank $\\leq 1$.\n\nExample 4 — cross product:\n$u = \\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}$, $v = \\begin{bmatrix}0\\\\1\\\\0\\end{bmatrix}$ ⇒ $u \\times v = \\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}$. If $v = \\begin{bmatrix}2\\\\0\\\\0\\end{bmatrix}$ (parallel) ⇒ $u \\times v = 0$.",
+        interview_tips="1. Announce shapes before any product ($m \\times n$ times $n \\times p$).\n2. Say \"$Ax$ = combination of columns\" early in matrix questions.\n3. Use $u^{\\top}v$ for dots; use $uv^{\\top}$ when you need a matrix — don't mix them up.\n4. If you see $x^{\\top}Ax$, assume $A$ symmetric / replace by $(A+A^{\\top})/2$.\n5. Cross product only in $\\mathbb{R}^3$ — don't invent one in other dimensions.\n6. Left-multiply $PA$ vs right-multiply $AP$ do different things (row vs column ops).",
+        prerequisites="None — first concept on the Mathematics path.",
     ),
     "linear-systems": ConceptSeed(
-        slug='linear-systems',
-        name='Linear Systems & Rank',
-        topic_slug='linear-systems',
-        definition='A linear system $Ax = b$ asks whether $b$ lies in the column space of $A$. The rank of $A$ is the dimension of that column space (equivalently row space). Full column rank means unique solutions when they exist; full row rank means solutions exist for every $b$. Interview fluency: classify consistent vs inconsistent, unique vs infinite solutions, and read rank from pivots / independent columns — not endless row reduction theater.',
-        formula='$Ax = b$ · $A$ is $m\\times n$, $x \\in \\mathbb{R}^n$, $b \\in \\mathbb{R}^m$\n$\\mathrm{rank}(A) = \\dim(\\mathrm{col}(A)) = \\dim(\\mathrm{row}(A)) \\le \\min(m,n)$\nConsistent $\\iff b \\in \\mathrm{col}(A) \\iff \\mathrm{rank}([A|b]) = \\mathrm{rank}(A)$\nUnique solution $\\iff$ consistent and $\\mathrm{rank}(A) = n$ (full column rank)\nNullspace: $N(A) = \\{x : Ax = 0\\}$ · $\\dim N(A) = n - \\mathrm{rank}(A)$ (rank–nullity)\nIf $A$ is square and full rank: unique solution $x = A^{-1}b$',
+        slug="linear-systems",
+        name="Linear Systems & Rank",
+        topic_slug="linear-systems",
+        definition="A linear system $Ax = b$ asks whether $b$ lies in the column space of $A$. The rank of $A$ is the dimension of that column space (equivalently row space). Full column rank means unique solutions when they exist; full row rank means solutions exist for every $b$. Interview fluency: classify consistent vs inconsistent, unique vs infinite solutions, and read rank from pivots / independent columns — not endless row reduction theater.",
+        formula="$Ax = b$ · $A$ is $m\\times n$, $x \\in \\mathbb{R}^n$, $b \\in \\mathbb{R}^m$\n$\\mathrm{rank}(A) = \\dim(\\mathrm{col}(A)) = \\dim(\\mathrm{row}(A)) \\le \\min(m,n)$\nConsistent $\\iff b \\in \\mathrm{col}(A) \\iff \\mathrm{rank}([A|b]) = \\mathrm{rank}(A)$\nUnique solution $\\iff$ consistent and $\\mathrm{rank}(A) = n$ (full column rank)\nNullspace: $N(A) = \\{x : Ax = 0\\}$ · $\\dim N(A) = n - \\mathrm{rank}(A)$ (rank–nullity)\nIf $A$ is square and full rank: unique solution $x = A^{-1}b$",
         intuition='Each equation is a hyperplane; intersections may be a point, a line/plane of solutions, or empty. Columns are the "ingredients" you can mix to make $b$. Free variables parametrize the nullspace — add any nullspace vector to a particular solution. Rank counts how many independent constraints / directions you truly have after removing redundancy.',
-        worked_example='Example 1 — unique solution:\n$\\begin{bmatrix}1&0\\\\0&1\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix} = \\begin{bmatrix}3\\\\4\\end{bmatrix}$ ⇒ $(x,y)=(3,4)$. Rank $2 = n$.\n\nExample 2 — infinite solutions:\n$\\begin{bmatrix}1&2\\\\2&4\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix} = \\begin{bmatrix}3\\\\6\\end{bmatrix}$. Second equation is double the first. Rank $1 < n=2$. Particular: $(3,0)$. Nullspace: $t(-2,1)$. General: $(3,0)+t(-2,1)$.\n\nExample 3 — inconsistent:\nSame $A$ but $b = \\begin{bmatrix}3\\\\5\\end{bmatrix}$. $\\mathrm{rank}(A)=1$ but $\\mathrm{rank}([A|b])=2$ ⇒ no solution.\n\nExample 4 — rank–nullity check:\n$A$ is $3 \\times 5$ with rank $2$ ⇒ $\\dim N(A) = 5-2 = 3$ free parameters in the homogeneous solution.',
+        worked_example="Example 1 — unique solution:\n$\\begin{bmatrix}1&0\\\\0&1\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix} = \\begin{bmatrix}3\\\\4\\end{bmatrix}$ ⇒ $(x,y)=(3,4)$. Rank $2 = n$.\n\nExample 2 — infinite solutions:\n$\\begin{bmatrix}1&2\\\\2&4\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix} = \\begin{bmatrix}3\\\\6\\end{bmatrix}$. Second equation is double the first. Rank $1 < n=2$. Particular: $(3,0)$. Nullspace: $t(-2,1)$. General: $(3,0)+t(-2,1)$.\n\nExample 3 — inconsistent:\nSame $A$ but $b = \\begin{bmatrix}3\\\\5\\end{bmatrix}$. $\\mathrm{rank}(A)=1$ but $\\mathrm{rank}([A|b])=2$ ⇒ no solution.\n\nExample 4 — rank–nullity check:\n$A$ is $3 \\times 5$ with rank $2$ ⇒ $\\dim N(A) = 5-2 = 3$ free parameters in the homogeneous solution.",
         interview_tips="1. State the three cases: none / unique / infinitely many.\n2. Compare $\\mathrm{rank}(A)$ to $\\mathrm{rank}([A|b])$ for consistency; compare $\\mathrm{rank}(A)$ to $n$ for uniqueness.\n3. Write general solution as $x_{\\mathrm{particular}}$ + nullspace.\n4. Square invertible is the special case $\\mathrm{rank} = n = m$ — don't assume it.\n5. Underdetermined ($n>m$) often has free variables when consistent.",
-        prerequisites='Vectors & Matrices',
+        prerequisites="Vectors & Matrices",
     ),
     "eigenvalues": ConceptSeed(
-        slug='eigenvalues',
-        name='Eigenvalues & Eigenvectors',
-        topic_slug='eigenvalues',
+        slug="eigenvalues",
+        name="Eigenvalues & Eigenvectors",
+        topic_slug="eigenvalues",
         definition="For a square matrix $A$, a nonzero vector $v$ is an eigenvector with eigenvalue $\\lambda$ if $Av = \\lambda v$ — $A$ stretches/flips $v$ without rotating it out of its line. The characteristic equation $\\det(A-\\lambda I)=0$ finds the $\\lambda$'s. Real symmetric matrices are special: real eigenvalues and an orthonormal eigenbasis (spectral theorem). Quadratic forms and covariance matrices live here; positive definite means all eigenvalues $> 0$.",
-        formula='$Av = \\lambda v$, $v \\neq 0 \\iff (A-\\lambda I)v = 0 \\iff \\det(A-\\lambda I)=0$\n$\\mathrm{tr}(A) = \\sum \\lambda_i$ · $\\det(A) = \\prod \\lambda_i$ (over algebraic multiplicities / complex)\nDiagonalizable: $A = PDP^{-1}$ with $D=\\mathrm{diag}(\\lambda_i)$\nReal symmetric: $A = Q\\Lambda Q^{\\top}$ with $Q$ orthogonal ($Q^{\\top}Q=I$)\nQuadratic form: $x^{\\top}Ax = \\sum \\lambda_i (q_i^{\\top}x)^2$ in an eigenbasis\nSPD (symmetric positive definite): $x^{\\top}Ax > 0$ for all $x\\neq 0 \\iff$ all $\\lambda_i > 0$',
+        formula="$Av = \\lambda v$, $v \\neq 0 \\iff (A-\\lambda I)v = 0 \\iff \\det(A-\\lambda I)=0$\n$\\mathrm{tr}(A) = \\sum \\lambda_i$ · $\\det(A) = \\prod \\lambda_i$ (over algebraic multiplicities / complex)\nDiagonalizable: $A = PDP^{-1}$ with $D=\\mathrm{diag}(\\lambda_i)$\nReal symmetric: $A = Q\\Lambda Q^{\\top}$ with $Q$ orthogonal ($Q^{\\top}Q=I$)\nQuadratic form: $x^{\\top}Ax = \\sum \\lambda_i (q_i^{\\top}x)^2$ in an eigenbasis\nSPD (symmetric positive definite): $x^{\\top}Ax > 0$ for all $x\\neq 0 \\iff$ all $\\lambda_i > 0$",
         intuition='Eigenvectors are the "natural axes" of a linear map. On those axes the map acts by simple scaling. Symmetric maps have orthogonal natural axes — like principal axes of an ellipse. Powers $A^{k}$ become trivial in an eigenbasis: scale by $\\lambda^{k}$. Stability, PCA, and many quant models reduce to reading the spectrum.',
-        worked_example='Example 1 — $2 \\times 2$ diagonal:\n$A = \\mathrm{diag}(2,5)$ has $\\lambda=2,5$ with $e_1,e_2$. $A\\begin{bmatrix}1\\\\0\\end{bmatrix} = 2\\begin{bmatrix}1\\\\0\\end{bmatrix}$.\n\nExample 2 — compute spectrum:\n$A = \\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}$. Char poly $(2-\\lambda)^2-1 = \\lambda^2-4\\lambda+3 = (\\lambda-1)(\\lambda-3)$. $\\lambda=1$ with $v\\propto\\begin{bmatrix}1\\\\-1\\end{bmatrix}$; $\\lambda=3$ with $v\\propto\\begin{bmatrix}1\\\\1\\end{bmatrix}$. Symmetric ⇒ eigenvectors orthogonal.\n\nExample 3 — quadratic form / PD:\n$x^{\\top}Ax = 2x_1^2 + 2x_1 x_2 + 2x_2^2$. Eigenvalues $1$ and $3$, both $>0$ ⇒ SPD. Minimum of $x^{\\top}Ax$ on $\\|x\\|=1$ is $\\lambda_{\\min}=1$.\n\nExample 4 — powers:\nIf $Av=\\lambda v$ then $A^{k}v = \\lambda^{k}v$. For $|\\lambda|<1$, $A^{k}v\\to 0$ along that mode.',
+        worked_example="Example 1 — $2 \\times 2$ diagonal:\n$A = \\mathrm{diag}(2,5)$ has $\\lambda=2,5$ with $e_1,e_2$. $A\\begin{bmatrix}1\\\\0\\end{bmatrix} = 2\\begin{bmatrix}1\\\\0\\end{bmatrix}$.\n\nExample 2 — compute spectrum:\n$A = \\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}$. Char poly $(2-\\lambda)^2-1 = \\lambda^2-4\\lambda+3 = (\\lambda-1)(\\lambda-3)$. $\\lambda=1$ with $v\\propto\\begin{bmatrix}1\\\\-1\\end{bmatrix}$; $\\lambda=3$ with $v\\propto\\begin{bmatrix}1\\\\1\\end{bmatrix}$. Symmetric ⇒ eigenvectors orthogonal.\n\nExample 3 — quadratic form / PD:\n$x^{\\top}Ax = 2x_1^2 + 2x_1 x_2 + 2x_2^2$. Eigenvalues $1$ and $3$, both $>0$ ⇒ SPD. Minimum of $x^{\\top}Ax$ on $\\|x\\|=1$ is $\\lambda_{\\min}=1$.\n\nExample 4 — powers:\nIf $Av=\\lambda v$ then $A^{k}v = \\lambda^{k}v$. For $|\\lambda|<1$, $A^{k}v\\to 0$ along that mode.",
         interview_tips='1. Write $Av=\\lambda v$ and $(A-\\lambda I)v=0$ before computing anything.\n2. Use trace/det as sanity checks for the characteristic polynomial.\n3. If $A$ is symmetric/covariance-like, say "real $\\lambda$, orthonormal basis" early.\n4. PD/PSD is about the sign of eigenvalues (or $x^{\\top}Ax$ tests).\n5. Not every matrix is diagonalizable — Jordan issues exist, but interviews usually stick to symmetric or explicitly nice matrices.',
-        prerequisites='Vectors & Matrices, Linear Systems & Rank',
+        prerequisites="Vectors & Matrices, Linear Systems & Rank",
     ),
     "orthogonality": ConceptSeed(
-        slug='orthogonality',
-        name='Orthogonality & Projections',
-        topic_slug='orthogonality',
-        definition='Vectors $u,v$ are orthogonal if $u^{\\top}v = 0$. An orthogonal set is linearly independent (if nonzero); an orthonormal set has unit lengths too. An orthogonal matrix $Q$ satisfies $Q^{\\top}Q = I$ (columns orthonormal) and preserves lengths: $\\|Qx\\|=\\|x\\|$. The orthogonal projection of $b$ onto $\\mathrm{col}(A)$ is the closest point in that subspace — the heart of least squares.',
-        formula='Orthogonal: $u^{\\top}v = 0$ · Orthonormal: $u_i^{\\top}u_j = 0$ ($i\\neq j$) and $\\|u_i\\|=1$\nOrthogonal matrix: $Q^{\\top}Q = I = QQ^{\\top}$ (square) · $Q^{-1} = Q^{\\top}$\nProj onto unit $u$: $(u^{\\top}b)\\, u$\nProj onto orthonormal columns of $Q$: $QQ^{\\top} b$\nLeast squares: $\\min \\|Ax-b\\| \\Rightarrow A^{\\top}A\\hat{x} = A^{\\top}b$ (normal equations)\nIf $A$ has thin QR, $A=QR \\Rightarrow \\hat{x} = R^{-1} Q^{\\top}b$',
-        intuition='Orthogonal directions don\'t interfere — coefficients decouple. Projection is "drop a perpendicular" onto a subspace: error $b-\\mathrm{proj}$ is orthogonal to every vector in the subspace (normal equations). Least squares finds the mix of columns of $A$ closest to $b$ when $b$ isn\'t in the column space.',
-        worked_example='Example 1 — orthonormal check:\n$u=\\begin{bmatrix}3/5\\\\4/5\\end{bmatrix}$, $v=\\begin{bmatrix}-4/5\\\\3/5\\end{bmatrix}$. $u^{\\top}v=0$ and both unit ⇒ orthonormal basis of $\\mathbb{R}^2$.\n\nExample 2 — project onto a line:\n$b=\\begin{bmatrix}2\\\\2\\end{bmatrix}$ onto $\\mathrm{span}\\{\\begin{bmatrix}1\\\\0\\end{bmatrix}\\}$: $\\mathrm{proj} = 2\\begin{bmatrix}1\\\\0\\end{bmatrix} = \\begin{bmatrix}2\\\\0\\end{bmatrix}$. Error $\\begin{bmatrix}0\\\\2\\end{bmatrix} \\perp \\begin{bmatrix}1\\\\0\\end{bmatrix}$.\n\nExample 3 — least squares for an overdetermined system:\n$A$ has rows $(1,0)$, $(1,1)$, $(1,2)$ and $b=\\begin{bmatrix}1\\\\2\\\\2\\end{bmatrix}$. Normal equations $A^{\\top}A \\hat{x} = A^{\\top}b$ with $A^{\\top}A=\\begin{bmatrix}3&3\\\\3&5\\end{bmatrix}$, $A^{\\top}b=\\begin{bmatrix}5\\\\6\\end{bmatrix}$. Solve: $3x+3y=5$ and $3x+5y=6$ ⇒ $2y=1$ ⇒ $y=1/2$, then $3x=5-3/2=7/2$ ⇒ $x=7/6$. So $\\hat{x}=\\begin{bmatrix}7/6\\\\1/2\\end{bmatrix}$.\n\nExample 4 — $QQ^{\\top}$ projection:\n$Q$ with columns $u,v$ from Example 1: $QQ^{\\top} = I$ in $\\mathbb{R}^2$ (full basis) so proj of any $b$ is $b$. If only first column, $QQ^{\\top} = uu^{\\top}$ projects onto that axis.',
-        interview_tips='1. Orthogonal ⇒ independent (for nonzero vectors) — useful for quick arguments.\n2. Write the geometric condition $(b-Ax) \\perp \\mathrm{col}(A)$ to derive $A^{\\top}(b-Ax)=0$.\n3. Prefer QR intuition over memorizing normal equations alone.\n4. Orthogonal matrices preserve norms and angles — mention when discussing stability / rotations.\n5. SVD (light): $A = U\\Sigma V^{\\top}$ rotates, scales axes, rotates again — defer deep SVD proofs unless asked.',
-        prerequisites='Vectors & Matrices',
+        slug="orthogonality",
+        name="Orthogonality & Projections",
+        topic_slug="orthogonality",
+        definition="Vectors $u,v$ are orthogonal if $u^{\\top}v = 0$. An orthogonal set is linearly independent (if nonzero); an orthonormal set has unit lengths too. An orthogonal matrix $Q$ satisfies $Q^{\\top}Q = I$ (columns orthonormal) and preserves lengths: $\\|Qx\\|=\\|x\\|$. The orthogonal projection of $b$ onto $\\mathrm{col}(A)$ is the closest point in that subspace — the heart of least squares.",
+        formula="Orthogonal: $u^{\\top}v = 0$ · Orthonormal: $u_i^{\\top}u_j = 0$ ($i\\neq j$) and $\\|u_i\\|=1$\nOrthogonal matrix: $Q^{\\top}Q = I = QQ^{\\top}$ (square) · $Q^{-1} = Q^{\\top}$\nProj onto unit $u$: $(u^{\\top}b)\\, u$\nProj onto orthonormal columns of $Q$: $QQ^{\\top} b$\nLeast squares: $\\min \\|Ax-b\\| \\Rightarrow A^{\\top}A\\hat{x} = A^{\\top}b$ (normal equations)\nIf $A$ has thin QR, $A=QR \\Rightarrow \\hat{x} = R^{-1} Q^{\\top}b$",
+        intuition="Orthogonal directions don't interfere — coefficients decouple. Projection is \"drop a perpendicular\" onto a subspace: error $b-\\mathrm{proj}$ is orthogonal to every vector in the subspace (normal equations). Least squares finds the mix of columns of $A$ closest to $b$ when $b$ isn't in the column space.",
+        worked_example="Example 1 — orthonormal check:\n$u=\\begin{bmatrix}3/5\\\\4/5\\end{bmatrix}$, $v=\\begin{bmatrix}-4/5\\\\3/5\\end{bmatrix}$. $u^{\\top}v=0$ and both unit ⇒ orthonormal basis of $\\mathbb{R}^2$.\n\nExample 2 — project onto a line:\n$b=\\begin{bmatrix}2\\\\2\\end{bmatrix}$ onto $\\mathrm{span}\\{\\begin{bmatrix}1\\\\0\\end{bmatrix}\\}$: $\\mathrm{proj} = 2\\begin{bmatrix}1\\\\0\\end{bmatrix} = \\begin{bmatrix}2\\\\0\\end{bmatrix}$. Error $\\begin{bmatrix}0\\\\2\\end{bmatrix} \\perp \\begin{bmatrix}1\\\\0\\end{bmatrix}$.\n\nExample 3 — least squares for an overdetermined system:\n$A$ has rows $(1,0)$, $(1,1)$, $(1,2)$ and $b=\\begin{bmatrix}1\\\\2\\\\2\\end{bmatrix}$. Normal equations $A^{\\top}A \\hat{x} = A^{\\top}b$ with $A^{\\top}A=\\begin{bmatrix}3&3\\\\3&5\\end{bmatrix}$, $A^{\\top}b=\\begin{bmatrix}5\\\\6\\end{bmatrix}$. Solve: $3x+3y=5$ and $3x+5y=6$ ⇒ $2y=1$ ⇒ $y=1/2$, then $3x=5-3/2=7/2$ ⇒ $x=7/6$. So $\\hat{x}=\\begin{bmatrix}7/6\\\\1/2\\end{bmatrix}$.\n\nExample 4 — $QQ^{\\top}$ projection:\n$Q$ with columns $u,v$ from Example 1: $QQ^{\\top} = I$ in $\\mathbb{R}^2$ (full basis) so proj of any $b$ is $b$. If only first column, $QQ^{\\top} = uu^{\\top}$ projects onto that axis.",
+        interview_tips="1. Orthogonal ⇒ independent (for nonzero vectors) — useful for quick arguments.\n2. Write the geometric condition $(b-Ax) \\perp \\mathrm{col}(A)$ to derive $A^{\\top}(b-Ax)=0$.\n3. Prefer QR intuition over memorizing normal equations alone.\n4. Orthogonal matrices preserve norms and angles — mention when discussing stability / rotations.\n5. SVD (light): $A = U\\Sigma V^{\\top}$ rotates, scales axes, rotates again — defer deep SVD proofs unless asked.",
+        prerequisites="Vectors & Matrices",
     ),
     "derivatives-gradients": ConceptSeed(
-        slug='derivatives-gradients',
-        name='Derivatives & Gradients',
-        topic_slug='derivatives-gradients',
+        slug="derivatives-gradients",
+        name="Derivatives & Gradients",
+        topic_slug="derivatives-gradients",
         definition="The derivative $f'(x)$ is the best linear approximation to how $f$ changes near $x$. In several variables, the gradient $\\nabla f$ is the vector of partial derivatives — direction of steepest ascent, and $\\nabla f \\cdot v$ is the directional derivative. The Hessian $H = D^2 f$ is the matrix of second partials. Chain rule is the interview workhorse for compositions and matrix calculus lite.",
         formula="1D: $f(x+h) \\approx f(x) + f'(x)h$\nGradient: $\\nabla f = (\\partial f/\\partial x_1, \\ldots, \\partial f/\\partial x_n)$\nDirectional derivative: $D_v f = \\nabla f \\cdot v$\nChain rule: $\\frac{d}{dt} f(g(t)) = \\nabla f(g(t)) \\cdot g'(t)$\nHessian: $H_{ij} = \\partial^2 f/(\\partial x_i \\partial x_j)$ · symmetric when mixed partials equal\nQuadratic: $f(x)=\\tfrac{1}{2}x^{\\top}Ax+b^{\\top}x \\Rightarrow \\nabla f = \\tfrac{1}{2}(A+A^{\\top})x+b$ ($A$ if $A$ symmetric)",
         intuition='Derivative = local linear map. Gradient points uphill and is orthogonal to level sets $\\{f=c\\}$. Hessian describes curvature — positive definite Hessian means locally bowl-shaped (local minimum). Most optimization first-order conditions are "gradient equals zero" plus a Hessian test.',
         worked_example="Example 1 — 1D product/chain:\n$f(x)=x^2 \\sin x$ ⇒ $f' = 2x \\sin x + x^2 \\cos x$.\n\nExample 2 — gradient:\n$f(x,y)=x^2 y + e^{y}$ ⇒ $\\nabla f = (2xy,\\, x^2 + e^{y})$. At $(1,0)$: $\\nabla f=(0,2)$.\n\nExample 3 — directional derivative:\nSame $f$ at $(1,0)$, unit direction $v=(1/\\sqrt{2},1/\\sqrt{2})$: $D_v f = \\nabla f\\cdot v = 2/\\sqrt{2} = \\sqrt{2}$.\n\nExample 4 — Hessian / critical point:\n$f(x,y)=x^2+y^2$ ⇒ $\\nabla f=(2x,2y)=0$ at origin, $H=\\mathrm{diag}(2,2)$ SPD ⇒ local (global) min.\n\nExample 5 — chain rule path:\n$f(x,y)=x^2+y^2$, $(x,y)=(t,t^2)$ ⇒ $g(t)=t^2+t^4$, $g'=2t+4t^3 = \\nabla f\\cdot(1,2t)$.",
         interview_tips='1. State what is scalar vs vector vs matrix before differentiating.\n2. For $\\nabla(x^{\\top}Ax)$, symmetrize $A$ first.\n3. Level set $\\Leftrightarrow$ gradient perpendicular — useful geometry check.\n4. Critical points: $\\nabla f=0$, then use Hessian eigenvalues / PD test.\n5. Write chain rule as "outer gradient times inner Jacobian" for compositions.',
-        prerequisites='Vectors & Matrices (helpful for multivariable)',
+        prerequisites="Vectors & Matrices (helpful for multivariable)",
     ),
     "taylor-expansions": ConceptSeed(
-        slug='taylor-expansions',
-        name='Taylor Expansions',
-        topic_slug='taylor-expansions',
-        definition='Taylor expansion approximates a smooth function locally by a polynomial built from its derivatives at a point. First order is the tangent linearization; second order adds Hessian curvature. In interviews this is how you approximate returns, option payoffs, logs, exponentials, and objective functions near a known point.',
+        slug="taylor-expansions",
+        name="Taylor Expansions",
+        topic_slug="taylor-expansions",
+        definition="Taylor expansion approximates a smooth function locally by a polynomial built from its derivatives at a point. First order is the tangent linearization; second order adds Hessian curvature. In interviews this is how you approximate returns, option payoffs, logs, exponentials, and objective functions near a known point.",
         formula="1D: $f(x+h) = f(x) + f'(x)h + \\tfrac{1}{2}f''(x)h^2 + \\cdots + R$\nMultivariable: $f(x+h) \\approx f(x) + \\nabla f(x)^{\\top}h + \\tfrac{1}{2} h^{\\top} H(x) h$\nCommon: $e^h \\approx 1+h+\\tfrac{1}{2}h^2$ · $\\log(1+h) \\approx h-\\tfrac{1}{2}h^2$ · $(1+h)^a \\approx 1+ah$\n$\\sin h \\approx h-h^3/6$ · $\\cos h \\approx 1-\\tfrac{1}{2}h^2$ · $1/(1-h) \\approx 1+h+h^2$ ($|h|<1$)",
         intuition="Near a point, smooth functions look like their best polynomial fit. First-order ignores curvature; second-order is the workhorse for local min/max and risk approximations. Always track the order of the remainder — interviews care whether you're $O(h)$ or $O(h^2)$.",
-        worked_example='Example 1 — log return approx:\n$\\log(1+r) \\approx r - \\tfrac{1}{2}r^2$. For $r=0.01$: $\\log(1.01)\\approx 0.00995$ vs $0.01 - 0.00005 = 0.00995$.\n\nExample 2 — exp:\n$e^{0.1} \\approx 1 + 0.1 + 0.005 = 1.105$ (true $\\approx 1.10517$).\n\nExample 3 — multivariable second order:\n$f(x,y)=e^{x}\\cos y$ at $(0,0)$: $f=1$, $\\nabla f=(1,0)$, $H=\\begin{bmatrix}1&0\\\\0&-1\\end{bmatrix}$. $f(h,k)\\approx 1 + h + \\tfrac{1}{2}(h^2 - k^2)$.\n\nExample 4 — binomial / power:\n$\\sqrt{1+h} \\approx 1 + \\tfrac{1}{2}h - \\tfrac{1}{8}h^2$. For $h=0.21$: approx $1.105$ vs $\\sqrt{1.21}=1.1$ (first order $1.105$ already close; second order $1.105-0.0055=1.0995$).',
+        worked_example="Example 1 — log return approx:\n$\\log(1+r) \\approx r - \\tfrac{1}{2}r^2$. For $r=0.01$: $\\log(1.01)\\approx 0.00995$ vs $0.01 - 0.00005 = 0.00995$.\n\nExample 2 — exp:\n$e^{0.1} \\approx 1 + 0.1 + 0.005 = 1.105$ (true $\\approx 1.10517$).\n\nExample 3 — multivariable second order:\n$f(x,y)=e^{x}\\cos y$ at $(0,0)$: $f=1$, $\\nabla f=(1,0)$, $H=\\begin{bmatrix}1&0\\\\0&-1\\end{bmatrix}$. $f(h,k)\\approx 1 + h + \\tfrac{1}{2}(h^2 - k^2)$.\n\nExample 4 — binomial / power:\n$\\sqrt{1+h} \\approx 1 + \\tfrac{1}{2}h - \\tfrac{1}{8}h^2$. For $h=0.21$: approx $1.105$ vs $\\sqrt{1.21}=1.1$ (first order $1.105$ already close; second order $1.105-0.0055=1.0995$).",
         interview_tips="1. Say the expansion point and the order you keep.\n2. Memorize $e$, $\\log$, $(1+h)^a$, $\\sin/\\cos$ to second order — they appear constantly.\n3. For multivariate, write gradient term + Hessian quadratic form explicitly.\n4. Check a numeric plug-in for small $h$ when time allows.\n5. Don't use small-$h$ expansions for $h=O(1)$ without commenting on error.",
-        prerequisites='Derivatives & Gradients',
+        prerequisites="Derivatives & Gradients",
     ),
     "math-optimization": ConceptSeed(
-        slug='math-optimization',
-        name='Convexity & Unconstrained Optimization',
-        topic_slug='math-optimization',
+        slug="math-optimization",
+        name="Convexity & Unconstrained Optimization",
+        topic_slug="math-optimization",
         definition="Unconstrained optimization seeks min/max of $f$ over all of $\\mathbb{R}^n$. First-order necessary condition: $\\nabla f(x^*)=0$. Second-order: Hessian PD ⇒ local min. Convexity upgrades local to global: a convex function's any local minimum is global, and $\\nabla f=0$ is enough. Interview focus: recognize convex structure, write FOCs, and test Hessians — not run heavy solvers.",
-        formula='FOC: $\\nabla f(x^*) = 0$ · SOC min: $H(x^*) \\succ 0$ (PD) · max: $H \\prec 0$\nConvex set: segment between points stays in set\nConvex $f$: $f(tx+(1-t)y) \\le t f(x)+(1-t)f(y)$\nFor smooth $f$: convex $\\iff H \\succeq 0$ (PSD) everywhere\nGradient descent intuition: $x \\leftarrow x - \\eta \\nabla f(x)$',
+        formula="FOC: $\\nabla f(x^*) = 0$ · SOC min: $H(x^*) \\succ 0$ (PD) · max: $H \\prec 0$\nConvex set: segment between points stays in set\nConvex $f$: $f(tx+(1-t)y) \\le t f(x)+(1-t)f(y)$\nFor smooth $f$: convex $\\iff H \\succeq 0$ (PSD) everywhere\nGradient descent intuition: $x \\leftarrow x - \\eta \\nabla f(x)$",
         intuition="Convex bowls have one valley — any critical point is a global min. Nonconvex landscapes can have many traps; FOC alone isn't enough. Level sets of convex functions are convex. In quant interviews, mean-variance style objectives and least squares are the usual convex examples.",
         worked_example="Example 1 — 1D:\n$f(x)=x^2-4x+1$ ⇒ $f'=2x-4=0$ ⇒ $x=2$, $f''=2>0$ ⇒ global min (convex).\n\nExample 2 — quadratic:\n$f(x)=\\tfrac{1}{2}x^{\\top}Qx - b^{\\top}x$ with $Q$ SPD. $\\nabla f=Qx-b=0$ ⇒ $x^*=Q^{-1}b$. $H=Q\\succ 0$ ⇒ unique global min.\n\nExample 3 — least squares is convex:\n$f(x)=\\|Ax-b\\|^2 = x^{\\top}(A^{\\top}A)x - 2(A^{\\top}b)^{\\top}x + \\|b\\|^2$. $A^{\\top}A$ is PSD ⇒ $f$ convex. FOC recovers normal equations $A^{\\top}A x = A^{\\top}b$.\n\nExample 4 — nonconvex trap:\n$f(x)=x^3/3 - x$ ⇒ $f'=x^2-1=0$ at $\\pm 1$. $f''(1)=2>0$ local min; $f''(-1)=-2<0$ local max. No global min ($f\\to-\\infty$ as $x\\to-\\infty$).",
         interview_tips='1. Always state FOC then SOC / convexity argument for global claims.\n2. "Quadratic with SPD Hessian" ⇒ unique global min — say it.\n3. Convexity is preserved by nonnegative cones of convex functions and by affine composition $f(Ax+b)$.\n4. Distinguish convex set vs convex function if the interviewer mixes terms.\n5. Gradient descent: small enough step, convex smooth ⇒ converges to the min.',
-        prerequisites='Derivatives & Gradients',
+        prerequisites="Derivatives & Gradients",
     ),
     "lagrange-multipliers": ConceptSeed(
-        slug='lagrange-multipliers',
-        name='Lagrange Multipliers',
-        topic_slug='lagrange-multipliers',
-        definition='Lagrange multipliers solve equality-constrained optimization: $\\min f(x)$ subject to $g(x)=0$ (or several equalities). At an optimum, $\\nabla f$ is normal to the constraint surface — parallel to $\\nabla g$ — so $\\nabla f = \\lambda \\nabla g$. The multiplier $\\lambda$ measures sensitivity of the optimal value to relaxing the constraint. MVP interviews: equalities only (full KKT / inequalities later if needed).',
-        formula='Problem: $\\min f(x)$ s.t. $g(x)=0$\n$L(x,\\lambda) = f(x) - \\lambda g(x)$  (sign convention varies)\nStationarity: $\\nabla_x L = \\nabla f - \\lambda \\nabla g = 0$ · primal feasibility: $g(x)=0$\nSeveral constraints $g_i=0$: $\\nabla f = \\sum_i \\lambda_i \\nabla g_i$\nEnvelope: $d/dc$ of optimal value with $g(x)=c$ relates to $\\lambda$',
+        slug="lagrange-multipliers",
+        name="Lagrange Multipliers",
+        topic_slug="lagrange-multipliers",
+        definition="Lagrange multipliers solve equality-constrained optimization: $\\min f(x)$ subject to $g(x)=0$ (or several equalities). At an optimum, $\\nabla f$ is normal to the constraint surface — parallel to $\\nabla g$ — so $\\nabla f = \\lambda \\nabla g$. The multiplier $\\lambda$ measures sensitivity of the optimal value to relaxing the constraint. MVP interviews: equalities only (full KKT / inequalities later if needed).",
+        formula="Problem: $\\min f(x)$ s.t. $g(x)=0$\n$L(x,\\lambda) = f(x) - \\lambda g(x)$  (sign convention varies)\nStationarity: $\\nabla_x L = \\nabla f - \\lambda \\nabla g = 0$ · primal feasibility: $g(x)=0$\nSeveral constraints $g_i=0$: $\\nabla f = \\sum_i \\lambda_i \\nabla g_i$\nEnvelope: $d/dc$ of optimal value with $g(x)=c$ relates to $\\lambda$",
         intuition='On the constraint surface you can only move tangent to it. For $f$ to be stationary there, its gradient can\'t have a tangential component — so $\\nabla f$ must align with the constraint gradients. $\\lambda$ is the "price" of the constraint.',
-        worked_example='Example 1 — classic:\n$\\max f=xy$ s.t. $x+y=1$. $\\nabla f=(y,x)$, $\\nabla g=(1,1)$ ⇒ $(y,x)=\\lambda(1,1)$ and $x+y=1$. So $x=y=\\lambda$ ⇒ $x=y=1/2$, $f=1/4$.\n\nExample 2 — quadratic on a line:\n$\\min x^2+y^2$ s.t. $x+2y=1$. $\\nabla f=(2x,2y)=\\lambda(1,2)$ ⇒ $2x=\\lambda$, $2y=2\\lambda$ ⇒ $y=\\lambda$, $x=\\lambda/2$. Constraint: $\\lambda/2+2\\lambda=1$ ⇒ $(5/2)\\lambda=1$ ⇒ $\\lambda=2/5$, $x=1/5$, $y=2/5$ (geometry: projection of the origin onto the line).\n\nExample 3 — two variables one constraint check FOC count:\n$n=2$, one equality ⇒ system has 3 equations (2 stationarity + 1 constraint) for $(x,y,\\lambda)$.',
-        interview_tips='1. Write $\\mathcal{L}$, then $\\nabla_x \\mathcal{L}=0$ and constraints — don\'t skip feasibility.\n2. Count equations vs unknowns to sanity-check.\n3. Interpret $\\lambda$ as shadow price if asked "what if the budget relaxes."\n4. For inequalities you\'d need KKT; say so if the constraint is $\\geq$.\n5. Geometry line: $\\nabla f \\parallel \\nabla g$ at the contact point of level set and constraint.',
-        prerequisites='Convexity & Unconstrained Optimization, Derivatives & Gradients',
+        worked_example="Example 1 — classic:\n$\\max f=xy$ s.t. $x+y=1$. $\\nabla f=(y,x)$, $\\nabla g=(1,1)$ ⇒ $(y,x)=\\lambda(1,1)$ and $x+y=1$. So $x=y=\\lambda$ ⇒ $x=y=1/2$, $f=1/4$.\n\nExample 2 — quadratic on a line:\n$\\min x^2+y^2$ s.t. $x+2y=1$. $\\nabla f=(2x,2y)=\\lambda(1,2)$ ⇒ $2x=\\lambda$, $2y=2\\lambda$ ⇒ $y=\\lambda$, $x=\\lambda/2$. Constraint: $\\lambda/2+2\\lambda=1$ ⇒ $(5/2)\\lambda=1$ ⇒ $\\lambda=2/5$, $x=1/5$, $y=2/5$ (geometry: projection of the origin onto the line).\n\nExample 3 — two variables one constraint check FOC count:\n$n=2$, one equality ⇒ system has 3 equations (2 stationarity + 1 constraint) for $(x,y,\\lambda)$.",
+        interview_tips="1. Write $\\mathcal{L}$, then $\\nabla_x \\mathcal{L}=0$ and constraints — don't skip feasibility.\n2. Count equations vs unknowns to sanity-check.\n3. Interpret $\\lambda$ as shadow price if asked \"what if the budget relaxes.\"\n4. For inequalities you'd need KKT; say so if the constraint is $\\geq$.\n5. Geometry line: $\\nabla f \\parallel \\nabla g$ at the contact point of level set and constraint.",
+        prerequisites="Convexity & Unconstrained Optimization, Derivatives & Gradients",
     ),
     "differential-equations": ConceptSeed(
-        slug='differential-equations',
-        name='Differential Equations',
-        topic_slug='differential-equations',
-        definition='An ordinary differential equation (ODE) relates a function to its derivatives. Interview focus: recognize separable and linear first-order ODEs, solve constant-coefficient linear ODEs, and read growth/decay / oscillation from the characteristic root. PDEs and stochastic DEs belong later (Quant Research / Finance) — keep this page ODE-first.',
+        slug="differential-equations",
+        name="Differential Equations",
+        topic_slug="differential-equations",
+        definition="An ordinary differential equation (ODE) relates a function to its derivatives. Interview focus: recognize separable and linear first-order ODEs, solve constant-coefficient linear ODEs, and read growth/decay / oscillation from the characteristic root. PDEs and stochastic DEs belong later (Quant Research / Finance) — keep this page ODE-first.",
         formula="Separable: $dy/dx = g(x)h(y) \\Rightarrow \\int dy/h(y) = \\int g(x)\\,dx$\nLinear 1st order: $y' + p(x)y = q(x)$ · integrating factor $\\mu=\\exp(\\int p\\,dx)$\nConst coeff: $y''+ay'+by=0$ · try $e^{rt} \\Rightarrow r^2+ar+b=0$\nExponential growth: $y' = ky \\Rightarrow y = y_0 e^{kt}$\nSystem form: $x' = Ax$ · solutions mix $e^{\\lambda t}$ along eigenvectors of $A$",
-        intuition='ODEs describe how a state evolves given a local rule. Linear constant-coefficient equations are solved by exponentials because the derivative of $e^{rt}$ is a multiple of itself — same eigen-idea as $Av=\\lambda v$. Stability: $\\mathrm{Re}(r)<0$ ⇒ decay.',
+        intuition="ODEs describe how a state evolves given a local rule. Linear constant-coefficient equations are solved by exponentials because the derivative of $e^{rt}$ is a multiple of itself — same eigen-idea as $Av=\\lambda v$. Stability: $\\mathrm{Re}(r)<0$ ⇒ decay.",
         worked_example="Example 1 — growth/decay:\n$y' = -3y$, $y(0)=5$ ⇒ $y=5e^{-3t}$.\n\nExample 2 — separable:\n$dy/dx = xy$, $y(0)=2$ ⇒ $\\int dy/y = \\int x\\, dx$ ⇒ $\\log|y| = \\tfrac{1}{2}x^2+C$ ⇒ $y=2e^{x^2/2}$.\n\nExample 3 — second order:\n$y''-y'-2y=0$ ⇒ $(r-2)(r+1)=0$ ⇒ $r=2,-1$. General: $y=Ae^{2t}+Be^{-t}$.\n\nExample 4 — linear system link:\n$x' = \\begin{bmatrix}0&1\\\\-2&-3\\end{bmatrix}x$ has characteristic poly of the matrix; modes $e^{\\lambda t}v$ with $Av=\\lambda v$ — same eigenvalues as the matrix $A$.",
         interview_tips="1. Identify type: separable, linear first-order, const-coeff, or system.\n2. For const-coeff, write the characteristic polynomial immediately.\n3. Apply initial conditions only after the general solution.\n4. Stability $\\Leftrightarrow$ negative real parts of roots / eigenvalues.\n5. If they ask heat/Black-Scholes PDE, say that's a different toolbox — don't force ODE slogans.",
-        prerequisites='Derivatives & Gradients',
+        prerequisites="Derivatives & Gradients",
     ),
     "estimation": ConceptSeed(
         slug="estimation",
@@ -309,7 +309,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
             "A confidence interval is a data-dependent range $[L,U]$ designed so that, under repeated "
             "sampling, it covers the true parameter $\\theta$ with nominal rate $1-\\alpha$ "
             "(e.g. 95%). The random object is the interval, not $\\theta$. Interviews punish "
-            "\"$\\theta$ is random in $[L,U]$ with probability 95%\" — $\\theta$ is fixed; coverage "
+            '"$\\theta$ is random in $[L,U]$ with probability 95%" — $\\theta$ is fixed; coverage '
             "is about the procedure."
         ),
         formula=(
@@ -331,7 +331,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
             "Solve: $z_{0.975}\\approx 1.96$, SE $=1/10=0.1$. "
             "Interval $2.0 \\pm 1.96\\cdot 0.1 = [1.804, 2.196]$.\n\n"
             "Interpretation: the method covers $\\mu$ about 95% of the time in repeated samples — "
-            "not \"$\\mu$ is random.\""
+            'not "$\\mu$ is random."'
         ),
         interview_tips=(
             "1. Say what is random (the interval) vs fixed ($\\theta$).\n"
@@ -365,8 +365,8 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         ),
         intuition=(
             "You design a gate that rarely opens under $H_0$ (level $\\alpha$). Seeing a small "
-            "$p$-value means the data are unusual under $H_0$ — not that $H_1$ is \"true with "
-            "probability $1-p$.\" Power rises with $n$, effect size, and $\\alpha$. Failing to "
+            '$p$-value means the data are unusual under $H_0$ — not that $H_1$ is "true with '
+            'probability $1-p$." Power rises with $n$, effect size, and $\\alpha$. Failing to '
             "reject is not the same as proving $H_0$."
         ),
         worked_example=(
@@ -379,7 +379,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         interview_tips=(
             "1. Write $H_0$, $H_1$, and whether the test is one- or two-sided before computing.\n"
             "2. Define Type I / II in one sentence each if asked.\n"
-            "3. \"$p=0.03$\" means evidence against $H_0$, not \"$H_0$ has 3% probability.\"\n"
+            '3. "$p=0.03$" means evidence against $H_0$, not "$H_0$ has 3% probability."\n'
             "4. Mention power when discussing sample size or weak alternatives.\n"
             "5. Link to CIs: values outside a 95% CI are rejected by the dual level-5% test."
         ),
@@ -393,7 +393,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
             "Given a parametric model with density/PMF $f(x\\mid\\theta)$, the likelihood of IID "
             "data is $L(\\theta)=\\prod_i f(X_i\\mid\\theta)$. The maximum likelihood estimator (MLE) "
             "maximizes $L$ (usually via the log-likelihood $\\ell=\\log L$). MLE is the workhorse "
-            "\"fit the model that makes the data most probable\" — interviews want setup, score "
+            '"fit the model that makes the data most probable" — interviews want setup, score '
             "equation, and common closed forms (Bernoulli, Normal mean)."
         ),
         formula=(
@@ -446,8 +446,8 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         ),
         intuition=(
             "OLS draws the line (hyperplane) that makes vertical errors as small as possible in "
-            "$L^2$. Coefficients answer \"holding other features fixed, how does $Y$ change with "
-            "this $X$?\" — causal language needs extra assumptions. $R^2$ is in-sample fit, not "
+            '$L^2$. Coefficients answer "holding other features fixed, how does $Y$ change with '
+            'this $X$?" — causal language needs extra assumptions. $R^2$ is in-sample fit, not '
             "proof of a good model."
         ),
         worked_example=(
@@ -459,7 +459,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
             "Fitted values $4/3$, $7/3$, $10/3$; residuals sum to $0$."
         ),
         interview_tips=(
-            "1. Say \"minimize $\\|y-X\\beta\\|^2$\" / normal equations before formulas.\n"
+            '1. Say "minimize $\\|y-X\\beta\\|^2$" / normal equations before formulas.\n'
             "2. Interpret $\\hat{\\beta}_1$ as a slope / partial effect, not automatically causal.\n"
             "3. Mention residual ⊥ columns ($X^{\\top}e=0$) as a geometry check.\n"
             "4. $R^2$ high $\\neq$ model is true; $R^2$ low $\\neq$ useless for prediction.\n"
@@ -503,7 +503,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
             "training error but huge variance on a new draw of noise."
         ),
         interview_tips=(
-            "1. Write the three-term decomposition when asked \"why overfit hurts.\"\n"
+            '1. Write the three-term decomposition when asked "why overfit hurts."\n'
             "2. Connect to estimation: MSE = variance + bias² is the same story.\n"
             "3. Regularization / fewer features / more data → usually lower variance.\n"
             "4. Training error alone cannot diagnose the tradeoff — mention held-out error.\n"
@@ -511,7 +511,6 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         ),
         prerequisites="Point Estimation, Linear Regression (OLS)",
     ),
-
     "derivatives": ConceptSeed(
         slug="derivatives",
         name="Derivatives Payoffs & Parity",
@@ -679,7 +678,7 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         intuition=(
             "You get paid for risk you cannot diversify. High beta ⇒ higher required return in "
             "the model. Empirical critiques (size, value, momentum) matter in interviews as "
-            "\"where CAPM is incomplete,\" not as a reason to forget the formula."
+            '"where CAPM is incomplete," not as a reason to forget the formula.'
         ),
         worked_example=(
             "Q: $r_f=2\\%$, $E[R_m]=8\\%$, $\\beta=1.5$. What is CAPM $E[R_i]$?\n\n"
@@ -762,13 +761,12 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         interview_tips=(
             "1. Define bid/ask/mid and who is maker vs taker.\n"
             "2. Name two spread components: inventory and adverse selection.\n"
-            "3. \"Toxic flow\" = flow that predicts future mid moves against the LP.\n"
+            '3. "Toxic flow" = flow that predicts future mid moves against the LP.\n'
             "4. Separate latency / queue priority talk from economics unless asked.\n"
             "5. Tie back to derivatives only if discussing hedging in the underlying market."
         ),
         prerequisites="Derivatives Payoffs & Parity (markets context)",
     ),
-
     "python": ConceptSeed(
         slug="python",
         name="Python for Quant",
@@ -952,94 +950,93 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
         ),
         prerequisites="None (set thinking helps)",
     ),
-
     "two-pointers": ConceptSeed(
-        slug='two-pointers',
-        name='Two Pointers',
-        topic_slug='two-pointers',
-        definition='Two pointers maintain indices that move through a sequence under an invariant — often on a sorted array, a string, or after sorting. Classic uses: pair sums, in-place filters, partitioning, and merging sorted lists. Interview skill: state the invariant and show why each move is safe.',
-        formula='Opposite ends (sorted pair-sum): $O(n)$ after sort, $O(1)$ extra space\nSlow/fast same direction: in-place filter, cycle detection\nUnsorted membership → prefer hash set, not two pointers',
-        intuition='If the space is ordered, each pointer move is forced by a comparison — you avoid nested $O(n^2)$. Sliding window is the contiguous special case of two pointers.',
-        worked_example='Pair sum on a sorted array:\n```python\ndef two_sum_sorted(a: list[int], t: int) -> tuple[int, int] | None:\n    i, j = 0, len(a) - 1\n    while i < j:\n        s = a[i] + a[j]\n        if s == t:\n            return (a[i], a[j])\n        if s < t:\n            i += 1\n        else:\n            j -= 1\n    return None\n# [1,2,4,7,11], t=9 → (2, 7)\n```\n\nIn-place keep evens (slow/fast):\n```python\ndef keep_evens(a: list[int]) -> int:\n    slow = 0\n    for fast in range(len(a)):\n        if a[fast] % 2 == 0:\n            a[slow] = a[fast]\n            slow += 1\n    return slow  # new length\n```',
-        interview_tips='1. Sorted vs unsorted → two pointers vs hash.\n2. Say the invariant out loud before coding.\n3. Dedup: skip equal neighbors when uniqueness matters.\n4. Off-by-one: i < j vs i <= j.\n5. Sliding window = two pointers + a contiguous feasibility constraint.',
-        prerequisites='Core Data Structures (arrays); sorting/complexity helpful',
+        slug="two-pointers",
+        name="Two Pointers",
+        topic_slug="two-pointers",
+        definition="Two pointers maintain indices that move through a sequence under an invariant — often on a sorted array, a string, or after sorting. Classic uses: pair sums, in-place filters, partitioning, and merging sorted lists. Interview skill: state the invariant and show why each move is safe.",
+        formula="Opposite ends (sorted pair-sum): $O(n)$ after sort, $O(1)$ extra space\nSlow/fast same direction: in-place filter, cycle detection\nUnsorted membership → prefer hash set, not two pointers",
+        intuition="If the space is ordered, each pointer move is forced by a comparison — you avoid nested $O(n^2)$. Sliding window is the contiguous special case of two pointers.",
+        worked_example="Pair sum on a sorted array:\n```python\ndef two_sum_sorted(a: list[int], t: int) -> tuple[int, int] | None:\n    i, j = 0, len(a) - 1\n    while i < j:\n        s = a[i] + a[j]\n        if s == t:\n            return (a[i], a[j])\n        if s < t:\n            i += 1\n        else:\n            j -= 1\n    return None\n# [1,2,4,7,11], t=9 → (2, 7)\n```\n\nIn-place keep evens (slow/fast):\n```python\ndef keep_evens(a: list[int]) -> int:\n    slow = 0\n    for fast in range(len(a)):\n        if a[fast] % 2 == 0:\n            a[slow] = a[fast]\n            slow += 1\n    return slow  # new length\n```",
+        interview_tips="1. Sorted vs unsorted → two pointers vs hash.\n2. Say the invariant out loud before coding.\n3. Dedup: skip equal neighbors when uniqueness matters.\n4. Off-by-one: i < j vs i <= j.\n5. Sliding window = two pointers + a contiguous feasibility constraint.",
+        prerequisites="Core Data Structures (arrays); sorting/complexity helpful",
     ),
     "sliding-window": ConceptSeed(
-        slug='sliding-window',
-        name='Sliding Window',
-        topic_slug='sliding-window',
-        definition='A sliding window maintains a contiguous subarray/substring $[L,R]$ while expanding and shrinking to satisfy a constraint (sum, distinct count, character budget). Amortized $O(n)$ when each index enters/leaves at most once.',
-        formula='Fixed length $k$: one pass, maintain running sum — $O(n)$\nVariable length: expand $R$, shrink $L$ while invalid — amortized $O(n)$\nNeed best contiguous segment under a constraint ⇒ think window',
-        intuition='The window is a two-pointer pair locked to contiguity. Grow to include candidates; shrink from the left when the constraint breaks.',
+        slug="sliding-window",
+        name="Sliding Window",
+        topic_slug="sliding-window",
+        definition="A sliding window maintains a contiguous subarray/substring $[L,R]$ while expanding and shrinking to satisfy a constraint (sum, distinct count, character budget). Amortized $O(n)$ when each index enters/leaves at most once.",
+        formula="Fixed length $k$: one pass, maintain running sum — $O(n)$\nVariable length: expand $R$, shrink $L$ while invalid — amortized $O(n)$\nNeed best contiguous segment under a constraint ⇒ think window",
+        intuition="The window is a two-pointer pair locked to contiguity. Grow to include candidates; shrink from the left when the constraint breaks.",
         worked_example="Longest substring with at most k distinct characters:\n```python\nfrom collections import defaultdict\n\ndef longest_at_most_k(s: str, k: int) -> int:\n    count: dict[str, int] = defaultdict(int)\n    left = best = 0\n    for right, ch in enumerate(s):\n        count[ch] += 1\n        while len(count) > k:\n            count[s[left]] -= 1\n            if count[s[left]] == 0:\n                del count[s[left]]\n            left += 1\n        best = max(best, right - left + 1)\n    return best\n# s='araaci', k=2 → 4 ('raac')\n```",
         interview_tips="1. Name the constraint that makes a window valid/invalid.\n2. Argue each index moves at most once ⇒ $O(n)$.\n3. Fixed $k$ vs variable length — pick the right variant.\n4. Hash map / counter for frequencies inside the window.\n5. Related: prefix sums when the metric is range-sum, not 'shrink when invalid'.",
-        prerequisites='Two Pointers',
+        prerequisites="Two Pointers",
     ),
     "prefix-sum": ConceptSeed(
-        slug='prefix-sum',
-        name='Prefix Sum',
-        topic_slug='prefix-sum',
-        definition='A prefix sum array precomputes running totals so any contiguous range sum is $O(1)$ after $O(n)$ setup. Variants: prefix XOR, 2D prefixes, and difference arrays for range updates.',
-        formula='$\\mathrm{pref}[0]=0$, $\\mathrm{pref}[i]=a_0+\\cdots+a_{i-1}$\nSum $a[L..R] = \\mathrm{pref}[R+1]-\\mathrm{pref}[L]$\nSubarray sum $=k$: hashmap of prefix frequencies — $O(n)$',
+        slug="prefix-sum",
+        name="Prefix Sum",
+        topic_slug="prefix-sum",
+        definition="A prefix sum array precomputes running totals so any contiguous range sum is $O(1)$ after $O(n)$ setup. Variants: prefix XOR, 2D prefixes, and difference arrays for range updates.",
+        formula="$\\mathrm{pref}[0]=0$, $\\mathrm{pref}[i]=a_0+\\cdots+a_{i-1}$\nSum $a[L..R] = \\mathrm{pref}[R+1]-\\mathrm{pref}[L]$\nSubarray sum $=k$: hashmap of prefix frequencies — $O(n)$",
         intuition="Turning range queries into two prefix lookups is the whole trick. For 'count subarrays with sum $k$', store how often each prefix appeared.",
-        worked_example='Range sum after build:\n```python\ndef build_pref(a: list[int]) -> list[int]:\n    pref = [0] * (len(a) + 1)\n    for i, x in enumerate(a):\n        pref[i + 1] = pref[i] + x\n    return pref\n\ndef range_sum(pref: list[int], L: int, R: int) -> int:\n    return pref[R + 1] - pref[L]\n# a=[2,3,1,4], sum[1..2] = pref[3]-pref[1] = 6-2 = 4\n```\n\nCount subarrays with sum k:\n```python\nfrom collections import defaultdict\n\ndef count_sum_k(a: list[int], k: int) -> int:\n    seen: dict[int, int] = defaultdict(int)\n    seen[0] = 1\n    pref = ans = 0\n    for x in a:\n        pref += x\n        ans += seen[pref - k]\n        seen[pref] += 1\n    return ans\n```',
+        worked_example="Range sum after build:\n```python\ndef build_pref(a: list[int]) -> list[int]:\n    pref = [0] * (len(a) + 1)\n    for i, x in enumerate(a):\n        pref[i + 1] = pref[i] + x\n    return pref\n\ndef range_sum(pref: list[int], L: int, R: int) -> int:\n    return pref[R + 1] - pref[L]\n# a=[2,3,1,4], sum[1..2] = pref[3]-pref[1] = 6-2 = 4\n```\n\nCount subarrays with sum k:\n```python\nfrom collections import defaultdict\n\ndef count_sum_k(a: list[int], k: int) -> int:\n    seen: dict[int, int] = defaultdict(int)\n    seen[0] = 1\n    pref = ans = 0\n    for x in a:\n        pref += x\n        ans += seen[pref - k]\n        seen[pref] += 1\n    return ans\n```",
         interview_tips="1. Draw pref with a leading 0 to simplify indices.\n2. Off-by-one: inclusive $[L,R]$ ↔ pref[R+1]-pref[L].\n3. Hashmap of prefixes for subarray-sum counts.\n4. Difference array for many range increments.\n5. Don't use a window if you only need arbitrary range sums.",
-        prerequisites='Two Pointers / arrays; Complexity & Core Algorithms helpful',
+        prerequisites="Two Pointers / arrays; Complexity & Core Algorithms helpful",
     ),
     "binary-search": ConceptSeed(
-        slug='binary-search',
-        name='Binary Search',
-        topic_slug='binary-search',
-        definition='Binary search finds a boundary in a monotonic search space: sorted arrays, or a yes/no predicate that flips from false to true (minimize feasible capacity, first true index, etc.). Interview skill: define the predicate and the invariant on $[lo, hi)$.',
-        formula='Sorted array lookup: $O(\\log n)$\nAnswer-space search: lo/hi on the answer; check(mid) feasible?\nInvariant: answer lies in the active interval; shrink half each step',
+        slug="binary-search",
+        name="Binary Search",
+        topic_slug="binary-search",
+        definition="Binary search finds a boundary in a monotonic search space: sorted arrays, or a yes/no predicate that flips from false to true (minimize feasible capacity, first true index, etc.). Interview skill: define the predicate and the invariant on $[lo, hi)$.",
+        formula="Sorted array lookup: $O(\\log n)$\nAnswer-space search: lo/hi on the answer; check(mid) feasible?\nInvariant: answer lies in the active interval; shrink half each step",
         intuition="You're not always 'finding a value in an array' — often you're binary-searching the answer while a linear check validates mid.",
-        worked_example='Lower bound (first index with a[i] >= x):\n```python\ndef lower_bound(a: list[int], x: int) -> int:\n    lo, hi = 0, len(a)  # [lo, hi)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] >= x:\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo\n# a=[1,3,3,7], x=3 → 1\n```\n\nMinimize capacity: ship packages in D days (sketch):\n```python\ndef can_ship(a, cap, D) -> bool:\n    days = cur = 1\n    for w in a:\n        if cur + w > cap:\n            days += 1\n            cur = 0\n        cur += w\n    return days <= D\n# binary search cap in [max(a), sum(a)]\n```',
-        interview_tips='1. Write the monotonic predicate in one sentence.\n2. Prefer half-open $[lo, hi)$ to reduce off-by-ones.\n3. mid = lo + (hi-lo)//2 if overflow worries you (C++ int).\n4. Duplicate values: specify first / last occurrence.\n5. If not monotonic, binary search is wrong — say so.',
-        prerequisites='Complexity & Core Algorithms',
+        worked_example="Lower bound (first index with a[i] >= x):\n```python\ndef lower_bound(a: list[int], x: int) -> int:\n    lo, hi = 0, len(a)  # [lo, hi)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if a[mid] >= x:\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo\n# a=[1,3,3,7], x=3 → 1\n```\n\nMinimize capacity: ship packages in D days (sketch):\n```python\ndef can_ship(a, cap, D) -> bool:\n    days = cur = 1\n    for w in a:\n        if cur + w > cap:\n            days += 1\n            cur = 0\n        cur += w\n    return days <= D\n# binary search cap in [max(a), sum(a)]\n```",
+        interview_tips="1. Write the monotonic predicate in one sentence.\n2. Prefer half-open $[lo, hi)$ to reduce off-by-ones.\n3. mid = lo + (hi-lo)//2 if overflow worries you (C++ int).\n4. Duplicate values: specify first / last occurrence.\n5. If not monotonic, binary search is wrong — say so.",
+        prerequisites="Complexity & Core Algorithms",
     ),
     "intervals": ConceptSeed(
-        slug='intervals',
-        name='Intervals',
-        topic_slug='intervals',
-        definition='Interval problems sort by start (or end) then scan once: merge overlaps, insert an interval, or find minimum rooms / arrows. Stack matching for parentheses is a related linear scan — keep merge logic as the core pattern here.',
-        formula='Sort by start: $O(n\\log n)$ then $O(n)$ merge\nOverlap if $next.start \\le cur.end$ (careful with inclusive ends)\nMin meeting rooms: sort starts/ends or use a heap of end times',
-        intuition='Sorting creates order so a single sweep decides merges. When a new interval starts before the current end, they overlap.',
+        slug="intervals",
+        name="Intervals",
+        topic_slug="intervals",
+        definition="Interval problems sort by start (or end) then scan once: merge overlaps, insert an interval, or find minimum rooms / arrows. Stack matching for parentheses is a related linear scan — keep merge logic as the core pattern here.",
+        formula="Sort by start: $O(n\\log n)$ then $O(n)$ merge\nOverlap if $next.start \\le cur.end$ (careful with inclusive ends)\nMin meeting rooms: sort starts/ends or use a heap of end times",
+        intuition="Sorting creates order so a single sweep decides merges. When a new interval starts before the current end, they overlap.",
         worked_example="Merge overlapping intervals:\n```python\ndef merge(intervals: list[list[int]]) -> list[list[int]]:\n    intervals.sort(key=lambda x: x[0])\n    out: list[list[int]] = []\n    for s, e in intervals:\n        if not out or s > out[-1][1]:\n            out.append([s, e])\n        else:\n            out[-1][1] = max(out[-1][1], e)\n    return out\n# [[1,3],[2,6],[8,10]] → [[1,6],[8,10]]\n```\n\nParentheses (stack — related linear scan):\n```python\ndef valid(s: str) -> bool:\n    pairs = {')':'(', ']':'[', '}':'{'}\n    st: list[str] = []\n    for ch in s:\n        if ch in '([{':\n            st.append(ch)\n        elif not st or st.pop() != pairs[ch]:\n            return False\n    return not st\n```",
         interview_tips="1. Sort key: by start for merge; sometimes by end for greedy picks.\n2. Clarify half-open vs closed intervals.\n3. Heap of end times for 'how many overlap now'.\n4. Don't force merge logic onto parentheses — use a stack.\n5. After sort, argue one linear pass is enough.",
-        prerequisites='Two Pointers; sorting',
+        prerequisites="Two Pointers; sorting",
     ),
     "graph-traversal": ConceptSeed(
-        slug='graph-traversal',
-        name='Graph Traversal',
-        topic_slug='graph-traversal',
-        definition='Graph traversal explores nodes via BFS or DFS: grids, adjacency lists, and implicit graphs. BFS gives unweighted shortest paths and level order; DFS fits connectivity, cycle checks, and backtracking. Interview skill: pick BFS vs DFS and track visited.',
-        formula='BFS: queue + visited — unweighted shortest path $O(V+E)$\nDFS: stack/recursion + visited — components, topo (with care)\nGrid: 4- or 8-neighbor edges; mark visited to avoid revisits',
+        slug="graph-traversal",
+        name="Graph Traversal",
+        topic_slug="graph-traversal",
+        definition="Graph traversal explores nodes via BFS or DFS: grids, adjacency lists, and implicit graphs. BFS gives unweighted shortest paths and level order; DFS fits connectivity, cycle checks, and backtracking. Interview skill: pick BFS vs DFS and track visited.",
+        formula="BFS: queue + visited — unweighted shortest path $O(V+E)$\nDFS: stack/recursion + visited — components, topo (with care)\nGrid: 4- or 8-neighbor edges; mark visited to avoid revisits",
         intuition="BFS expands by distance; DFS dives deep. On a grid, 'graph' is just cells with neighbor edges.",
-        worked_example='BFS shortest path in an unweighted grid (4-dir):\n```python\nfrom collections import deque\n\ndef shortest(grid: list[list[int]]) -> int:\n    # 0 free, 1 blocked; start (0,0) to (n-1,m-1)\n    n, m = len(grid), len(grid[0])\n    if grid[0][0] or grid[n-1][m-1]:\n        return -1\n    q = deque([(0, 0, 1)])  # r, c, dist\n    seen = {(0, 0)}\n    while q:\n        r, c, d = q.popleft()\n        if (r, c) == (n - 1, m - 1):\n            return d\n        for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < n and 0 <= nc < m and not grid[nr][nc] and (nr, nc) not in seen:\n                seen.add((nr, nc))\n                q.append((nr, nc, d + 1))\n    return -1\n```',
+        worked_example="BFS shortest path in an unweighted grid (4-dir):\n```python\nfrom collections import deque\n\ndef shortest(grid: list[list[int]]) -> int:\n    # 0 free, 1 blocked; start (0,0) to (n-1,m-1)\n    n, m = len(grid), len(grid[0])\n    if grid[0][0] or grid[n-1][m-1]:\n        return -1\n    q = deque([(0, 0, 1)])  # r, c, dist\n    seen = {(0, 0)}\n    while q:\n        r, c, d = q.popleft()\n        if (r, c) == (n - 1, m - 1):\n            return d\n        for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < n and 0 <= nc < m and not grid[nr][nc] and (nr, nc) not in seen:\n                seen.add((nr, nc))\n                q.append((nr, nc, d + 1))\n    return -1\n```",
         interview_tips="1. BFS for shortest unweighted; DFS for components / search trees.\n2. Always mark visited when enqueue/push (not when pop) to avoid dup work.\n3. State $V$ and $E$ for complexity.\n4. Implicit graphs: don't build adj if a neighbor function suffices.\n5. Directed vs undirected changes cycle/topo rules — clarify.",
-        prerequisites='Core Data Structures (queue/stack)',
+        prerequisites="Core Data Structures (queue/stack)",
     ),
     "dynamic-programming": ConceptSeed(
-        slug='dynamic-programming',
-        name='Dynamic Programming',
-        topic_slug='dynamic-programming',
-        definition='DP solves problems with optimal substructure and overlapping subproblems by storing subanswers. Interview focus: define state, transition, base cases, and iteration order (or memoized recursion) — 1D/2D classics, not exotic DP theory.',
-        formula='Need: optimal substructure + overlapping subproblems\nState → transition → base → order\nTime ≈ (#states)×(work per state); space often reducible',
-        intuition='If recursion recomputes the same subproblems, cache them. If you can order states so prerequisites come first, use a table bottom-up.',
-        worked_example='Climb stairs (1 or 2 steps): ways to reach n:\n```python\ndef climb(n: int) -> int:\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n```\n\n0/1 knapsack (count max value):\n```python\ndef knapsack(w: list[int], v: list[int], W: int) -> int:\n    dp = [0] * (W + 1)\n    for wi, vi in zip(w, v):\n        for cap in range(W, wi - 1, -1):  # backward = 0/1\n            dp[cap] = max(dp[cap], dp[cap - wi] + vi)\n    return dp[W]\n```',
-        interview_tips='1. Speak state meaning in words before code.\n2. Write transition + base cases explicitly.\n3. 0/1 vs unbounded: loop direction on capacity.\n4. Start from recursion + memo if stuck on order.\n5. Complexity: count states × transitions.',
-        prerequisites='Complexity & Core Algorithms; Graph Traversal helpful for DAG DP',
+        slug="dynamic-programming",
+        name="Dynamic Programming",
+        topic_slug="dynamic-programming",
+        definition="DP solves problems with optimal substructure and overlapping subproblems by storing subanswers. Interview focus: define state, transition, base cases, and iteration order (or memoized recursion) — 1D/2D classics, not exotic DP theory.",
+        formula="Need: optimal substructure + overlapping subproblems\nState → transition → base → order\nTime ≈ (#states)×(work per state); space often reducible",
+        intuition="If recursion recomputes the same subproblems, cache them. If you can order states so prerequisites come first, use a table bottom-up.",
+        worked_example="Climb stairs (1 or 2 steps): ways to reach n:\n```python\ndef climb(n: int) -> int:\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n```\n\n0/1 knapsack (count max value):\n```python\ndef knapsack(w: list[int], v: list[int], W: int) -> int:\n    dp = [0] * (W + 1)\n    for wi, vi in zip(w, v):\n        for cap in range(W, wi - 1, -1):  # backward = 0/1\n            dp[cap] = max(dp[cap], dp[cap - wi] + vi)\n    return dp[W]\n```",
+        interview_tips="1. Speak state meaning in words before code.\n2. Write transition + base cases explicitly.\n3. 0/1 vs unbounded: loop direction on capacity.\n4. Start from recursion + memo if stuck on order.\n5. Complexity: count states × transitions.",
+        prerequisites="Complexity & Core Algorithms; Graph Traversal helpful for DAG DP",
     ),
     "greedy": ConceptSeed(
-        slug='greedy',
-        name='Greedy',
-        topic_slug='greedy',
-        definition='A greedy algorithm builds a solution by local choices that never reconsider the past. It works when an exchange argument / greedy choice property holds. Interviews want the choice rule, a correctness sketch, and a counterexample when greedy fails.',
-        formula='Pattern: sort by key → scan once taking feasible picks\nClassic: interval scheduling by end time; Huffman; activity selection\nIf greedy fails, fall back to DP / search',
+        slug="greedy",
+        name="Greedy",
+        topic_slug="greedy",
+        definition="A greedy algorithm builds a solution by local choices that never reconsider the past. It works when an exchange argument / greedy choice property holds. Interviews want the choice rule, a correctness sketch, and a counterexample when greedy fails.",
+        formula="Pattern: sort by key → scan once taking feasible picks\nClassic: interval scheduling by end time; Huffman; activity selection\nIf greedy fails, fall back to DP / search",
         intuition="Sort so the locally best next option is globally safe. If you can't prove it, stress-test with a tiny counterexample before coding.",
         worked_example="Max non-overlapping intervals (schedule by earliest end):\n```python\ndef max_non_overlap(intervals: list[list[int]]) -> int:\n    intervals.sort(key=lambda x: x[1])\n    count = 0\n    end = float('-inf')\n    for s, e in intervals:\n        if s >= end:\n            count += 1\n            end = e\n    return count\n# pick earliest-finishing feasible interval each time\n```\n\nCounterexample intuition: choosing longest interval first can block two short ones.",
         interview_tips="1. State the greedy choice in one sentence.\n2. Sort key matters — justify it.\n3. Give a 30-second exchange / 'stays feasible' argument.\n4. Keep a counterexample ready if the interviewer challenges you.\n5. Greedy ≠ always optimal; know when to switch to DP.",
-        prerequisites='Intervals; Complexity & Core Algorithms',
+        prerequisites="Intervals; Complexity & Core Algorithms",
     ),
     "quick-tricks": ConceptSeed(
         slug="quick-tricks",
@@ -1735,111 +1732,161 @@ CONCEPT_DETAILS: dict[str, ConceptSeed] = {
 
 
 CONCEPT_EDGES: tuple[ConceptEdgeSeed, ...] = (
-    ConceptEdgeSeed('independence', 'counting', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('conditional-probability', 'counting', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('independence', 'conditional-probability', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('bayes', 'conditional-probability', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('bayes', 'independence', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('bayes', 'counting', ConceptEdgeRelationshipType.USED_IN),
-    ConceptEdgeSeed('bayes', 'continuous-distributions', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('random-variables', 'counting', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('expectation', 'random-variables', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('expectation', 'counting', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('random-variables', 'expectation', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('conditional-expectation', 'expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('conditional-expectation', 'conditional-probability', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('variance', 'expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('continuous-distributions', 'random-variables', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('continuous-distributions', 'expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('continuous-distributions', 'variance', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('limit-theorems', 'expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('limit-theorems', 'variance', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('limit-theorems', 'continuous-distributions', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('markov-chains', 'random-variables', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('markov-chains', 'conditional-probability', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('martingales', 'conditional-expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('martingales', 'markov-chains', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('linear-systems', 'vectors-matrices', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('eigenvalues', 'vectors-matrices', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('eigenvalues', 'linear-systems', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('orthogonality', 'vectors-matrices', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('orthogonality', 'eigenvalues', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('taylor-expansions', 'derivatives-gradients', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('math-optimization', 'derivatives-gradients', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('lagrange-multipliers', 'math-optimization', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('lagrange-multipliers', 'derivatives-gradients', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('differential-equations', 'derivatives-gradients', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('confidence-intervals', 'estimation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('hypothesis-testing', 'estimation', ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("independence", "counting", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("conditional-probability", "counting", ConceptEdgeRelationshipType.REQUIRES),
     ConceptEdgeSeed(
-        'hypothesis-testing', 'confidence-intervals', ConceptEdgeRelationshipType.REQUIRES
+        "independence", "conditional-probability", ConceptEdgeRelationshipType.RELATED_TO
     ),
-    ConceptEdgeSeed('maximum-likelihood', 'estimation', ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("bayes", "conditional-probability", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("bayes", "independence", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("bayes", "counting", ConceptEdgeRelationshipType.USED_IN),
+    ConceptEdgeSeed("bayes", "continuous-distributions", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("random-variables", "counting", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("expectation", "random-variables", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("expectation", "counting", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("random-variables", "expectation", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("conditional-expectation", "expectation", ConceptEdgeRelationshipType.REQUIRES),
     ConceptEdgeSeed(
-        'maximum-likelihood',
-        'continuous-distributions',
+        "conditional-expectation", "conditional-probability", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("variance", "expectation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "continuous-distributions", "random-variables", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "continuous-distributions", "expectation", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("continuous-distributions", "variance", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("limit-theorems", "expectation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("limit-theorems", "variance", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "limit-theorems", "continuous-distributions", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed("markov-chains", "random-variables", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "markov-chains", "conditional-probability", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("martingales", "conditional-expectation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("martingales", "markov-chains", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("linear-systems", "vectors-matrices", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("eigenvalues", "vectors-matrices", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("eigenvalues", "linear-systems", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("orthogonality", "vectors-matrices", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("orthogonality", "eigenvalues", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed(
+        "taylor-expansions", "derivatives-gradients", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "math-optimization", "derivatives-gradients", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "lagrange-multipliers", "math-optimization", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "lagrange-multipliers", "derivatives-gradients", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "differential-equations", "derivatives-gradients", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("confidence-intervals", "estimation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("hypothesis-testing", "estimation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "hypothesis-testing", "confidence-intervals", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("maximum-likelihood", "estimation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "maximum-likelihood",
+        "continuous-distributions",
         ConceptEdgeRelationshipType.RELATED_TO,
     ),
-    ConceptEdgeSeed('regression', 'estimation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('regression', 'hypothesis-testing', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('regression', 'orthogonality', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('bias-variance', 'estimation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('bias-variance', 'regression', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('black-scholes', 'derivatives', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('greeks', 'black-scholes', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('greeks', 'derivatives', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('portfolio-theory', 'variance', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('capm', 'portfolio-theory', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('fixed-income', 'derivatives', ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("regression", "estimation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("regression", "hypothesis-testing", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("regression", "orthogonality", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("bias-variance", "estimation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("bias-variance", "regression", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("black-scholes", "derivatives", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("greeks", "black-scholes", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("greeks", "derivatives", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("portfolio-theory", "variance", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("capm", "portfolio-theory", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("fixed-income", "derivatives", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("market-microstructure", "derivatives", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("data-structures", "python", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("cpp", "data-structures", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("algorithms", "data-structures", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("algorithms", "python", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("sql", "algorithms", ConceptEdgeRelationshipType.RELATED_TO),
     ConceptEdgeSeed(
-        'market-microstructure', 'derivatives', ConceptEdgeRelationshipType.RELATED_TO
+        "stochastic-processes", "random-variables", ConceptEdgeRelationshipType.REQUIRES
     ),
-    ConceptEdgeSeed('data-structures', 'python', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('cpp', 'data-structures', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('algorithms', 'data-structures', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('algorithms', 'python', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('sql', 'algorithms', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('stochastic-processes', 'random-variables', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('stochastic-processes', 'markov-chains', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('stochastic-processes', 'time-series', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('brownian-motion', 'stochastic-processes', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('brownian-motion', 'black-scholes', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('monte-carlo', 'brownian-motion', ConceptEdgeRelationshipType.USED_IN),
-    ConceptEdgeSeed('monte-carlo', 'expectation', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('numerical-methods', 'monte-carlo', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('numerical-methods', 'differential-equations', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('numerical-methods', 'math-optimization', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('time-series', 'regression', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('time-series', 'limit-theorems', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('machine-learning-for-finance', 'bias-variance', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('machine-learning-for-finance', 'regression', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('sliding-window', 'two-pointers', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('prefix-sum', 'algorithms', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('binary-search', 'algorithms', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('intervals', 'two-pointers', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('graph-traversal', 'data-structures', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('dynamic-programming', 'algorithms', ConceptEdgeRelationshipType.REQUIRES),
     ConceptEdgeSeed(
-        'dynamic-programming', 'graph-traversal', ConceptEdgeRelationshipType.RELATED_TO
+        "stochastic-processes", "markov-chains", ConceptEdgeRelationshipType.RELATED_TO
     ),
-    ConceptEdgeSeed('greedy', 'intervals', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('two-pointers', 'data-structures', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('addition-subtraction', 'quick-tricks', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('basic-multiplication', 'addition-subtraction', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('intermediate-multiplication', 'basic-multiplication', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('mental-division-fractions', 'basic-multiplication', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('guesstimation', 'addition-subtraction', ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("stochastic-processes", "time-series", ConceptEdgeRelationshipType.RELATED_TO),
     ConceptEdgeSeed(
-        'guesstimation', 'mental-division-fractions', ConceptEdgeRelationshipType.RELATED_TO
+        "brownian-motion", "stochastic-processes", ConceptEdgeRelationshipType.REQUIRES
     ),
-    ConceptEdgeSeed('memorizing-numbers', 'intermediate-multiplication', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('advanced-multiplication', 'intermediate-multiplication', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('advanced-multiplication', 'memorizing-numbers', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('game-theory', 'expectation', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('market-games', 'game-theory', ConceptEdgeRelationshipType.REQUIRES),
-    ConceptEdgeSeed('market-games', 'market-microstructure', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('behavioral-interview', 'bayes', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('system-design', 'python', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('system-design', 'data-structures', ConceptEdgeRelationshipType.RELATED_TO),
-    ConceptEdgeSeed('brain-teasers', 'counting', ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("brownian-motion", "black-scholes", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("monte-carlo", "brownian-motion", ConceptEdgeRelationshipType.USED_IN),
+    ConceptEdgeSeed("monte-carlo", "expectation", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("numerical-methods", "monte-carlo", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed(
+        "numerical-methods", "differential-equations", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed(
+        "numerical-methods", "math-optimization", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed("time-series", "regression", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("time-series", "limit-theorems", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed(
+        "machine-learning-for-finance", "bias-variance", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "machine-learning-for-finance", "regression", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("sliding-window", "two-pointers", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("prefix-sum", "algorithms", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("binary-search", "algorithms", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("intervals", "two-pointers", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("graph-traversal", "data-structures", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed("dynamic-programming", "algorithms", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "dynamic-programming", "graph-traversal", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed("greedy", "intervals", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("two-pointers", "data-structures", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("addition-subtraction", "quick-tricks", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed(
+        "basic-multiplication", "addition-subtraction", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "intermediate-multiplication", "basic-multiplication", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed(
+        "mental-division-fractions", "basic-multiplication", ConceptEdgeRelationshipType.REQUIRES
+    ),
+    ConceptEdgeSeed("guesstimation", "addition-subtraction", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "guesstimation", "mental-division-fractions", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed(
+        "memorizing-numbers", "intermediate-multiplication", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed(
+        "advanced-multiplication",
+        "intermediate-multiplication",
+        ConceptEdgeRelationshipType.REQUIRES,
+    ),
+    ConceptEdgeSeed(
+        "advanced-multiplication", "memorizing-numbers", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed("game-theory", "expectation", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("market-games", "game-theory", ConceptEdgeRelationshipType.REQUIRES),
+    ConceptEdgeSeed(
+        "market-games", "market-microstructure", ConceptEdgeRelationshipType.RELATED_TO
+    ),
+    ConceptEdgeSeed("behavioral-interview", "bayes", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("system-design", "python", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("system-design", "data-structures", ConceptEdgeRelationshipType.RELATED_TO),
+    ConceptEdgeSeed("brain-teasers", "counting", ConceptEdgeRelationshipType.RELATED_TO),
 )

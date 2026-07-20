@@ -14,9 +14,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
         subtopic_slug="derivatives",
         difficulty=Difficulty.EASY,
         short_answer="10",
-        canonical_solution=(
-            "$r=0$ ⇒ $C-P=S_0-K=0$ ⇒ $P=C=10$."
-        ),
+        canonical_solution=("$r=0$ ⇒ $C-P=S_0-K=0$ ⇒ $P=C=10$."),
         estimated_time_seconds=120,
         common_mistakes=("Using $C-P=S-K e^{-rT}$ without setting $r=0$",),
         prerequisites=("Put–call parity",),
@@ -24,9 +22,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-002",
         title="Forward Price No Dividends",
-        body=(
-            "$S_0=100$, continuous $r=0$, $T=1$. What is the no-dividend forward price $F$?"
-        ),
+        body=("$S_0=100$, continuous $r=0$, $T=1$. What is the no-dividend forward price $F$?"),
         topic_slug="finance",
         subtopic_slug="derivatives",
         difficulty=Difficulty.EASY,
@@ -38,9 +34,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-003",
         title="Call Payoff at Expiry",
-        body=(
-            "A European call with $K=50$ expires with $S_T=60$. What is the payoff?"
-        ),
+        body=("A European call with $K=50$ expires with $S_T=60$. What is the payoff?"),
         topic_slug="finance",
         subtopic_slug="derivatives",
         difficulty=Difficulty.EASY,
@@ -65,7 +59,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
             "With $r=q=0$ and $F=S_0>K$, zero vol ⇒ call → $S_0-K$ (discounted intrinsic / forward claim)."
         ),
         estimated_time_seconds=180,
-        common_mistakes=("Answering 0 because \"no uncertainty\"",),
+        common_mistakes=('Answering 0 because "no uncertainty"',),
         prerequisites=("Black–Scholes limits",),
     ),
     QuestionSeed(
@@ -96,7 +90,10 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
         short_answer="8",
         canonical_solution="$C-P=S_0-K=0$ ⇒ $P=C=8$.",
         estimated_time_seconds=90,
-        prerequisites=("Put–call parity", "Black–Scholes",),
+        prerequisites=(
+            "Put–call parity",
+            "Black–Scholes",
+        ),
     ),
     # --- Greeks ---
     QuestionSeed(
@@ -216,9 +213,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-014",
         title="Beta Definition Pieces",
-        body=(
-            "$\\mathrm{Cov}(R_i,R_m)=0.03$ and $\\mathrm{Var}(R_m)=0.02$. What is $\\beta_i$?"
-        ),
+        body=("$\\mathrm{Cov}(R_i,R_m)=0.03$ and $\\mathrm{Var}(R_m)=0.02$. What is $\\beta_i$?"),
         topic_slug="finance",
         subtopic_slug="capm",
         difficulty=Difficulty.EASY,
@@ -230,9 +225,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-015",
         title="Market Beta",
-        body=(
-            "In CAPM, what is the beta of the market portfolio itself?"
-        ),
+        body=("In CAPM, what is the beta of the market portfolio itself?"),
         topic_slug="finance",
         subtopic_slug="capm",
         difficulty=Difficulty.EASY,
@@ -260,9 +253,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-017",
         title="One-Year Zero Price",
-        body=(
-            "Face 100, continuous yield $y=0$ for one year. What is the zero's price?"
-        ),
+        body=("Face 100, continuous yield $y=0$ for one year. What is the zero's price?"),
         topic_slug="finance",
         subtopic_slug="fixed-income",
         difficulty=Difficulty.EASY,
@@ -290,9 +281,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-019",
         title="Quoted Spread Width",
-        body=(
-            "Bid $99.90$, ask $100.10$. What is the quoted spread?"
-        ),
+        body=("Bid $99.90$, ask $100.10$. What is the quoted spread?"),
         topic_slug="finance",
         subtopic_slug="market-microstructure",
         difficulty=Difficulty.EASY,
@@ -304,9 +293,7 @@ FINANCE_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="fin-020",
         title="Mid Price",
-        body=(
-            "Bid $99.90$, ask $100.10$. What is the mid?"
-        ),
+        body=("Bid $99.90$, ask $100.10$. What is the mid?"),
         topic_slug="finance",
         subtopic_slug="market-microstructure",
         difficulty=Difficulty.EASY,

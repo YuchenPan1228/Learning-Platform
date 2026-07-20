@@ -5,13 +5,7 @@ import { MathText } from "@/components/math/math-text";
 import { splitConceptContent } from "@/lib/concept-content-segments";
 
 export type ConceptSectionTone =
-  | "definition"
-  | "insight"
-  | "formula"
-  | "example"
-  | "tips"
-  | "mistakes"
-  | "prerequisites";
+  "definition" | "insight" | "formula" | "example" | "tips" | "mistakes" | "prerequisites";
 
 type SectionToneStyles = {
   accent: string;

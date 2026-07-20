@@ -24,9 +24,7 @@ STATISTICS_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="stats-002",
         title="Bias of a Scaled Estimator",
-        body=(
-            "Let $E[\\hat\\theta]=\\theta+2$. What is $\\mathrm{Bias}(\\hat\\theta)$?"
-        ),
+        body=("Let $E[\\hat\\theta]=\\theta+2$. What is $\\mathrm{Bias}(\\hat\\theta)$?"),
         topic_slug="statistics",
         subtopic_slug="estimation",
         difficulty=Difficulty.EASY,
@@ -66,9 +64,7 @@ STATISTICS_QUESTIONS: tuple[QuestionSeed, ...] = (
         subtopic_slug="confidence-intervals",
         difficulty=Difficulty.EASY,
         short_answer="0.392",
-        canonical_solution=(
-            "Half-width $= z\\,\\sigma/\\sqrt n = 1.96\\cdot 2/10 = 0.392$."
-        ),
+        canonical_solution=("Half-width $= z\\,\\sigma/\\sqrt n = 1.96\\cdot 2/10 = 0.392$."),
         estimated_time_seconds=120,
         common_mistakes=("Using $\\sigma$ instead of $\\sigma/\\sqrt n$",),
         prerequisites=("Normal CI for mean",),
@@ -76,9 +72,7 @@ STATISTICS_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="stats-005",
         title="CI Centered at Sample Mean",
-        body=(
-            "$\\bar X=3$, half-width $0.5$. Enter the 95% CI as [a,b] with a<b."
-        ),
+        body=("$\\bar X=3$, half-width $0.5$. Enter the 95% CI as [a,b] with a<b."),
         topic_slug="statistics",
         subtopic_slug="confidence-intervals",
         difficulty=Difficulty.EASY,
@@ -173,9 +167,7 @@ STATISTICS_QUESTIONS: tuple[QuestionSeed, ...] = (
     QuestionSeed(
         seed_key="stats-011",
         title="Normal Mean MLE",
-        body=(
-            "IID $N(\\mu,1)$ data with $\\bar X=2.5$. What is $\\hat\\mu_{\\mathrm{MLE}}$?"
-        ),
+        body=("IID $N(\\mu,1)$ data with $\\bar X=2.5$. What is $\\hat\\mu_{\\mathrm{MLE}}$?"),
         topic_slug="statistics",
         subtopic_slug="maximum-likelihood",
         difficulty=Difficulty.EASY,
