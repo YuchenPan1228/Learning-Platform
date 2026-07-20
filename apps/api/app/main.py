@@ -1,6 +1,6 @@
 import logging
+import threading
 from collections.abc import AsyncIterator
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -23,17 +23,21 @@ from app.routers import (
 )
 
 logger = logging.getLogger(__name__)
-_warmup_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ai-warmup")
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     get_engine()
     settings = get_settings()
-    if settings.ai_warmup_on_startup:
-        _warmup_executor.submit(_safe_warmup)
+    # Skip warmup under pytest to avoid Ollama calls and shared-thread teardown races.
+    if settings.ai_warmup_on_startup and settings.app_env != "test":
+        thread = threading.Thread(
+            target=_safe_warmup,
+            name="ai-warmup",
+            daemon=True,
+        )
+        thread.start()
     yield
-    _warmup_executor.shutdown(wait=False, cancel_futures=True)
 
 
 def _safe_warmup() -> None:
