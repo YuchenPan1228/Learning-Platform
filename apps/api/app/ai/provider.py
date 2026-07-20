@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
+from app.ai.tasks import AITask
 from app.ai.types import AIChatResult, AIMessage
 
 
@@ -17,6 +19,11 @@ class AIProvider(ABC):
     def chat_model(self) -> str:
         """Default chat model configured for this provider."""
 
+    def model_for_task(self, task: AITask) -> str:
+        """Resolve the chat model for a workload category."""
+        del task
+        return self.chat_model
+
     @abstractmethod
     def chat(
         self,
@@ -24,6 +31,9 @@ class AIProvider(ABC):
         *,
         model: str | None = None,
         temperature: float | None = None,
+        json_mode: bool = False,
+        response_schema: Mapping[str, Any] | None = None,
+        max_tokens: int | None = None,
         cache_hit: bool = False,
         prompt_hash: str | None = None,
         input_object_version: str | None = None,

@@ -387,6 +387,9 @@ Tasks:
 - Add Ollama as default local provider.
 - Add provider configuration.
 - Leave OpenAI/Anthropic as later adapters.
+- Route chat requests by task (`general`, `coding`, `reasoning`) with `OLLAMA_CHAT_MODEL` as the local fallback.
+- Prefer JSON Schema structured outputs and schema validation; keep repair retries off by default.
+- Split hint and explanation generation so each UI action only pays for what it needs.
 
 Depends on: `QP-003`.
 
@@ -742,6 +745,7 @@ Tasks:
 - Use local embedding model such as `nomic-embed-text` or `bge-small-en-v1.5`.
 - Keep provider swappable.
 - Track embedding runtime and cost as zero/local.
+- Wire the reserved `AITask.EMBEDDING` / `OLLAMA_EMBEDDING_MODEL` config into the embedding provider.
 
 Depends on: `QP-046`.
 

@@ -1,9 +1,12 @@
+import logging
+import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai.warmup import warmup_configured_models
 from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
@@ -19,11 +22,29 @@ from app.routers import (
     topics,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     get_engine()
+    settings = get_settings()
+    # Skip warmup under pytest to avoid Ollama calls and shared-thread teardown races.
+    if settings.ai_warmup_on_startup and settings.app_env != "test":
+        thread = threading.Thread(
+            target=_safe_warmup,
+            name="ai-warmup",
+            daemon=True,
+        )
+        thread.start()
     yield
+
+
+def _safe_warmup() -> None:
+    try:
+        warmup_configured_models()
+    except Exception:
+        logger.exception("AI model warmup failed")
 
 
 def create_app() -> FastAPI:

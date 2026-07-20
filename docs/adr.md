@@ -149,3 +149,27 @@ Rationale:
 
 - The fastest path to a useful product is finishing the core learning loop before expanding.
 
+## ADR-011: Route AI Workloads Across Specialized Models
+
+Status: Accepted
+
+Decision:
+
+- Keep Ollama as the default local AI provider behind `AIProvider`.
+- Route chat workloads by `AITask`: `general`, `coding`, `reasoning` (plus `embedding` later).
+- Document production targets as Qwen3 32B (general), Qwen2.5-Coder 32B (coding), DeepSeek-R1 (reasoning), and `nomic-embed-text` (embeddings).
+- Keep local defaults small via `OLLAMA_CHAT_MODEL`, with optional `OLLAMA_MODEL_*` overrides.
+- Prefer JSON Schema structured outputs and Pydantic validation; keep repair retries off by default for latency.
+- Warm the default chat model on API startup; stream responses and parallel multi-artifact generation in a later pass.
+
+Rationale:
+
+- One small model is enough to unlock the tutoring loop on a laptop.
+- Specialized models improve coding and hard quant reasoning when hardware allows.
+- Schema-constrained generation is more reliable than free-form “return JSON” prompts.
+
+Consequences:
+
+- Services must resolve models through task routing and cache by the resolved model name.
+- Embedding calls remain deferred until QP-047; config/routing placeholders are reserved now.
+
