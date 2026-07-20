@@ -32,9 +32,7 @@ class OllamaProvider(AIProvider):
         self._request_timeout_seconds = request_timeout_seconds
         self._default_num_predict = default_num_predict
         self._model_by_task = {
-            task: model.strip()
-            for task, model in (model_by_task or {}).items()
-            if model.strip()
+            task: model.strip() for task, model in (model_by_task or {}).items() if model.strip()
         }
         self._http_client = http_client
         self._owns_http_client = http_client is None
@@ -45,9 +43,8 @@ class OllamaProvider(AIProvider):
             )
         if not self._chat_model:
             # Prefer general, then any configured task model, as the default identity.
-            self._chat_model = (
-                self._model_by_task.get(AITask.GENERAL)
-                or next(iter(self._model_by_task.values()))
+            self._chat_model = self._model_by_task.get(AITask.GENERAL) or next(
+                iter(self._model_by_task.values())
             )
 
     @property
@@ -122,8 +119,7 @@ class OllamaProvider(AIProvider):
             ) from exc
         except httpx.HTTPStatusError as exc:
             raise AIProviderRequestError(
-                f"Ollama returned HTTP {exc.response.status_code} "
-                f"using model '{resolved_model}'.",
+                f"Ollama returned HTTP {exc.response.status_code} using model '{resolved_model}'.",
             ) from exc
         except httpx.HTTPError as exc:
             raise AIProviderRequestError(

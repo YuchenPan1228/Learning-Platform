@@ -39,9 +39,7 @@ def chat_structured(
     On parse/validation failure, optionally asks the model to repair the payload.
     """
     resolved_repairs = (
-        repair_attempts
-        if repair_attempts is not None
-        else get_settings().ai_json_repair_attempts
+        repair_attempts if repair_attempts is not None else get_settings().ai_json_repair_attempts
     )
     attempts = 1 + max(0, resolved_repairs)
     schema = response_model.model_json_schema()
@@ -84,6 +82,5 @@ def chat_structured(
             ]
 
     raise StructuredOutputError(
-        f"AI provider returned invalid structured JSON after {attempts} attempt(s): "
-        f"{last_error}",
+        f"AI provider returned invalid structured JSON after {attempts} attempt(s): {last_error}",
     ) from None
