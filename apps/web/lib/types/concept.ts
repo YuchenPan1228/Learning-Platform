@@ -19,6 +19,7 @@ export type ConceptDetail = ConceptSummary & {
   definition: string | null;
   formula: string | null;
   intuition: string | null;
+  worked_example: string | null;
   common_mistakes: string | null;
   interview_tips: string | null;
   prerequisites: string | null;

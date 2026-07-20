@@ -17,6 +17,13 @@ def test_dashboard_returns_topic_mastery_and_weak_prerequisites(
     assert payload["topic_mastery"][0]["slug"] == "probability"
     assert payload["topic_mastery"][0]["mastery_score"] == 0.0
     assert payload["topic_mastery"][0]["attempts_count"] == 0
+    assert len(payload["subtopic_mastery"]) == 66
+    assert any(item["slug"] == "counting" for item in payload["subtopic_mastery"])
+    assert any(item["slug"] == "vectors-matrices" for item in payload["subtopic_mastery"])
+    assert any(item["slug"] == "conditional-expectation" for item in payload["subtopic_mastery"])
+    counting = next(item for item in payload["subtopic_mastery"] if item["slug"] == "counting")
+    assert counting["mastery_score"] == 0.0
+    assert "mastery_score" in counting
 
     weak_prerequisites = payload["weak_prerequisites"]
     assert len(weak_prerequisites) > 0

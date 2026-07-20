@@ -11,14 +11,16 @@ import { cn } from "@/lib/utils";
 type SubtopicGridProps = {
   subtopics: TopicWithSubtopics["subtopics"];
   conceptsBySlug: Record<string, ConceptSummary>;
+  masteryBySlug: Record<string, number>;
 };
 
-export function SubtopicGrid({ subtopics, conceptsBySlug }: SubtopicGridProps) {
+export function SubtopicGrid({ subtopics, conceptsBySlug, masteryBySlug }: SubtopicGridProps) {
   return (
     <section aria-label="Subtopics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {subtopics.map((subtopic) => {
         const concept = conceptsBySlug[subtopic.slug];
         const palette = getConceptPalette(subtopic.slug, subtopic.slug);
+        const masteryScore = masteryBySlug[subtopic.slug] ?? 0;
 
         return (
           <Link
@@ -32,18 +34,16 @@ export function SubtopicGrid({ subtopics, conceptsBySlug }: SubtopicGridProps) {
             )}
           >
             <article>
-              <TopicBadge slug={subtopic.slug} label={subtopic.name} />
-              <h4 className="mt-3 text-base font-semibold text-[#15201c]">{subtopic.name}</h4>
-              {concept ? (
-                <p className="mt-2 text-sm leading-relaxed text-[#66736e]">
-                  Study the <span className="font-medium text-[#31443d]">{concept.name}</span>{" "}
-                  concept in this section.
-                </p>
-              ) : (
-                <p className="mt-2 text-sm text-[#66736e]">
-                  Open this subtopic to study the linked concept.
-                </p>
-              )}
+              <div className="flex items-start justify-between gap-3">
+                <TopicBadge slug={subtopic.slug} label={subtopic.name} />
+                <span className={cn("shrink-0 text-sm font-semibold", palette.badgeText)}>
+                  {formatMasteryScore(masteryScore)}
+                </span>
+              </div>
+              <h4 className="mt-3 text-base font-semibold text-[#15201c]">
+                {concept?.name ?? subtopic.name}
+              </h4>
+              <MasteryBar score={masteryScore} className="mt-3" />
             </article>
           </Link>
         );
@@ -56,9 +56,15 @@ type TopicDetailViewProps = {
   topic: TopicWithSubtopics;
   masteryScore: number;
   conceptsBySlug: Record<string, ConceptSummary>;
+  subtopicMasteryBySlug: Record<string, number>;
 };
 
-export function TopicDetailView({ topic, masteryScore, conceptsBySlug }: TopicDetailViewProps) {
+export function TopicDetailView({
+  topic,
+  masteryScore,
+  conceptsBySlug,
+  subtopicMasteryBySlug,
+}: TopicDetailViewProps) {
   const palette = getTopicPalette(topic.slug);
 
   return (
@@ -102,7 +108,11 @@ export function TopicDetailView({ topic, masteryScore, conceptsBySlug }: TopicDe
           <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Curriculum</p>
           <h3 className="text-xl font-semibold text-[#15201c]">Subtopics</h3>
         </div>
-        <SubtopicGrid subtopics={topic.subtopics} conceptsBySlug={conceptsBySlug} />
+        <SubtopicGrid
+          subtopics={topic.subtopics}
+          conceptsBySlug={conceptsBySlug}
+          masteryBySlug={subtopicMasteryBySlug}
+        />
       </div>
     </div>
   );

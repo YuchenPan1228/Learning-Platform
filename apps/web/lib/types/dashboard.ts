@@ -19,5 +19,6 @@ export type WeakPrerequisite = {
 export type DashboardData = {
   user_id: string;
   topic_mastery: TopicMastery[];
+  subtopic_mastery: TopicMastery[];
   weak_prerequisites: WeakPrerequisite[];
 };

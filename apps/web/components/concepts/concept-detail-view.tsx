@@ -2,7 +2,7 @@ import { ConceptContent } from "@/components/concepts/concept-content";
 import { ConceptGraphPanel } from "@/components/concepts/concept-graph-panel";
 import type { ConceptDetail } from "@/lib/types/concept";
 
-export function ConceptDetailView({
+export async function ConceptDetailView({
   concept,
   practiceQuestionCount,
   practiceHref,

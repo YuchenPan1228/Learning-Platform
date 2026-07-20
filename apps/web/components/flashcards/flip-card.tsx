@@ -1,3 +1,4 @@
+import { MathText } from "@/components/math/math-text";
 import type { Flashcard } from "@/lib/types/flashcard";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +22,11 @@ export function FlipCard({ flashcard, isFlipped, onFlip }: FlipCardProps) {
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">
         {isFlipped ? "Answer" : "Prompt"} · {flashcard.topic_slug}
       </p>
-      <p className="mt-4 text-xl leading-relaxed font-medium text-[#15201c]">
-        {isFlipped ? flashcard.back : flashcard.front}
-      </p>
+      <MathText
+        as="p"
+        className="mt-4 text-xl leading-relaxed font-medium text-[#15201c]"
+        text={isFlipped ? flashcard.back : flashcard.front}
+      />
       <p className="mt-6 text-sm text-[#66736e]">
         {isFlipped ? "Tap the card to hide the answer." : "Tap the card to reveal the answer."}
       </p>

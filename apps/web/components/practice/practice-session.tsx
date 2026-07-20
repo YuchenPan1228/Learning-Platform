@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { MathText } from "@/components/math/math-text";
 import { AiTutorPanel } from "@/components/practice/ai-tutor-panel";
 import { QuestionMetadata } from "@/components/practice/question-metadata";
 import { buttonVariants } from "@/components/ui/button";
@@ -171,7 +172,7 @@ export function PracticeSession({
           </div>
         </div>
 
-        <p className="text-sm leading-relaxed text-[#31443d]">{question.body}</p>
+        <MathText as="p" className="text-sm leading-relaxed text-[#31443d]" text={question.body} />
 
         <label className="mt-5 grid gap-2">
           <span className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
@@ -217,16 +218,22 @@ export function PracticeSession({
           <section className="mt-6 rounded-lg border border-[#bdd3ca] bg-[#edf5f1] p-4">
             <h3 className="text-sm font-semibold text-[#15201c]">Solution</h3>
             {question.canonical_solution ? (
-              <p className="mt-2 text-sm leading-relaxed text-[#31443d]">
-                {question.canonical_solution}
-              </p>
+              <MathText
+                as="p"
+                className="mt-2 text-sm leading-relaxed text-[#31443d]"
+                text={question.canonical_solution}
+              />
             ) : (
               <p className="mt-2 text-sm text-[#66736e]">No canonical solution is stored yet.</p>
             )}
             {question.short_answer ? (
               <p className="mt-3 text-sm text-[#66736e]">
                 Expected answer:{" "}
-                <span className="font-medium text-[#15201c]">{question.short_answer}</span>
+                <MathText
+                  as="span"
+                  className="font-medium text-[#15201c]"
+                  text={question.short_answer}
+                />
               </p>
             ) : null}
           </section>

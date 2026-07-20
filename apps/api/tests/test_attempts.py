@@ -1,5 +1,9 @@
 import pytest
+from app.db import get_session_factory
 from app.models.attempt import Attempt
+from app.models.enums import ContentStatus, Difficulty
+from app.models.question import Question
+from app.models.topic import Topic
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
@@ -67,17 +71,29 @@ def test_record_attempt_without_short_answer_stores_null_correctness(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    questions_response = client.get("/questions", params={"limit": 100})
-    unsupported_question = next(
-        question
-        for question in questions_response.json()
-        if client.get(f"/questions/{question['id']}").json()["short_answer"] is None
-    )
+    session = get_session_factory()()
+    try:
+        topic = session.scalar(select(Topic).where(Topic.slug == "statistics"))
+        assert topic is not None
+        unsupported_question = Question(
+            title="Unsupported Grading Question",
+            body="Explain why CI endpoints are random while the parameter is fixed.",
+            difficulty=Difficulty.EASY,
+            topic_id=topic.id,
+            status=ContentStatus.APPROVED,
+            short_answer=None,
+        )
+        session.add(unsupported_question)
+        session.commit()
+        session.refresh(unsupported_question)
+        question_id = unsupported_question.id
+    finally:
+        session.close()
 
     response = client.post(
         "/attempts",
         json={
-            "question_id": unsupported_question["id"],
+            "question_id": question_id,
             "answer": "interval invariant",
             "time_spent_seconds": 90,
         },

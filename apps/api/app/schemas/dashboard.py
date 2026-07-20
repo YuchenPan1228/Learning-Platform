@@ -22,4 +22,5 @@ class WeakPrerequisiteRead(BaseModel):
 class DashboardRead(BaseModel):
     user_id: str
     topic_mastery: list[TopicMasteryRead]
+    subtopic_mastery: list[TopicMasteryRead]
     weak_prerequisites: list[WeakPrerequisiteRead]

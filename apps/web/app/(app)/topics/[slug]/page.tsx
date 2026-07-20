@@ -14,6 +14,12 @@ function conceptsBySlug(concepts: ConceptSummary[]): Record<string, ConceptSumma
   return Object.fromEntries(concepts.map((concept) => [concept.slug, concept]));
 }
 
+function masteryBySlug(
+  masteryEntries: Array<{ slug: string; mastery_score: number }>,
+): Record<string, number> {
+  return Object.fromEntries(masteryEntries.map((entry) => [entry.slug, entry.mastery_score]));
+}
+
 export default async function TopicDetailPage({ params }: TopicDetailPageProps) {
   const { slug } = await params;
   const [topic, dashboard, concepts] = await Promise.all([
@@ -34,6 +40,7 @@ export default async function TopicDetailPage({ params }: TopicDetailPageProps) 
       topic={topic}
       masteryScore={masteryScore}
       conceptsBySlug={conceptsBySlug(concepts)}
+      subtopicMasteryBySlug={masteryBySlug(dashboard.subtopic_mastery)}
     />
   );
 }
