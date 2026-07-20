@@ -5,11 +5,7 @@ import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { shouldShowAiCacheState } from "@/lib/ai/cache-state";
-import {
-  requestExplanation,
-  requestHints,
-  requestSimilarQuestion,
-} from "@/lib/api/ai-tutor";
+import { requestExplanation, requestHints, requestSimilarQuestion } from "@/lib/api/ai-tutor";
 import type {
   AIExplanationResult,
   AIHintsResult,

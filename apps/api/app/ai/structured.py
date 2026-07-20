@@ -48,7 +48,6 @@ def chat_structured(
     base_messages = list(messages)
     current_messages = base_messages
     last_error = "unknown error"
-    last_result: AIChatResult | None = None
 
     for attempt in range(attempts):
         try:
@@ -64,7 +63,6 @@ def chat_structured(
             )
         except AIProviderRequestError:
             raise
-        last_result = result
         try:
             payload = loads_model_json(result.content)
             return response_model.model_validate(payload), result
