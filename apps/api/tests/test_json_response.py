@@ -12,12 +12,12 @@ def test_loads_model_json_strips_markdown_fence() -> None:
     content = """```json
 {"explanation": "ok"}
 ```"""
-    assert loads_model_json(content)["explanation"] == "ok"
+    assert loads_model_json(content) == {"explanation": "ok"}
 
 
 def test_loads_model_json_extracts_embedded_object() -> None:
     content = 'Here you go:\n{"explanation": "ok"}\nThanks'
-    assert loads_model_json(content)["explanation"] == "ok"
+    assert loads_model_json(content) == {"explanation": "ok"}
 
 
 def test_loads_model_json_rejects_empty() -> None:
