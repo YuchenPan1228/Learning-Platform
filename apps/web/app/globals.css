@@ -127,4 +127,13 @@
   html {
     @apply font-sans;
   }
+
+  /* Concept study cards: keep accents stable against the global border utility. */
+  .concept-section-card {
+    border-style: solid;
+  }
+
+  .concept-section-card .katex {
+    font-size: 1.05em;
+  }
 }

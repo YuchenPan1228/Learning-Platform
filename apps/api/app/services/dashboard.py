@@ -1,13 +1,25 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.concept import ConceptEdge
 from app.models.enums import ConceptEdgeRelationshipType
 from app.models.topic import Topic
 from app.schemas.dashboard import DashboardRead, TopicMasteryRead, WeakPrerequisiteRead
-from app.services.progress import get_topic_progress_stats
+from app.services.progress import TopicProgressStats, get_topic_progress_stats
 
 WEAK_MASTERY_THRESHOLD = 50.0
+
+
+def _mastery_card(topic: Topic, stats: TopicProgressStats | None) -> TopicMasteryRead:
+    return TopicMasteryRead(
+        topic_id=topic.id,
+        slug=topic.slug,
+        name=topic.name,
+        mastery_score=stats.mastery_score if stats is not None else 0.0,
+        attempts_count=stats.attempts_count if stats is not None else 0,
+        solved_count=stats.solved_count if stats is not None else 0,
+        total_questions=stats.total_questions if stats is not None else 0,
+    )
 
 
 def _topic_mastery_cards(session: Session) -> list[TopicMasteryRead]:
@@ -15,20 +27,21 @@ def _topic_mastery_cards(session: Session) -> list[TopicMasteryRead]:
     root_topics = session.scalars(
         select(Topic).where(Topic.parent_topic_id.is_(None)).order_by(Topic.order_index, Topic.id),
     ).all()
+    return [_mastery_card(topic, topic_stats.get(topic.id)) for topic in root_topics]
+
+
+def _subtopic_mastery_cards(session: Session) -> list[TopicMasteryRead]:
+    topic_stats = get_topic_progress_stats(session)
+    root_topics = session.scalars(
+        select(Topic)
+        .where(Topic.parent_topic_id.is_(None))
+        .options(selectinload(Topic.subtopics))
+        .order_by(Topic.order_index, Topic.id),
+    ).all()
     cards: list[TopicMasteryRead] = []
-    for topic in root_topics:
-        stats = topic_stats.get(topic.id)
-        cards.append(
-            TopicMasteryRead(
-                topic_id=topic.id,
-                slug=topic.slug,
-                name=topic.name,
-                mastery_score=stats.mastery_score if stats is not None else 0.0,
-                attempts_count=stats.attempts_count if stats is not None else 0,
-                solved_count=stats.solved_count if stats is not None else 0,
-                total_questions=stats.total_questions if stats is not None else 0,
-            )
-        )
+    for root in root_topics:
+        for subtopic in sorted(root.subtopics, key=lambda item: (item.order_index, item.id)):
+            cards.append(_mastery_card(subtopic, topic_stats.get(subtopic.id)))
     return cards
 
 
@@ -75,5 +88,6 @@ def get_dashboard(session: Session) -> DashboardRead:
     return DashboardRead(
         user_id=LOCAL_USER_ID,
         topic_mastery=_topic_mastery_cards(session),
+        subtopic_mastery=_subtopic_mastery_cards(session),
         weak_prerequisites=_weak_prerequisites(session),
     )

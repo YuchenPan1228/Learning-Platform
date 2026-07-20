@@ -14,7 +14,7 @@ def test_list_topics_returns_root_sections_with_subtopics(
     topics = response.json()
     assert len(topics) == 9
     assert topics[0]["slug"] == "probability"
-    assert len(topics[0]["subtopics"]) == 10
+    assert len(topics[0]["subtopics"]) == 12
 
 
 @pytest.mark.integration
@@ -50,11 +50,41 @@ def test_list_concepts_and_get_detail_with_neighbors(
 ) -> None:
     list_response = client.get("/concepts")
     assert list_response.status_code == 200
-    assert len(list_response.json()) == 64
+    assert len(list_response.json()) == 66
 
     filtered_response = client.get("/concepts", params={"topic_slug": "probability"})
     assert filtered_response.status_code == 200
-    assert len(filtered_response.json()) == 10
+    assert len(filtered_response.json()) == 12
+
+    math_response = client.get("/concepts", params={"topic_slug": "mathematics"})
+    assert math_response.status_code == 200
+    assert len(math_response.json()) == 9
+    assert any(item["slug"] == "vectors-matrices" for item in math_response.json())
+
+    stats_response = client.get("/concepts", params={"topic_slug": "statistics"})
+    assert stats_response.status_code == 200
+    assert len(stats_response.json()) == 6
+    assert any(item["slug"] == "bias-variance" for item in stats_response.json())
+    assert any(item["name"] == "Point Estimation" for item in stats_response.json())
+
+    finance_response = client.get("/concepts", params={"topic_slug": "finance"})
+    assert finance_response.status_code == 200
+    assert len(finance_response.json()) == 7
+    assert any(item["slug"] == "greeks" for item in finance_response.json())
+    assert any(item["name"] == "Derivatives Payoffs & Parity" for item in finance_response.json())
+
+    programming_response = client.get("/concepts", params={"topic_slug": "programming"})
+    assert programming_response.status_code == 200
+    assert len(programming_response.json()) == 5
+    assert any(item["slug"] == "python" for item in programming_response.json())
+    assert any(item["name"] == "C++ for Quant" for item in programming_response.json())
+    assert all(item["slug"] != "programming-coding-patterns" for item in programming_response.json())
+    detail_response = client.get("/concepts/counting")
+    assert detail_response.status_code == 200
+    counting = detail_response.json()
+    assert counting["name"] == "Counting & Sample Spaces"
+    assert counting["worked_example"] is not None
+    assert "common_mistakes" in counting
 
     detail_response = client.get("/concepts/bayes")
     assert detail_response.status_code == 200
@@ -77,10 +107,36 @@ def test_list_questions_with_filters_and_get_detail(
     assert "tags" in questions[0]
 
     all_response = client.get("/questions", params={"limit": 100})
-    assert len(all_response.json()) == 65
+    all_page2 = client.get("/questions", params={"limit": 100, "offset": 100})
+    assert len(all_response.json()) + len(all_page2.json()) == 183
 
     filtered_response = client.get("/questions", params={"topic_slug": "probability", "limit": 100})
     assert len(filtered_response.json()) == 20
+
+    math_response = client.get("/questions", params={"topic_slug": "mathematics", "limit": 100})
+    assert math_response.status_code == 200
+    assert len(math_response.json()) == 20
+    assert all(item["topic_slug"] == "mathematics" for item in math_response.json())
+
+    stats_response = client.get("/questions", params={"topic_slug": "statistics", "limit": 100})
+    assert stats_response.status_code == 200
+    assert len(stats_response.json()) == 18
+    assert all(item["topic_slug"] == "statistics" for item in stats_response.json())
+    assert any(item["subtopic_slug"] == "estimation" for item in stats_response.json())
+
+    finance_q_response = client.get("/questions", params={"topic_slug": "finance", "limit": 100})
+    assert finance_q_response.status_code == 200
+    assert len(finance_q_response.json()) == 21
+    assert all(item["topic_slug"] == "finance" for item in finance_q_response.json())
+    assert any(item["subtopic_slug"] == "greeks" for item in finance_q_response.json())
+
+    programming_q_response = client.get(
+        "/questions", params={"topic_slug": "programming", "limit": 100}
+    )
+    assert programming_q_response.status_code == 200
+    assert len(programming_q_response.json()) == 17
+    assert all(item["topic_slug"] == "programming" for item in programming_q_response.json())
+    assert any(item["subtopic_slug"] == "python" for item in programming_q_response.json())
 
     concept_response = client.get("/questions", params={"concept_slug": "bayes", "limit": 100})
     assert concept_response.status_code == 200
@@ -142,17 +198,20 @@ def test_flashcards_and_learning_paths_endpoints(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    flashcards_response = client.get("/flashcards")
+    flashcards_response = client.get("/flashcards", params={"limit": 100})
+    flashcards_page2 = client.get("/flashcards", params={"limit": 100, "offset": 100})
     assert flashcards_response.status_code == 200
-    flashcards = flashcards_response.json()
-    assert len(flashcards) == 15
+    assert flashcards_page2.status_code == 200
+    flashcards = flashcards_response.json() + flashcards_page2.json()
+    assert len(flashcards) == 165
     assert flashcards[0]["front"]
     assert flashcards[0]["topic_slug"]
 
     filtered_flashcards_response = client.get("/flashcards", params={"topic_slug": "bayes"})
     assert filtered_flashcards_response.status_code == 200
-    assert len(filtered_flashcards_response.json()) == 1
-    assert filtered_flashcards_response.json()[0]["front"] == "State Bayes' rule."
+    bayes_cards = filtered_flashcards_response.json()
+    assert len(bayes_cards) == 3
+    assert any(card["front"] == "State Bayes' rule." for card in bayes_cards)
 
     flashcard_detail_response = client.get(f"/flashcards/{flashcards[0]['id']}")
     assert flashcard_detail_response.status_code == 200

@@ -24,6 +24,7 @@ class ConceptRead(BaseModel):
     definition: str | None
     formula: str | None
     intuition: str | None
+    worked_example: str | None
     common_mistakes: str | None
     interview_tips: str | None
     prerequisites: str | None

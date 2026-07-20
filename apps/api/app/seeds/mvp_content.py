@@ -19,10 +19,14 @@ from app.seeds.utils import slugify
 @dataclass(frozen=True, slots=True)
 class MvpContentSummary:
     probability_questions: int
+    mathematics_questions: int
+    statistics_questions: int
+    programming_questions: int
     mental_math_questions: int
     coding_questions: int
     finance_questions: int
     market_game_questions: int
+    brain_teaser_questions: int
     flashcards: int
     tags: int
 
@@ -30,10 +34,14 @@ class MvpContentSummary:
     def total(self) -> int:
         return (
             self.probability_questions
+            + self.mathematics_questions
+            + self.statistics_questions
+            + self.programming_questions
             + self.mental_math_questions
             + self.coding_questions
             + self.finance_questions
             + self.market_game_questions
+            + self.brain_teaser_questions
         )
 
 
@@ -198,16 +206,26 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
 
     counts = {
         "probability": 0,
+        "mathematics": 0,
+        "statistics": 0,
+        "programming": 0,
         "mental_math": 0,
         "coding": 0,
         "finance": 0,
         "market_game": 0,
+        "brain_teaser": 0,
     }
 
     for seed in ALL_MVP_QUESTIONS:
         _upsert_question(session, seed, topics_by_slug)
         if seed.seed_key.startswith("prob-"):
             counts["probability"] += 1
+        elif seed.seed_key.startswith("math-"):
+            counts["mathematics"] += 1
+        elif seed.seed_key.startswith("stats-"):
+            counts["statistics"] += 1
+        elif seed.seed_key.startswith("prog-"):
+            counts["programming"] += 1
         elif seed.seed_key.startswith("mm-"):
             counts["mental_math"] += 1
         elif seed.seed_key.startswith("code-"):
@@ -216,6 +234,8 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
             counts["finance"] += 1
         elif seed.seed_key.startswith("game-"):
             counts["market_game"] += 1
+        elif seed.seed_key.startswith("oth-"):
+            counts["brain_teaser"] += 1
 
     for flashcard_seed in ALL_MVP_FLASHCARDS:
         _upsert_flashcard(session, flashcard_seed, topics_by_slug)
@@ -224,10 +244,14 @@ def seed_mvp_content(session: Session) -> MvpContentSummary:
     tag_count = len(session.scalars(select(Tag)).all())
     return MvpContentSummary(
         probability_questions=counts["probability"],
+        mathematics_questions=counts["mathematics"],
+        statistics_questions=counts["statistics"],
+        programming_questions=counts["programming"],
         mental_math_questions=counts["mental_math"],
         coding_questions=counts["coding"],
         finance_questions=counts["finance"],
         market_game_questions=counts["market_game"],
+        brain_teaser_questions=counts["brain_teaser"],
         flashcards=len(ALL_MVP_FLASHCARDS),
         tags=tag_count,
     )
@@ -246,10 +270,14 @@ def main() -> None:
     print(
         "Seeded MVP content:",
         f"{summary.probability_questions} probability,",
+        f"{summary.mathematics_questions} mathematics,",
+        f"{summary.statistics_questions} statistics,",
+        f"{summary.programming_questions} programming,",
         f"{summary.mental_math_questions} mental math,",
         f"{summary.coding_questions} coding,",
         f"{summary.finance_questions} finance,",
         f"{summary.market_game_questions} market games,",
+        f"{summary.brain_teaser_questions} brain teasers,",
         f"{summary.flashcards} flashcards,",
         f"{summary.tags} tags",
         f"({summary.total} questions).",

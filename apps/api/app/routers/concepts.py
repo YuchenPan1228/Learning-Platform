@@ -35,6 +35,7 @@ def _concept_read(concept: Concept) -> ConceptRead:
         definition=concept.definition,
         formula=concept.formula,
         intuition=concept.intuition,
+        worked_example=concept.worked_example,
         common_mistakes=concept.common_mistakes,
         interview_tips=concept.interview_tips,
         prerequisites=concept.prerequisites,

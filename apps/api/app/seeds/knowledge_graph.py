@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.concept import Concept, ConceptEdge
+from app.models.flashcard import Flashcard
 from app.models.topic import Topic
 from app.seeds.data.knowledge_graph import (
     CONCEPT_DETAILS,
@@ -68,6 +69,7 @@ def seed_topics(session: Session) -> dict[str, Topic]:
         )
         topics_by_slug[section.slug] = parent
 
+        desired_child_slugs = {_subtopic_slug(subtopic) for subtopic in section.subtopics}
         for subtopic_index, subtopic in enumerate(section.subtopics):
             child_slug = _subtopic_slug(subtopic)
             child = _upsert_topic(
@@ -79,6 +81,37 @@ def seed_topics(session: Session) -> dict[str, Topic]:
                 description=None,
             )
             topics_by_slug[child_slug] = child
+
+        obsolete_children = session.scalars(
+            select(Topic).where(
+                Topic.parent_topic_id == parent.id,
+                Topic.slug.not_in(desired_child_slugs),
+            )
+        ).all()
+        for obsolete in obsolete_children:
+            flashcards = session.scalars(
+                select(Flashcard).where(Flashcard.topic_id == obsolete.id)
+            ).all()
+            for flashcard in flashcards:
+                session.delete(flashcard)
+            concepts = session.scalars(
+                select(Concept).where(Concept.topic_id == obsolete.id)
+            ).all()
+            concept_ids = [concept.id for concept in concepts]
+            if concept_ids:
+                edges = session.scalars(
+                    select(ConceptEdge).where(
+                        ConceptEdge.source_concept_id.in_(concept_ids)
+                        | ConceptEdge.target_concept_id.in_(concept_ids)
+                    )
+                ).all()
+                for edge in edges:
+                    session.delete(edge)
+                for concept in concepts:
+                    session.delete(concept)
+            session.delete(obsolete)
+        if obsolete_children:
+            session.flush()
 
     return topics_by_slug
 
@@ -97,6 +130,7 @@ def _concept_payload(
             "definition": detailed.definition,
             "formula": detailed.formula,
             "intuition": detailed.intuition,
+            "worked_example": detailed.worked_example,
             "common_mistakes": detailed.common_mistakes,
             "interview_tips": detailed.interview_tips,
             "prerequisites": detailed.prerequisites,
@@ -107,6 +141,7 @@ def _concept_payload(
         "definition": default_concept_definition(subtopic.name, section.name),
         "formula": None,
         "intuition": None,
+        "worked_example": None,
         "common_mistakes": None,
         "interview_tips": None,
         "prerequisites": None,

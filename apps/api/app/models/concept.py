@@ -28,6 +28,7 @@ class Concept(Base):
     definition: Mapped[str | None] = mapped_column(Text, nullable=True)
     formula: Mapped[str | None] = mapped_column(Text, nullable=True)
     intuition: Mapped[str | None] = mapped_column(Text, nullable=True)
+    worked_example: Mapped[str | None] = mapped_column(Text, nullable=True)
     common_mistakes: Mapped[str | None] = mapped_column(Text, nullable=True)
     interview_tips: Mapped[str | None] = mapped_column(Text, nullable=True)
     prerequisites: Mapped[str | None] = mapped_column(Text, nullable=True)

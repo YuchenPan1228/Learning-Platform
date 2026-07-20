@@ -84,12 +84,15 @@ CODING_QUESTIONS: tuple[QuestionSeed, ...] = (
     ),
     QuestionSeed(
         seed_key="code-008",
-        title="Union Find Purpose",
-        body="What problem class is union-find especially good at?",
+        title="Connected Components",
+        body="How do you find connected components in an undirected graph?",
         topic_slug="coding-patterns",
-        subtopic_slug="union-find",
+        subtopic_slug="graph-traversal",
         difficulty=Difficulty.MEDIUM,
-        canonical_solution="Dynamic connectivity and detecting whether adding an edge creates a cycle.",
+        canonical_solution=(
+            "Run BFS or DFS from unvisited nodes; each traversal marks one component. "
+            "$O(V+E)$ total."
+        ),
         estimated_time_seconds=240,
     ),
     QuestionSeed(
@@ -107,9 +110,12 @@ CODING_QUESTIONS: tuple[QuestionSeed, ...] = (
         title="Stack for Parentheses",
         body="Why does a stack solve valid parentheses checking?",
         topic_slug="coding-patterns",
-        subtopic_slug="intervals",
+        subtopic_slug="two-pointers",
         difficulty=Difficulty.MEDIUM,
-        canonical_solution="Opening brackets push; closing brackets must match the most recent unmatched opener.",
+        canonical_solution=(
+            "Opening brackets push; closing brackets must match the most recent unmatched "
+            "opener (LIFO). Related linear scan — not interval merge."
+        ),
         estimated_time_seconds=240,
     ),
 )

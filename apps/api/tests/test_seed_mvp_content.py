@@ -28,17 +28,21 @@ def test_seed_mvp_content_is_idempotent(
         flashcard_count = session.scalar(select(func.count()).select_from(Flashcard))
         second = seed_mvp_content(session)
 
-        assert first.total == 65
+        assert first.total == 183
         assert first.probability_questions == 20
-        assert first.mental_math_questions == 20
+        assert first.mathematics_questions == 20
+        assert first.statistics_questions == 18
+        assert first.programming_questions == 15
+        assert first.mental_math_questions == 56
         assert first.coding_questions == 10
-        assert first.finance_questions == 10
+        assert first.finance_questions == 21
         assert first.market_game_questions == 5
-        assert first.flashcards == 15
+        assert first.brain_teaser_questions == 18
+        assert first.flashcards == 165
         assert first.tags >= 1
         assert second == first
-        assert question_count == 65
-        assert flashcard_count == 15
+        assert question_count == 183
+        assert flashcard_count == 165
 
         from app.models.tag import QuestionTag, Tag
 
@@ -52,6 +56,24 @@ def test_seed_mvp_content_is_idempotent(
         )
         assert mental_math is not None
         assert mental_math.short_answer == "351"
+
+        stats = session.scalar(
+            select(Question).where(Question.extraction_method == "hand_seed:stats-001")
+        )
+        assert stats is not None
+        assert stats.short_answer == "0.25"
+
+        finance = session.scalar(
+            select(Question).where(Question.extraction_method == "hand_seed:fin-001")
+        )
+        assert finance is not None
+        assert finance.short_answer == "10"
+
+        programming = session.scalar(
+            select(Question).where(Question.extraction_method == "hand_seed:prog-001")
+        )
+        assert programming is not None
+        assert programming.short_answer == "O(n) vs O(1)"
 
         market_game = session.scalar(
             select(Question).where(Question.extraction_method == "hand_seed:game-002")
