@@ -10,6 +10,7 @@ from app.ai.warmup import warmup_configured_models
 from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
+    analytics,
     attempts,
     concepts,
     dashboard,
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     application.include_router(learning_paths.router)
     application.include_router(mastery.router)
     application.include_router(study_plan.router)
+    application.include_router(analytics.router)
     application.include_router(search.router)
     application.state.settings = settings
     return application
