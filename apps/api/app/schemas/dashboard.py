@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.study_plan import DailyStudyPlanRead
+
 
 class TopicMasteryRead(BaseModel):
     topic_id: int
@@ -24,3 +26,4 @@ class DashboardRead(BaseModel):
     topic_mastery: list[TopicMasteryRead]
     subtopic_mastery: list[TopicMasteryRead]
     weak_prerequisites: list[WeakPrerequisiteRead]
+    daily_plan: DailyStudyPlanRead

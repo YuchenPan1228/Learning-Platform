@@ -6,6 +6,7 @@ from app.models.enums import ConceptEdgeRelationshipType
 from app.models.topic import Topic
 from app.schemas.dashboard import DashboardRead, TopicMasteryRead, WeakPrerequisiteRead
 from app.services.progress import TopicProgressStats, get_topic_progress_stats
+from app.services.study_planner import build_daily_study_plan
 
 WEAK_MASTERY_THRESHOLD = 50.0
 
@@ -90,4 +91,5 @@ def get_dashboard(session: Session) -> DashboardRead:
         topic_mastery=_topic_mastery_cards(session),
         subtopic_mastery=_subtopic_mastery_cards(session),
         weak_prerequisites=_weak_prerequisites(session),
+        daily_plan=build_daily_study_plan(session),
     )
