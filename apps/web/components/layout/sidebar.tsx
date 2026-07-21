@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { adminNavItems, isNavItemActive, mainNavItems } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
 import { SidebarDailyPlan } from "@/components/dashboard/sidebar-daily-plan";
+import { adminNavItems, isNavItemActive, mainNavItems } from "@/lib/navigation";
+import type { DailyStudyPlan } from "@/lib/types/dashboard";
+import { cn } from "@/lib/utils";
 
 function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -26,7 +27,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ dailyPlan }: { dailyPlan: DailyStudyPlan | null }) {
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-6 border-r border-[#dfe6e1] bg-[#fbfcfa] p-6">
       <div className="flex items-center gap-3">
@@ -52,7 +53,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <SidebarDailyPlan />
+      <SidebarDailyPlan dailyPlan={dailyPlan} />
     </aside>
   );
 }
