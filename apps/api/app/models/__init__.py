@@ -10,6 +10,7 @@ from app.models.enums import (
     ContentStatus,
     Difficulty,
     DuplicateMatchType,
+    FlashcardReviewRating,
     LearningSignalType,
     SearchResourceType,
     TagCategory,
@@ -20,6 +21,7 @@ from app.models.learning_signal import LearningSignal
 from app.models.question import Question
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
+from app.models.user_flashcard_progress import UserFlashcardProgress
 from app.models.user_question_progress import UserQuestionProgress
 from app.models.user_topic_mastery import UserTopicMastery
 
@@ -36,6 +38,7 @@ __all__ = [
     "Difficulty",
     "DuplicateMatchType",
     "Flashcard",
+    "FlashcardReviewRating",
     "LearningPath",
     "LearningPathStep",
     "LearningSignal",
@@ -47,6 +50,7 @@ __all__ = [
     "Tag",
     "TagCategory",
     "Topic",
+    "UserFlashcardProgress",
     "UserQuestionProgress",
     "UserTopicMastery",
 ]
