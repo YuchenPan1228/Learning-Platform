@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.services.mastery import recalculate_user_topic_mastery
+
 
 @dataclass(frozen=True, slots=True)
 class LocalUserStateSummary:
@@ -9,7 +11,5 @@ class LocalUserStateSummary:
 
 
 def seed_local_user_state(session: Session) -> LocalUserStateSummary:
-    # UserTopicMastery stays empty until Phase 3B (QP-028).
-    # Dashboard mastery is computed from attempts in the meantime.
-    session.commit()
-    return LocalUserStateSummary(mastery_rows=0)
+    rows = recalculate_user_topic_mastery(session)
+    return LocalUserStateSummary(mastery_rows=len(rows))

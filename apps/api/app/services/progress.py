@@ -131,6 +131,9 @@ def set_question_progress(
         existing.manual_status = payload.status
 
     session.commit()
+    from app.services.mastery import recalculate_user_topic_mastery
+
+    recalculate_user_topic_mastery(session)
     progress = get_question_progress(session, question_id)
     return QuestionProgressRead(
         question_id=question_id,

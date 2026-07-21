@@ -6,6 +6,7 @@ from app.models.constants import LOCAL_USER_ID
 from app.models.question import Question
 from app.schemas.attempt import AttemptRead
 from app.services.answer_check import attempt_score, grade_short_answer
+from app.services.mastery import recalculate_user_topic_mastery
 
 
 def create_attempt(
@@ -35,6 +36,7 @@ def create_attempt(
     session.add(attempt)
     session.commit()
     session.refresh(attempt)
+    recalculate_user_topic_mastery(session)
 
     return AttemptRead(
         id=attempt.id,
