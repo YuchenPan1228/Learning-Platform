@@ -16,6 +16,7 @@ from app.routers import (
     flashcards,
     health,
     learning_paths,
+    mastery,
     questions,
     search,
     tags,
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     application.include_router(tags.router)
     application.include_router(flashcards.router)
     application.include_router(learning_paths.router)
+    application.include_router(mastery.router)
     application.include_router(search.router)
     application.state.settings = settings
     return application
