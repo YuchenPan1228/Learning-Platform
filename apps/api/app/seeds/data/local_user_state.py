@@ -1,5 +1,5 @@
-# Placeholder mastery scores deferred until Phase 3B (QP-028).
-# Dashboard mastery is computed from attempts until then.
+# Local mastery is computed deterministically from attempts (QP-028).
+# Seeded UserTopicMastery rows are produced by recalculate_user_topic_mastery.
 
 TOPIC_MASTERY_SCORES: dict[str, float] = {}
 
