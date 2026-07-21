@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC
 from unittest.mock import MagicMock, patch
 
@@ -21,7 +22,7 @@ def _topic(topic_id: int, slug: str, name: str, parent_id: int | None = None) ->
     )
 
 
-def _scalars_result(*, rows: list, unique: bool = False) -> MagicMock:
+def _scalars_result(*, rows: Sequence[object], unique: bool = False) -> MagicMock:
     result = MagicMock()
     result.all = MagicMock(return_value=rows)
     if unique:
