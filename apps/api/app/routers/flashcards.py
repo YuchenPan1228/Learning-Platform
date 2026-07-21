@@ -1,52 +1,49 @@
-from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 
 from app.dependencies import SessionDep
-from app.models.flashcard import Flashcard
-from app.models.topic import Topic
-from app.schemas.flashcard import FlashcardRead
+from app.schemas.flashcard import FlashcardRead, FlashcardReviewRequest, FlashcardReviewResponse
+from app.services.flashcard_review import (
+    get_flashcard_with_progress,
+    list_flashcards_with_progress,
+    review_flashcard,
+)
 
 router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
-
-def _flashcard_read(flashcard: Flashcard) -> FlashcardRead:
-    return FlashcardRead(
-        id=flashcard.id,
-        front=flashcard.front,
-        back=flashcard.back,
-        topic_id=flashcard.topic_id,
-        topic_slug=flashcard.topic.slug,
-        difficulty=flashcard.difficulty,
-    )
+TopicSlugQuery = Annotated[str | None, Query()]
+DueOnlyQuery = Annotated[bool, Query()]
+LimitQuery = Annotated[int, Query(ge=1, le=100)]
+OffsetQuery = Annotated[int, Query(ge=0)]
 
 
 @router.get("")
 def list_flashcards(
     session: SessionDep,
-    topic_slug: str | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    topic_slug: TopicSlugQuery = None,
+    due_only: DueOnlyQuery = False,
+    limit: LimitQuery = 50,
+    offset: OffsetQuery = 0,
 ) -> list[FlashcardRead]:
-    query = (
-        select(Flashcard)
-        .options(joinedload(Flashcard.topic))
-        .order_by(Flashcard.id)
-        .limit(limit)
-        .offset(offset)
+    return list_flashcards_with_progress(
+        session,
+        topic_slug=topic_slug,
+        due_only=due_only,
+        limit=limit,
+        offset=offset,
     )
-    if topic_slug is not None:
-        query = query.join(Flashcard.topic).where(Topic.slug == topic_slug)
 
-    flashcards = session.scalars(query).unique().all()
-    return [_flashcard_read(flashcard) for flashcard in flashcards]
+
+@router.post("/{flashcard_id}/review")
+def submit_flashcard_review(
+    flashcard_id: int,
+    payload: FlashcardReviewRequest,
+    session: SessionDep,
+) -> FlashcardReviewResponse:
+    return review_flashcard(session, flashcard_id=flashcard_id, payload=payload)
 
 
 @router.get("/{flashcard_id}")
 def get_flashcard(flashcard_id: int, session: SessionDep) -> FlashcardRead:
-    flashcard = session.scalar(
-        select(Flashcard).where(Flashcard.id == flashcard_id).options(joinedload(Flashcard.topic)),
-    )
-    if flashcard is None:
-        raise HTTPException(status_code=404, detail="Flashcard not found")
-    return _flashcard_read(flashcard)
+    return get_flashcard_with_progress(session, flashcard_id)

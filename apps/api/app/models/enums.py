@@ -61,6 +61,12 @@ class ManualQuestionProgressStatus(StrEnum):
     NOT_ATTEMPTED = "not_attempted"
 
 
+class FlashcardReviewRating(StrEnum):
+    AGAIN = "again"
+    GOOD = "good"
+    EASY = "easy"
+
+
 class AICacheResultKind(StrEnum):
     EXPLANATION = "explanation"
     HINT = "hint"

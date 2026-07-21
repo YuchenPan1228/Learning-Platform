@@ -15,6 +15,7 @@ EXPECTED_TABLES = {
     "user_topic_mastery",
     "ai_usage_logs",
     "ai_cache_entries",
+    "user_flashcard_progress",
 }
 
 
