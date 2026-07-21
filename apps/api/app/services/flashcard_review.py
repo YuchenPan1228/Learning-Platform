@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.constants import LOCAL_USER_ID
@@ -39,6 +39,24 @@ def flashcard_to_read(
         last_rating=progress.last_rating if progress is not None else None,
         is_due=progress is None or progress.next_review_at <= datetime.now(UTC),
     )
+
+
+def count_due_flashcards(session: Session) -> int:
+    """Count flashcards due now (never reviewed or next_review_at <= now)."""
+    now = datetime.now(UTC)
+    total = session.scalar(select(func.count()).select_from(Flashcard)) or 0
+    not_due = (
+        session.scalar(
+            select(func.count())
+            .select_from(UserFlashcardProgress)
+            .where(
+                UserFlashcardProgress.user_id == LOCAL_USER_ID,
+                UserFlashcardProgress.next_review_at > now,
+            ),
+        )
+        or 0
+    )
+    return max(int(total) - int(not_due), 0)
 
 
 def list_flashcards_with_progress(

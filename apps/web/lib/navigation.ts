@@ -9,6 +9,7 @@ export const mainNavItems: NavItem[] = [
   { href: "/practice", label: "Practice" },
   { href: "/mental-math", label: "Mental Math" },
   { href: "/flashcards", label: "Flashcards" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 export const adminNavItems: NavItem[] = [
@@ -22,6 +23,7 @@ const pageTitles: Record<string, string> = {
   "/practice": "Practice",
   "/mental-math": "Mental Math",
   "/flashcards": "Flashcards",
+  "/analytics": "Analytics",
   "/admin/import": "Admin Import",
   "/admin/review": "Admin Review",
 };
