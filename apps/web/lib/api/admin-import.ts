@@ -1,7 +1,14 @@
 import { getApiBaseUrl } from "@/lib/api/config";
 import type { ImportedResource, ResourceSourceType } from "@/lib/types/admin-import";
+import type { ImportDraftTarget } from "@/lib/admin-review/draft-form";
 
-export type UrlImportInput = {
+type SharedImportDraftInput = {
+  objectType?: ImportDraftTarget;
+  topicSlug: string;
+  subtopicSlug?: string;
+};
+
+export type UrlImportInput = SharedImportDraftInput & {
   url: string;
   title?: string;
   author?: string;
@@ -10,7 +17,7 @@ export type UrlImportInput = {
   summary?: string;
 };
 
-export type NoteImportInput = {
+export type NoteImportInput = SharedImportDraftInput & {
   noteText: string;
   title?: string;
   author?: string;
@@ -19,7 +26,17 @@ export type NoteImportInput = {
   sourceType?: Extract<ResourceSourceType, "manual" | "book_note">;
 };
 
-export type PdfMetadataImportInput = {
+export type QuestionImportInput = {
+  title: string;
+  body: string;
+  shortAnswer?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  topicSlug: string;
+  subtopicSlug?: string;
+  objectType: "question";
+};
+
+export type PdfMetadataImportInput = SharedImportDraftInput & {
   title: string;
   filePath?: string;
   author?: string;
@@ -54,6 +71,14 @@ async function postImport(path: string, body: Record<string, unknown>): Promise<
   return response.json() as Promise<ImportedResource>;
 }
 
+function draftFields(input: SharedImportDraftInput): Record<string, unknown> {
+  return {
+    object_type: input.objectType ?? "question",
+    topic_slug: input.topicSlug,
+    subtopic_slug: input.subtopicSlug,
+  };
+}
+
 export function importUrlResource(input: UrlImportInput): Promise<ImportedResource> {
   return postImport("/admin/import/url", {
     url: input.url,
@@ -62,6 +87,7 @@ export function importUrlResource(input: UrlImportInput): Promise<ImportedResour
     license: input.license,
     attribution: input.attribution,
     summary: input.summary,
+    ...draftFields(input),
   });
 }
 
@@ -73,6 +99,19 @@ export function importNoteResource(input: NoteImportInput): Promise<ImportedReso
     license: input.license,
     attribution: input.attribution,
     source_type: input.sourceType ?? "manual",
+    ...draftFields(input),
+  });
+}
+
+export function importQuestionResource(input: QuestionImportInput): Promise<ImportedResource> {
+  return postImport("/admin/import/question", {
+    title: input.title,
+    body: input.body,
+    short_answer: input.shortAnswer,
+    difficulty: input.difficulty,
+    topic_slug: input.topicSlug,
+    subtopic_slug: input.subtopicSlug,
+    object_type: input.objectType,
   });
 }
 
@@ -87,5 +126,6 @@ export function importPdfMetadataResource(
     license: input.license,
     attribution: input.attribution,
     summary: input.summary,
+    ...draftFields(input),
   });
 }

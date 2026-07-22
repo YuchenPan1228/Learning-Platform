@@ -91,6 +91,7 @@ export async function editReviewItem(
     },
     body: JSON.stringify({
       payload_json: input.payloadJson,
+      object_type: input.objectType,
       quality_score: input.qualityScore,
       confidence_score: input.confidenceScore,
     }),

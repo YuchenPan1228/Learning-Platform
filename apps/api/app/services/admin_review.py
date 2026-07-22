@@ -8,6 +8,14 @@ from app.schemas.admin_review import (
     ExtractedObjectReviewRead,
     ResourceProvenanceRead,
 )
+from app.services.import_topic_validation import ImportTopicError, validate_import_topics
+
+_REVIEW_OBJECT_TYPES = frozenset(
+    {
+        ExtractedObjectType.QUESTION,
+        ExtractedObjectType.FLASHCARD,
+    }
+)
 
 
 class ReviewQueueError(ValueError):
@@ -51,9 +59,14 @@ def edit_review_item(
     if not updates:
         raise ReviewQueueError("no fields provided to edit")
 
+    if "object_type" in updates and updates["object_type"] is not None:
+        if updates["object_type"] not in _REVIEW_OBJECT_TYPES:
+            raise ReviewQueueError("object_type must be question or flashcard")
+
     # Provenance fields (resource_id, topic_job_id, extraction_method, model_version)
     # are intentionally omitted from ExtractedObjectEdit and never mutated here.
     if "payload_json" in updates and updates["payload_json"] is not None:
+        _validate_payload_topics(session, updates["payload_json"])
         row.payload_json = updates["payload_json"]
     if "object_type" in updates and updates["object_type"] is not None:
         row.object_type = updates["object_type"]
@@ -127,3 +140,27 @@ def _to_review_read(row: ExtractedObject) -> ExtractedObjectReviewRead:
         updated_at=row.updated_at,
         resource=resource,
     )
+
+
+def _validate_payload_topics(session: Session, payload_json: dict[str, object]) -> None:
+    topic_slug = payload_json.get("topic_slug")
+    if topic_slug is None:
+        return
+    if not isinstance(topic_slug, str) or not topic_slug.strip():
+        raise ReviewQueueError("topic_slug must be a non-empty string")
+
+    subtopic_slug = payload_json.get("subtopic_slug")
+    normalized_subtopic = None
+    if subtopic_slug is not None:
+        if not isinstance(subtopic_slug, str) or not subtopic_slug.strip():
+            raise ReviewQueueError("subtopic_slug must be a non-empty string when provided")
+        normalized_subtopic = subtopic_slug.strip()
+
+    try:
+        validate_import_topics(
+            session,
+            topic_slug=topic_slug.strip(),
+            subtopic_slug=normalized_subtopic,
+        )
+    except ImportTopicError as exc:
+        raise ReviewQueueError(str(exc)) from exc

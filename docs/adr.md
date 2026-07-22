@@ -171,5 +171,70 @@ Rationale:
 Consequences:
 
 - Services must resolve models through task routing and cache by the resolved model name.
-- Embedding calls remain deferred until QP-047; config/routing placeholders are reserved now.
+- Embedding calls remain deferred until QP-048; config/routing placeholders are reserved now.
+
+## ADR-012: Manual Ingestion Publishes Questions and Flashcards Only
+
+Status: Accepted
+
+Decision:
+
+- Phase 4 manual import creates review-queue drafts as questions or flashcards only.
+- Publish converts approved drafts into `Question` or `Flashcard` records.
+- Manual import does not create new `Concept` or `Topic` records.
+- Editing **existing** seeded concepts is a separate admin workflow (`QP-038`), not part of import → review → publish.
+
+Rationale:
+
+- Questions and flashcards are the highest-value incremental content for interview prep.
+- Concept and topic graph curation needs a dedicated editor and should not be coupled to URL/PDF ingestion.
+- Keeps the human review loop narrow and testable before Phase 5 automation.
+
+Consequences:
+
+- `admin_publish` manual path supports question and flashcard only.
+- Concept/formula/example extraction from automated ingestion stays deferred until `QP-038` exists.
+
+## ADR-013: User-Chosen Topic at Import; AI Suggests in Phase 5
+
+Status: Accepted
+
+Decision:
+
+- Phase 4: user selects topic and optional subtopic at import and may change them while editing a draft in review.
+- Phase 5 (`QP-043`): AI may pre-fill `topic_slug` / `subtopic_slug` from source content; user confirms in review before approve/publish.
+- Later: optional auto-suggest with override is allowed, but human confirmation remains required before publish.
+
+Rationale:
+
+- Topic placement errors are costly and hard to undo at scale.
+- A single-user MVP should prefer explicit control until extraction quality is proven.
+- AI suggestions fit naturally after structured extraction exists in Phase 5.
+
+Consequences:
+
+- Import APIs require validated `topic_slug`.
+- Review UI must expose topic/subtopic editing on drafts.
+- Phase 5 extractors should write suggested topics into `payload_json`, not publish directly.
+
+## ADR-014: Defer URL/PDF AI Extraction to Phase 5
+
+Status: Accepted
+
+Decision:
+
+- Phase 4 imports URL/PDF metadata or pasted text only; the user writes or edits draft content in review.
+- Phase 5 (`QP-042`, `QP-043`) adds local page/PDF extraction and structured AI extraction into the same review queue.
+- Do not build a parallel AI extraction path in Phase 4.
+
+Rationale:
+
+- Phase 5 already owns crawling, extraction tooling, and job lifecycle.
+- Duplicating AI extraction in Phase 4 would fork provenance, observability, and review UX.
+- Manual import remains useful while the automated pipeline is built.
+
+Consequences:
+
+- Phase 4 URL/PDF imports create skeleton question or flashcard drafts with placeholders where needed.
+- Review UI is shared between manual and automated drafts through Phase 5 and beyond.
 

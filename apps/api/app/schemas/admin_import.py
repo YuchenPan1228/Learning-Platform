@@ -1,11 +1,32 @@
 from datetime import datetime
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
-from app.models.enums import ContentStatus, ResourceSourceType
+from app.models.enums import ContentStatus, Difficulty, ExtractedObjectType, ResourceSourceType
+
+_IMPORT_OBJECT_TYPES = frozenset(
+    {
+        ExtractedObjectType.QUESTION,
+        ExtractedObjectType.FLASHCARD,
+    }
+)
 
 
-class UrlImportCreate(BaseModel):
+class ImportDraftOptions(BaseModel):
+    object_type: ExtractedObjectType = ExtractedObjectType.QUESTION
+    topic_slug: str = Field(min_length=1, max_length=120)
+    subtopic_slug: str | None = Field(default=None, max_length=120)
+
+    @field_validator("object_type")
+    @classmethod
+    def validate_import_object_type(cls, value: ExtractedObjectType) -> ExtractedObjectType:
+        if value not in _IMPORT_OBJECT_TYPES:
+            raise ValueError("object_type must be question or flashcard")
+        return value
+
+
+class UrlImportCreate(ImportDraftOptions):
     url: HttpUrl
     title: str | None = Field(default=None, max_length=300)
     author: str | None = Field(default=None, max_length=200)
@@ -14,7 +35,7 @@ class UrlImportCreate(BaseModel):
     summary: str | None = None
 
 
-class NoteImportCreate(BaseModel):
+class NoteImportCreate(ImportDraftOptions):
     note_text: str = Field(min_length=1)
     title: str | None = Field(default=None, max_length=300)
     author: str | None = Field(default=None, max_length=200)
@@ -29,8 +50,30 @@ class NoteImportCreate(BaseModel):
             raise ValueError("source_type must be manual or book_note")
         return value
 
+    @model_validator(mode="after")
+    def validate_flashcard_title(self) -> Self:
+        if self.object_type is ExtractedObjectType.FLASHCARD and not (self.title or "").strip():
+            raise ValueError("title (flashcard front) is required for flashcard imports")
+        return self
 
-class PdfMetadataImportCreate(BaseModel):
+
+class QuestionImportCreate(ImportDraftOptions):
+    title: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1)
+    short_answer: str | None = None
+    difficulty: Difficulty | None = None
+    author: str | None = Field(default=None, max_length=200)
+    license: str | None = Field(default=None, max_length=120)
+    attribution: str | None = None
+
+    @model_validator(mode="after")
+    def validate_question_import(self) -> Self:
+        if self.object_type is not ExtractedObjectType.QUESTION:
+            raise ValueError("question import requires object_type question")
+        return self
+
+
+class PdfMetadataImportCreate(ImportDraftOptions):
     title: str = Field(min_length=1, max_length=300)
     file_path: str | None = Field(default=None, max_length=500)
     author: str | None = Field(default=None, max_length=200)

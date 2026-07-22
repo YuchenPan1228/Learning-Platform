@@ -6,19 +6,27 @@ from app.dedup.text import text_hash
 from app.models.enums import ContentStatus, ExtractedObjectType, ResourceSourceType
 from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
+from app.models.topic import Topic
 from app.schemas.admin_import import (
     NoteImportCreate,
     PdfMetadataImportCreate,
+    QuestionImportCreate,
     UrlImportCreate,
 )
 from app.services.admin_import import (
     import_note_resource,
     import_pdf_metadata_resource,
+    import_question_resource,
     import_url_resource,
 )
-from app.services.import_extracted_draft import create_extracted_draft_from_resource
+from app.services.import_extracted_draft import (
+    DraftImportOptions,
+    create_extracted_draft_from_resource,
+)
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+
+_TOPIC_SLUG = "probability"
 
 
 def _attach_persisted_fields(row: Resource, resource_id: int) -> None:
@@ -41,6 +49,15 @@ def _mock_import_session(
     resource_id: int = 1,
     extracted_id: int = 10,
 ) -> None:
+    topic = Topic(
+        id=1,
+        slug=_TOPIC_SLUG,
+        name="Probability",
+        order_index=0,
+        parent_topic_id=None,
+    )
+    session.scalar.return_value = topic
+
     flush_count = {"value": 0}
 
     def refresh(row: object) -> None:
@@ -61,7 +78,7 @@ def _mock_import_session(
     session.flush.side_effect = flush
 
 
-def test_import_url_resource_creates_draft_without_crawling() -> None:
+def test_import_url_resource_creates_question_draft_without_crawling() -> None:
     session = MagicMock()
     _mock_import_session(session)
 
@@ -71,6 +88,8 @@ def test_import_url_resource_creates_draft_without_crawling() -> None:
             url="https://example.com/bayes",
             title="Bayes notes",
             license="CC-BY-4.0",
+            topic_slug=_TOPIC_SLUG,
+            object_type=ExtractedObjectType.QUESTION,
         ),
     )
 
@@ -87,15 +106,16 @@ def test_import_url_resource_creates_draft_without_crawling() -> None:
     assert saved.raw_text_hash == text_hash("https://example.com/bayes")
     extracted = session.add.call_args_list[1].args[0]
     assert isinstance(extracted, ExtractedObject)
-    assert extracted.object_type is ExtractedObjectType.CONCEPT
+    assert extracted.object_type is ExtractedObjectType.QUESTION
     assert extracted.resource_id == 1
+    assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
     assert extracted.extraction_method == "manual:import"
     assert result.id == 1
     assert result.extracted_object_id == 10
     assert result.source_type is ResourceSourceType.URL
 
 
-def test_import_note_resource_stores_text_as_summary() -> None:
+def test_import_note_resource_stores_text_as_question_body() -> None:
     session = MagicMock()
     _mock_import_session(session, resource_id=2, extracted_id=11)
 
@@ -106,6 +126,8 @@ def test_import_note_resource_stores_text_as_summary() -> None:
             title="Bayes note",
             source_type=ResourceSourceType.BOOK_NOTE,
             attribution="Handwritten study notes",
+            topic_slug=_TOPIC_SLUG,
+            object_type=ExtractedObjectType.QUESTION,
         ),
     )
 
@@ -116,7 +138,8 @@ def test_import_note_resource_stores_text_as_summary() -> None:
     assert saved.url is None
     assert saved.status is ContentStatus.DRAFT
     extracted = session.add.call_args_list[1].args[0]
-    assert extracted.payload_json["definition"] == "Bayes theorem relates P(A|B) to P(B|A)."
+    assert extracted.payload_json["body"] == "Bayes theorem relates P(A|B) to P(B|A)."
+    assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
     assert result.summary == "Bayes theorem relates P(A|B) to P(B|A)."
     assert result.extracted_object_id == 11
 
@@ -126,6 +149,16 @@ def test_note_import_rejects_non_note_source_type() -> None:
         NoteImportCreate(
             note_text="text",
             source_type=ResourceSourceType.URL,
+            topic_slug=_TOPIC_SLUG,
+        )
+
+
+def test_flashcard_note_import_requires_front_title() -> None:
+    with pytest.raises(ValidationError):
+        NoteImportCreate(
+            note_text="answer text",
+            topic_slug=_TOPIC_SLUG,
+            object_type=ExtractedObjectType.FLASHCARD,
         )
 
 
@@ -140,6 +173,8 @@ def test_import_pdf_metadata_stores_path_without_parsing() -> None:
             file_path="/Users/me/docs/interview-math.pdf",
             publisher="Self",
             license="All rights reserved",
+            topic_slug=_TOPIC_SLUG,
+            object_type=ExtractedObjectType.FLASHCARD,
         ),
     )
 
@@ -150,11 +185,36 @@ def test_import_pdf_metadata_stores_path_without_parsing() -> None:
     assert saved.publisher == "Self"
     assert saved.status is ContentStatus.DRAFT
     assert saved.raw_text_hash == text_hash("/Users/me/docs/interview-math.pdf")
+    extracted = session.add.call_args_list[1].args[0]
+    assert extracted.object_type is ExtractedObjectType.FLASHCARD
+    assert extracted.payload_json["front"] == "Interview Math PDF"
     assert result.id == 3
     assert result.extracted_object_id == 12
 
 
-def test_create_extracted_draft_from_resource_builds_concept_payload() -> None:
+def test_import_question_resource_creates_ready_to_review_draft() -> None:
+    session = MagicMock()
+    _mock_import_session(session, resource_id=4, extracted_id=13)
+
+    result = import_question_resource(
+        session,
+        QuestionImportCreate(
+            title="Bayes follow-up",
+            body="Given P(A)=0.3 and P(B|A)=0.5, what is P(A and B)?",
+            short_answer="0.15",
+            topic_slug=_TOPIC_SLUG,
+            object_type=ExtractedObjectType.QUESTION,
+        ),
+    )
+
+    extracted = session.add.call_args_list[1].args[0]
+    assert extracted.object_type is ExtractedObjectType.QUESTION
+    assert extracted.payload_json["title"] == "Bayes follow-up"
+    assert extracted.payload_json["short_answer"] == "0.15"
+    assert result.extracted_object_id == 13
+
+
+def test_create_extracted_draft_from_resource_builds_question_payload() -> None:
     resource = Resource(
         source_type=ResourceSourceType.MANUAL,
         title="Bayes note",
@@ -164,19 +224,27 @@ def test_create_extracted_draft_from_resource_builds_concept_payload() -> None:
     resource.id = 5
     session = MagicMock()
 
-    extracted = create_extracted_draft_from_resource(session, resource)
+    extracted = create_extracted_draft_from_resource(
+        session,
+        resource,
+        options=DraftImportOptions(
+            object_type=ExtractedObjectType.QUESTION,
+            topic_slug=_TOPIC_SLUG,
+        ),
+    )
 
     session.add.assert_called_once_with(extracted)
     assert extracted.resource_id == 5
-    assert extracted.object_type is ExtractedObjectType.CONCEPT
-    assert extracted.payload_json["name"] == "Bayes note"
-    assert extracted.payload_json["definition"] == "P(A|B) = P(B|A)P(A)/P(B)"
+    assert extracted.object_type is ExtractedObjectType.QUESTION
+    assert extracted.payload_json["title"] == "Bayes note"
+    assert extracted.payload_json["body"] == "P(A|B) = P(B|A)P(A)/P(B)"
+    assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
     assert extracted.extraction_method == "manual:import"
 
 
 @pytest.mark.integration
 def test_admin_import_endpoints_create_resources(
-    migrated_database: None,
+    seeded_database: None,
     require_postgres: None,
     client: TestClient,
 ) -> None:
@@ -185,6 +253,8 @@ def test_admin_import_endpoints_create_resources(
         json={
             "url": "https://example.com/conditional-probability",
             "title": "Conditional probability",
+            "topic_slug": _TOPIC_SLUG,
+            "object_type": "question",
         },
     )
     assert url_response.status_code == 200
@@ -199,6 +269,8 @@ def test_admin_import_endpoints_create_resources(
             "note_text": "Independence means P(A and B) = P(A)P(B).",
             "title": "Independence",
             "source_type": "manual",
+            "topic_slug": _TOPIC_SLUG,
+            "object_type": "flashcard",
         },
     )
     assert note_response.status_code == 200
@@ -206,12 +278,26 @@ def test_admin_import_endpoints_create_resources(
     assert note_body["source_type"] == "manual"
     assert note_body["summary"].startswith("Independence means")
 
+    question_response = client.post(
+        "/admin/import/question",
+        json={
+            "title": "Dice parity",
+            "body": "You roll two fair dice. What is P(sum is even)?",
+            "topic_slug": _TOPIC_SLUG,
+            "object_type": "question",
+        },
+    )
+    assert question_response.status_code == 200
+    question_body = question_response.json()
+
     pdf_response = client.post(
         "/admin/import/pdf",
         json={
             "title": "Local PDF",
             "file_path": "/tmp/quant-notes.pdf",
             "author": "Yuchen",
+            "topic_slug": _TOPIC_SLUG,
+            "object_type": "question",
         },
     )
     assert pdf_response.status_code == 200
@@ -227,10 +313,29 @@ def test_admin_import_endpoints_create_resources(
     extracted_ids = {item["id"] for item in review_items}
     assert url_body["extracted_object_id"] in extracted_ids
     assert note_body["extracted_object_id"] in extracted_ids
+    assert question_body["extracted_object_id"] in extracted_ids
     assert pdf_body["extracted_object_id"] in extracted_ids
 
     url_draft = next(item for item in review_items if item["id"] == url_body["extracted_object_id"])
     assert url_draft["status"] == "draft"
-    assert url_draft["object_type"] == "concept"
+    assert url_draft["object_type"] == "question"
+    assert url_draft["payload_json"]["topic_slug"] == _TOPIC_SLUG
     assert url_draft["resource"]["id"] == url_body["id"]
     assert url_draft["extraction_method"] == "manual:import"
+
+    flashcard_draft = next(
+        item for item in review_items if item["id"] == note_body["extracted_object_id"]
+    )
+    assert flashcard_draft["object_type"] == "flashcard"
+    assert flashcard_draft["payload_json"]["front"] == "Independence"
+
+    invalid_topic = client.post(
+        "/admin/import/question",
+        json={
+            "title": "Bad topic",
+            "body": "Question body",
+            "topic_slug": "not-a-real-topic",
+            "object_type": "question",
+        },
+    )
+    assert invalid_topic.status_code == 400

@@ -4,6 +4,10 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  createEditorStateFromItem,
+  DraftContentEditor,
+} from "@/components/admin/draft-content-editor";
+import {
   approveReviewItem,
   editReviewItem,
   fetchReviewQueue,
@@ -25,14 +29,17 @@ import {
 } from "@/lib/admin-review/display";
 import type {
   PublishReviewResult,
+  ReviewQueueEditInput,
   ReviewQueueItem,
   ReviewQueueStatus,
 } from "@/lib/types/admin-review";
+import type { TopicWithSubtopics } from "@/lib/types/topic";
 import { cn } from "@/lib/utils";
 
 type AdminReviewViewProps = {
   initialItems: ReviewQueueItem[];
   initialStatus?: ReviewQueueStatus;
+  topics: TopicWithSubtopics[];
 };
 
 const QUEUE_TABS: { id: ReviewQueueStatus; label: string; description: string }[] = [
@@ -102,21 +109,23 @@ function DetailSection({
 function ReviewDetailPanel({
   item,
   queueStatus,
+  topics,
   isBusy,
   publishMessage,
   onApprove,
   onReject,
   onPublish,
-  onSaveEdit,
+  onSaveDraft,
 }: {
   item: ReviewQueueItem;
   queueStatus: ReviewQueueStatus;
+  topics: TopicWithSubtopics[];
   isBusy: boolean;
   publishMessage: string | null;
   onApprove: () => void;
   onReject: () => void;
   onPublish: () => void;
-  onSaveEdit: (qualityScore: number | null) => Promise<void>;
+  onSaveDraft: (input: ReviewQueueEditInput) => Promise<void>;
 }) {
   const extractedText = getExtractedText(item);
   const summary = getSummary(item);
@@ -125,28 +134,7 @@ function ReviewDetailPanel({
   const licenseStatus = getLicenseStatus(item);
   const qualityScore = getQualityScore(item);
   const provenanceRows = getProvenanceRows(item);
-  const [qualityInput, setQualityInput] = useState(
-    item.quality_score !== null ? String(item.quality_score) : "",
-  );
-  const [editError, setEditError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  async function handleSaveQuality() {
-    setEditError(null);
-    setIsSaving(true);
-    try {
-      const trimmed = qualityInput.trim();
-      const parsed = trimmed === "" ? null : Number(trimmed);
-      if (parsed !== null && (Number.isNaN(parsed) || parsed < 0 || parsed > 1)) {
-        throw new Error("Quality score must be between 0 and 1.");
-      }
-      await onSaveEdit(parsed);
-    } catch (error) {
-      setEditError(error instanceof Error ? error.message : "Edit failed.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
+  const canEditDraft = queueStatus === "draft";
 
   return (
     <div className={panelClassName}>
@@ -221,6 +209,15 @@ function ReviewDetailPanel({
           ) : null}
         </DetailSection>
 
+        <DraftContentEditor
+          key={`${item.id}-${item.updated_at}`}
+          initialState={createEditorStateFromItem(item)}
+          topics={topics}
+          canEdit={canEditDraft}
+          isBusy={isBusy}
+          onSave={onSaveDraft}
+        />
+
         <DetailSection
           title="Formulas"
           emptyMessage="No formulas detected."
@@ -282,36 +279,6 @@ function ReviewDetailPanel({
           </DetailSection>
           <DetailSection title="Quality score">
             <p className="mt-2 text-sm font-medium text-[#15201c]">{formatScore(qualityScore)}</p>
-            {queueStatus === "draft" ? (
-              <div className="mt-3 flex flex-wrap items-end gap-2">
-                <label className="block text-xs font-medium text-[#66736e]">
-                  Edit draft quality (0–1)
-                  <input
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={qualityInput}
-                    onChange={(event) => setQualityInput(event.target.value)}
-                    className="mt-1 block w-28 rounded-lg border border-[#dfe6e1] px-2 py-1.5 text-sm text-[#15201c]"
-                  />
-                </label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isBusy || isSaving}
-                  onClick={handleSaveQuality}
-                >
-                  {isSaving ? "Saving…" : "Save edit"}
-                </Button>
-              </div>
-            ) : null}
-            {editError ? (
-              <p className="mt-2 text-sm text-[#9b2c2c]" role="alert">
-                {editError}
-              </p>
-            ) : null}
           </DetailSection>
         </div>
 
@@ -341,7 +308,11 @@ function formatPublishMessage(result: PublishReviewResult): string {
   return `Published as ${result.published.kind} #${result.published.id}.${warnings}`;
 }
 
-export function AdminReviewView({ initialItems, initialStatus = "draft" }: AdminReviewViewProps) {
+export function AdminReviewView({
+  initialItems,
+  initialStatus = "draft",
+  topics,
+}: AdminReviewViewProps) {
   const [queueStatus, setQueueStatus] = useState<ReviewQueueStatus>(initialStatus);
   const [items, setItems] = useState(() => filterQueueItems(initialItems, initialStatus));
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -487,6 +458,7 @@ export function AdminReviewView({ initialItems, initialStatus = "draft" }: Admin
             key={selectedItem.id}
             item={selectedItem}
             queueStatus={queueStatus}
+            topics={topics}
             isBusy={isBusy}
             publishMessage={publishMessage}
             onApprove={() =>
@@ -508,8 +480,8 @@ export function AdminReviewView({ initialItems, initialStatus = "draft" }: Admin
                 await refreshQueue(queueStatus, null);
               })
             }
-            onSaveEdit={async (qualityScore) => {
-              await editReviewItem(selectedItem.id, { qualityScore });
+            onSaveDraft={async (input) => {
+              await editReviewItem(selectedItem.id, input);
               await refreshQueue(queueStatus, selectedItem.id);
             }}
           />

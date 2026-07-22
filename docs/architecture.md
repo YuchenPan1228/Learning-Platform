@@ -81,7 +81,7 @@ AI Router (AITask)
    ├── general    → general tutoring, lessons, quizzes, similar questions
    ├── coding     → Java/Python/SQL, LeetCode-style help, debugging
    ├── reasoning  → quant interview problems, multi-step math
-   └── embedding  → semantic search over learning content (deferred to QP-047)
+   └── embedding  → semantic search over learning content (deferred to QP-048)
 ```
 
 Production Ollama targets:
@@ -351,10 +351,17 @@ Phase 3B APIs:
 
 Phase 4-5 APIs:
 
-- Admin import
-- Review queue
+- Admin import (question/flashcard drafts with user-selected topic)
+- Review queue (edit draft, approve, publish)
 - Topic jobs
 - Ingestion job status
+
+Phase 4 admin scope:
+
+- Import → `ExtractedObject` draft → human review → publish as `Question` or `Flashcard`.
+- User picks topic/subtopic at import and in review (`ADR-013`).
+- URL/PDF AI extraction deferred to Phase 5 `QP-042` / `QP-043` (`ADR-014`).
+- Editing existing `Concept` records is separate (`QP-038`); manual import does not create concepts (`ADR-012`).
 
 No authentication should be added until a later milestone.
 
@@ -377,6 +384,7 @@ Later routes:
 - `/analytics`
 - `/market-games`
 - `/admin/ingestion/jobs`
+- `/admin/concepts` (edit existing concepts, `QP-038`)
 - `/settings`
 - `/login`
 
@@ -422,5 +430,12 @@ Paid crawler services:
 
 Embeddings:
 
-- Deferred until approved dataset size and search quality justify them.
+- Deferred until approved dataset size and search quality justify them (`QP-047`–`QP-051`).
+
+Manual ingestion:
+
+- Phase 4 publishes questions and flashcards only; no new concepts/topics via import (`ADR-012`).
+- User assigns topic at import/review; AI topic suggestions start in Phase 5 (`ADR-013`).
+- URL/PDF AI extraction deferred to Phase 5 (`ADR-014`).
+- Existing concept editing is a separate admin workflow (`QP-038`).
 

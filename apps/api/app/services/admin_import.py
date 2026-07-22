@@ -6,10 +6,16 @@ from app.models.resource import Resource
 from app.schemas.admin_import import (
     NoteImportCreate,
     PdfMetadataImportCreate,
+    QuestionImportCreate,
     ResourceImportRead,
     UrlImportCreate,
 )
-from app.services.import_extracted_draft import create_extracted_draft_from_resource
+from app.services.import_extracted_draft import (
+    DraftImportOptions,
+    QuestionDraftFields,
+    create_extracted_draft_from_resource,
+)
+from app.services.import_topic_validation import ImportTopicError, validate_import_topics
 
 _NOTE_SOURCE_TYPES = frozenset(
     {
@@ -20,6 +26,9 @@ _NOTE_SOURCE_TYPES = frozenset(
 
 
 def import_url_resource(session: Session, payload: UrlImportCreate) -> ResourceImportRead:
+    draft_options = _draft_options_from_payload(payload)
+    _validate_topics(session, draft_options)
+
     url = str(payload.url)
     resource = Resource(
         source_type=ResourceSourceType.URL,
@@ -32,7 +41,7 @@ def import_url_resource(session: Session, payload: UrlImportCreate) -> ResourceI
         raw_text_hash=text_hash(url),
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource)
+    return _persist_resource(session, resource, options=draft_options)
 
 
 def import_note_resource(session: Session, payload: NoteImportCreate) -> ResourceImportRead:
@@ -45,6 +54,9 @@ def import_note_resource(session: Session, payload: NoteImportCreate) -> Resourc
     if not note_text:
         raise ValueError("note_text must not be blank")
 
+    draft_options = _draft_options_from_payload(payload)
+    _validate_topics(session, draft_options)
+
     resource = Resource(
         source_type=payload.source_type,
         title=_blank_to_none(payload.title),
@@ -55,13 +67,54 @@ def import_note_resource(session: Session, payload: NoteImportCreate) -> Resourc
         raw_text_hash=text_hash(note_text),
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource)
+    return _persist_resource(session, resource, options=draft_options)
+
+
+def import_question_resource(
+    session: Session,
+    payload: QuestionImportCreate,
+) -> ResourceImportRead:
+    draft_options = _draft_options_from_payload(payload)
+    _validate_topics(session, draft_options)
+
+    body = payload.body.strip()
+    title = payload.title.strip()
+    if not body:
+        raise ValueError("body must not be blank")
+    if not title:
+        raise ValueError("title must not be blank")
+
+    resource = Resource(
+        source_type=ResourceSourceType.MANUAL,
+        title=title,
+        author=_blank_to_none(payload.author),
+        license=_blank_to_none(payload.license),
+        attribution=_blank_to_none(payload.attribution),
+        summary=body,
+        raw_text_hash=text_hash(f"{title}\n{body}"),
+        status=ContentStatus.DRAFT,
+    )
+    question_fields = QuestionDraftFields(
+        title=title,
+        body=body,
+        short_answer=_blank_to_none(payload.short_answer),
+        difficulty=payload.difficulty,
+    )
+    return _persist_resource(
+        session,
+        resource,
+        options=draft_options,
+        question_fields=question_fields,
+    )
 
 
 def import_pdf_metadata_resource(
     session: Session,
     payload: PdfMetadataImportCreate,
 ) -> ResourceImportRead:
+    draft_options = _draft_options_from_payload(payload)
+    _validate_topics(session, draft_options)
+
     title = payload.title.strip()
     if not title:
         raise ValueError("title must not be blank")
@@ -80,13 +133,24 @@ def import_pdf_metadata_resource(
         raw_text_hash=text_hash(fingerprint),
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource)
+    return _persist_resource(session, resource, options=draft_options)
 
 
-def _persist_resource(session: Session, resource: Resource) -> ResourceImportRead:
+def _persist_resource(
+    session: Session,
+    resource: Resource,
+    *,
+    options: DraftImportOptions,
+    question_fields: QuestionDraftFields | None = None,
+) -> ResourceImportRead:
     session.add(resource)
     session.flush()
-    extracted = create_extracted_draft_from_resource(session, resource)
+    extracted = create_extracted_draft_from_resource(
+        session,
+        resource,
+        options=options,
+        question_fields=question_fields,
+    )
     session.commit()
     session.refresh(resource)
     session.refresh(extracted)
@@ -95,8 +159,30 @@ def _persist_resource(session: Session, resource: Resource) -> ResourceImportRea
     )
 
 
+def _draft_options_from_payload(
+    payload: UrlImportCreate | NoteImportCreate | QuestionImportCreate | PdfMetadataImportCreate,
+) -> DraftImportOptions:
+    return DraftImportOptions(
+        object_type=payload.object_type,
+        topic_slug=payload.topic_slug.strip(),
+        subtopic_slug=_blank_to_none(payload.subtopic_slug),
+    )
+
+
+def _validate_topics(session: Session, options: DraftImportOptions) -> None:
+    validate_import_topics(
+        session,
+        topic_slug=options.topic_slug,
+        subtopic_slug=options.subtopic_slug,
+    )
+
+
 def _blank_to_none(value: str | None) -> str | None:
     if value is None:
         return None
     stripped = value.strip()
     return stripped or None
+
+
+__all__ = ["ImportTopicError", "import_note_resource", "import_pdf_metadata_resource",
+           "import_question_resource", "import_url_resource"]
