@@ -9,13 +9,13 @@ from app.models.resource import Resource
 from app.models.topic import Topic
 from app.schemas.admin_import import (
     NoteImportCreate,
-    PdfMetadataImportCreate,
+    PdfImportCreate,
     QuestionImportCreate,
     UrlImportCreate,
 )
 from app.services.admin_import import (
     import_note_resource,
-    import_pdf_metadata_resource,
+    import_pdf_resource,
     import_question_resource,
     import_url_resource,
 )
@@ -162,34 +162,68 @@ def test_flashcard_note_import_requires_front_title() -> None:
         )
 
 
-def test_import_pdf_metadata_stores_path_without_parsing() -> None:
+def test_import_pdf_resource_stores_uploaded_file_without_parsing(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
     session = MagicMock()
     _mock_import_session(session, resource_id=3, extracted_id=12)
+    pdf_bytes = b"%PDF-1.4\n%fake pdf content\n"
 
-    result = import_pdf_metadata_resource(
+    result = import_pdf_resource(
         session,
-        PdfMetadataImportCreate(
+        PdfImportCreate(
             title="Interview Math PDF",
-            file_path="/Users/me/docs/interview-math.pdf",
-            publisher="Self",
-            license="All rights reserved",
             topic_slug=_TOPIC_SLUG,
             object_type=ExtractedObjectType.FLASHCARD,
         ),
+        filename="interview-math.pdf",
+        content_type="application/pdf",
+        content=pdf_bytes,
     )
 
     saved = session.add.call_args_list[0].args[0]
     assert saved.source_type is ResourceSourceType.PDF
-    assert saved.url == "/Users/me/docs/interview-math.pdf"
+    assert saved.url is not None
+    assert saved.url.startswith("pdfs/")
+    assert saved.url.endswith("interview-math.pdf")
     assert saved.title == "Interview Math PDF"
-    assert saved.publisher == "Self"
     assert saved.status is ContentStatus.DRAFT
-    assert saved.raw_text_hash == text_hash("/Users/me/docs/interview-math.pdf")
+    assert len(saved.raw_text_hash or "") == 64
+    assert (tmp_path / "uploads" / saved.url).is_file()
     extracted = session.add.call_args_list[1].args[0]
     assert extracted.object_type is ExtractedObjectType.FLASHCARD
     assert extracted.payload_json["front"] == "Interview Math PDF"
     assert result.id == 3
     assert result.extracted_object_id == 12
+    get_settings.cache_clear()
+
+
+def test_import_pdf_rejects_non_pdf_bytes(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    session = MagicMock()
+    _mock_import_session(session)
+
+    with pytest.raises(ValueError, match="not a valid PDF"):
+        import_pdf_resource(
+            session,
+            PdfImportCreate(topic_slug=_TOPIC_SLUG, object_type=ExtractedObjectType.QUESTION),
+            filename="notes.pdf",
+            content_type="application/pdf",
+            content=b"not a pdf",
+        )
+    get_settings.cache_clear()
 
 
 def test_import_question_resource_creates_ready_to_review_draft() -> None:
@@ -292,19 +326,21 @@ def test_admin_import_endpoints_create_resources(
 
     pdf_response = client.post(
         "/admin/import/pdf",
-        json={
+        data={
             "title": "Local PDF",
-            "file_path": "/tmp/quant-notes.pdf",
-            "author": "Yuchen",
             "topic_slug": _TOPIC_SLUG,
             "object_type": "question",
+        },
+        files={
+            "file": ("quant-notes.pdf", b"%PDF-1.4\n%test\n", "application/pdf"),
         },
     )
     assert pdf_response.status_code == 200
     pdf_body = pdf_response.json()
     assert pdf_body["source_type"] == "pdf"
-    assert pdf_body["url"] == "/tmp/quant-notes.pdf"
-    assert pdf_body["author"] == "Yuchen"
+    assert pdf_body["url"] is not None
+    assert pdf_body["url"].startswith("pdfs/")
+    assert pdf_body["title"] == "Local PDF"
     assert isinstance(pdf_body["extracted_object_id"], int)
 
     review_response = client.get("/admin/review")

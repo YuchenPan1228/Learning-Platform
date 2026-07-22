@@ -361,6 +361,8 @@ Phase 4 admin scope:
 - Import → `ExtractedObject` draft → human review → publish as `Question` or `Flashcard`.
 - User picks topic/subtopic at import and in review (`ADR-013`).
 - URL/PDF AI extraction deferred to Phase 5 `QP-042` / `QP-043` (`ADR-014`).
+- Phase 4 PDF import uploads and stores files; extraction is Phase 5.
+- Phase 5 must use AI to turn long page text, PDF text, and pasted notes into formatted question/answer (and flashcard) review drafts (`QP-043`).
 - Editing existing `Concept` records is separate (`QP-038`); manual import does not create concepts (`ADR-012`).
 
 No authentication should be added until a later milestone.
@@ -437,5 +439,6 @@ Manual ingestion:
 - Phase 4 publishes questions and flashcards only; no new concepts/topics via import (`ADR-012`).
 - User assigns topic at import/review; AI topic suggestions start in Phase 5 (`ADR-013`).
 - URL/PDF AI extraction deferred to Phase 5 (`ADR-014`).
+- Phase 5 AI parsing (`QP-043`): long webpage/PDF/pasted text → formatted Q&A and flashcard drafts for human review.
 - Existing concept editing is a separate admin workflow (`QP-038`).
 

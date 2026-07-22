@@ -15,13 +15,9 @@ import {
   rejectReviewItem,
 } from "@/lib/api/admin-review";
 import {
-  formatScore,
   getCandidateQuestions,
   getExtractedText,
   getFormulas,
-  getLicenseStatus,
-  getProvenanceRows,
-  getQualityScore,
   getReviewItemTitle,
   getSourceLabel,
   getSummary,
@@ -131,9 +127,6 @@ function ReviewDetailPanel({
   const summary = getSummary(item);
   const formulas = getFormulas(item);
   const candidateQuestions = getCandidateQuestions(item);
-  const licenseStatus = getLicenseStatus(item);
-  const qualityScore = getQualityScore(item);
-  const provenanceRows = getProvenanceRows(item);
   const canEditDraft = queueStatus === "draft";
 
   return (
@@ -144,10 +137,7 @@ function ReviewDetailPanel({
             {queueStatusLabel(queueStatus)}
           </p>
           <h2 className="mt-1 text-xl font-semibold text-[#15201c]">{getReviewItemTitle(item)}</h2>
-          <p className="mt-1 text-sm text-[#66736e]">
-            {item.object_type} · confidence {formatScore(item.confidence_score)} · draft quality{" "}
-            {formatScore(item.quality_score)}
-          </p>
+          <p className="mt-1 text-sm text-[#66736e]">{item.object_type}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {queueStatus === "draft" ? (
@@ -271,29 +261,6 @@ function ReviewDetailPanel({
               })}
             </ul>
           ) : null}
-        </DetailSection>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <DetailSection title="License status">
-            <p className="mt-2 text-sm font-medium text-[#15201c]">{licenseStatus}</p>
-          </DetailSection>
-          <DetailSection title="Quality score">
-            <p className="mt-2 text-sm font-medium text-[#15201c]">{formatScore(qualityScore)}</p>
-          </DetailSection>
-        </div>
-
-        <DetailSection title="Provenance metadata">
-          <dl className="mt-2 grid gap-2 text-sm">
-            {provenanceRows.map((row) => (
-              <div
-                key={`${item.id}-${row.label}`}
-                className="grid gap-1 sm:grid-cols-[160px_minmax(0,1fr)]"
-              >
-                <dt className="font-medium text-[#66736e]">{row.label}</dt>
-                <dd className="break-all text-[#40524b]">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
         </DetailSection>
       </div>
     </div>

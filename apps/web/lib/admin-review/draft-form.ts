@@ -13,7 +13,6 @@ export type DraftFormState = {
   difficulty: string;
   front: string;
   back: string;
-  qualityScore: string;
 };
 
 function readString(value: unknown): string {
@@ -34,7 +33,6 @@ export function createDraftFormState(item: ReviewQueueItem): DraftFormState {
     difficulty: readString(payload.difficulty),
     front: readString(payload.front) || readString(payload.title),
     back: readString(payload.back) || readString(payload.body),
-    qualityScore: item.quality_score !== null ? String(item.quality_score) : "",
   };
 }
 
@@ -65,18 +63,6 @@ export function buildDraftPayload(state: DraftFormState): Record<string, unknown
     payload.difficulty = state.difficulty.trim();
   }
   return payload;
-}
-
-export function parseQualityScore(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const parsed = Number(trimmed);
-  if (Number.isNaN(parsed) || parsed < 0 || parsed > 1) {
-    throw new Error("Quality score must be between 0 and 1.");
-  }
-  return parsed;
 }
 
 export function validateDraftFormState(state: DraftFormState): void {

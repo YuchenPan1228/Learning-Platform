@@ -223,18 +223,22 @@ Status: Accepted
 
 Decision:
 
-- Phase 4 imports URL/PDF metadata or pasted text only; the user writes or edits draft content in review.
-- Phase 5 (`QP-042`, `QP-043`) adds local page/PDF extraction and structured AI extraction into the same review queue.
+- Phase 4 imports URL bookmarks and uploaded PDF files, then the user writes or edits draft content in review.
+- Phase 4 stores uploaded PDFs on local disk under `UPLOAD_DIR` and links them from `Resource.url`; it does not parse PDF text yet.
+- Phase 5 (`QP-042`, `QP-043`) adds local page/PDF text extraction and AI structured parsing into the same review queue.
+- Phase 5 AI extraction must support: long webpage text → formatted Q&A drafts; uploaded PDF text → formatted Q&A drafts; pasted freeform notes → formatted Q&A / flashcard drafts.
 - Do not build a parallel AI extraction path in Phase 4.
 
 Rationale:
 
 - Phase 5 already owns crawling, extraction tooling, and job lifecycle.
 - Duplicating AI extraction in Phase 4 would fork provenance, observability, and review UX.
-- Manual import remains useful while the automated pipeline is built.
+- Uploading the PDF now still lets reviewers keep the source next to the draft before extraction exists.
 
 Consequences:
 
-- Phase 4 URL/PDF imports create skeleton question or flashcard drafts with placeholders where needed.
+- Phase 4 URL imports create skeleton question or flashcard drafts with placeholders where needed.
+- Phase 4 PDF imports require a file upload and create skeleton drafts linked to the stored file.
+- Phase 5 must implement AI parsing that converts long source text into title/body/answer-style question drafts (and flashcards), not just raw text storage.
 - Review UI is shared between manual and automated drafts through Phase 5 and beyond.
 

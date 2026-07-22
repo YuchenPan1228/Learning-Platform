@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   buildDraftPayload,
   createDraftFormState,
-  parseQualityScore,
   validateDraftFormState,
   type DraftFormState,
 } from "@/lib/admin-review/draft-form";
@@ -45,7 +44,6 @@ export function DraftContentEditor({
       await onSave({
         objectType: form.objectType,
         payloadJson: buildDraftPayload(form),
-        qualityScore: parseQualityScore(form.qualityScore),
       });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Save failed.");
@@ -58,8 +56,7 @@ export function DraftContentEditor({
     <section className="border-t border-[#edf5f1] pt-4">
       <h3 className="text-sm font-semibold text-[#15201c]">Edit draft content</h3>
       <p className="mt-1 text-sm text-[#66736e]">
-        Refine the question or flashcard before approval and publish. New concepts and topics are
-        out of scope for now.
+        Refine the question or flashcard before approval and publish.
       </p>
 
       <div className="mt-4 grid gap-4">
@@ -158,22 +155,6 @@ export function DraftContentEditor({
             </label>
           </div>
         )}
-
-        <label className={labelClassName}>
-          Draft quality (0–1)
-          <input
-            type="number"
-            min={0}
-            max={1}
-            step={0.01}
-            value={form.qualityScore}
-            disabled={!canEdit || isBusy || isSaving}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, qualityScore: event.target.value }))
-            }
-            className={`${fieldClassName} max-w-[8rem]`}
-          />
-        </label>
 
         {canEdit ? (
           <div>

@@ -73,13 +73,8 @@ class QuestionImportCreate(ImportDraftOptions):
         return self
 
 
-class PdfMetadataImportCreate(ImportDraftOptions):
-    title: str = Field(min_length=1, max_length=300)
-    file_path: str | None = Field(default=None, max_length=500)
-    author: str | None = Field(default=None, max_length=200)
-    publisher: str | None = Field(default=None, max_length=200)
-    license: str | None = Field(default=None, max_length=120)
-    attribution: str | None = None
+class PdfImportCreate(ImportDraftOptions):
+    title: str | None = Field(default=None, max_length=300)
     summary: str | None = None
 
 

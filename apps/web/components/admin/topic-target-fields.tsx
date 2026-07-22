@@ -87,10 +87,6 @@ export function TopicTargetFields({
           ))}
         </select>
       </label>
-      <p className="text-xs text-[#66736e]">
-        You choose the topic during import and review. AI topic suggestions can be added later in
-        the ingestion pipeline.
-      </p>
     </div>
   );
 }

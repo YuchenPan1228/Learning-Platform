@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from "@/lib/api/config";
-import type { ImportedResource, ResourceSourceType } from "@/lib/types/admin-import";
+import type { ImportedResource } from "@/lib/types/admin-import";
 import type { ImportDraftTarget } from "@/lib/admin-review/draft-form";
 
 type SharedImportDraftInput = {
@@ -11,40 +11,40 @@ type SharedImportDraftInput = {
 export type UrlImportInput = SharedImportDraftInput & {
   url: string;
   title?: string;
-  author?: string;
-  license?: string;
-  attribution?: string;
-  summary?: string;
 };
 
 export type NoteImportInput = SharedImportDraftInput & {
   noteText: string;
   title?: string;
-  author?: string;
-  license?: string;
-  attribution?: string;
-  sourceType?: Extract<ResourceSourceType, "manual" | "book_note">;
 };
 
 export type QuestionImportInput = {
   title: string;
   body: string;
   shortAnswer?: string;
-  difficulty?: "easy" | "medium" | "hard";
   topicSlug: string;
   subtopicSlug?: string;
   objectType: "question";
 };
 
-export type PdfMetadataImportInput = SharedImportDraftInput & {
-  title: string;
-  filePath?: string;
-  author?: string;
-  publisher?: string;
-  license?: string;
-  attribution?: string;
+export type PdfImportInput = SharedImportDraftInput & {
+  file: File;
+  title?: string;
   summary?: string;
 };
+
+async function parseImportError(response: Response): Promise<string> {
+  let detail = `Import failed with status ${response.status}`;
+  try {
+    const payload = (await response.json()) as { detail?: unknown };
+    if (typeof payload.detail === "string") {
+      detail = payload.detail;
+    }
+  } catch {
+    // Keep the status-based message when the body is not JSON.
+  }
+  return detail;
+}
 
 async function postImport(path: string, body: Record<string, unknown>): Promise<ImportedResource> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
@@ -56,16 +56,7 @@ async function postImport(path: string, body: Record<string, unknown>): Promise<
   });
 
   if (!response.ok) {
-    let detail = `Import failed with status ${response.status}`;
-    try {
-      const payload = (await response.json()) as { detail?: unknown };
-      if (typeof payload.detail === "string") {
-        detail = payload.detail;
-      }
-    } catch {
-      // Keep the status-based message when the body is not JSON.
-    }
-    throw new Error(detail);
+    throw new Error(await parseImportError(response));
   }
 
   return response.json() as Promise<ImportedResource>;
@@ -83,10 +74,6 @@ export function importUrlResource(input: UrlImportInput): Promise<ImportedResour
   return postImport("/admin/import/url", {
     url: input.url,
     title: input.title,
-    author: input.author,
-    license: input.license,
-    attribution: input.attribution,
-    summary: input.summary,
     ...draftFields(input),
   });
 }
@@ -95,10 +82,7 @@ export function importNoteResource(input: NoteImportInput): Promise<ImportedReso
   return postImport("/admin/import/note", {
     note_text: input.noteText,
     title: input.title,
-    author: input.author,
-    license: input.license,
-    attribution: input.attribution,
-    source_type: input.sourceType ?? "manual",
+    source_type: "manual",
     ...draftFields(input),
   });
 }
@@ -108,24 +92,35 @@ export function importQuestionResource(input: QuestionImportInput): Promise<Impo
     title: input.title,
     body: input.body,
     short_answer: input.shortAnswer,
-    difficulty: input.difficulty,
     topic_slug: input.topicSlug,
     subtopic_slug: input.subtopicSlug,
     object_type: input.objectType,
   });
 }
 
-export function importPdfMetadataResource(
-  input: PdfMetadataImportInput,
-): Promise<ImportedResource> {
-  return postImport("/admin/import/pdf", {
-    title: input.title,
-    file_path: input.filePath,
-    author: input.author,
-    publisher: input.publisher,
-    license: input.license,
-    attribution: input.attribution,
-    summary: input.summary,
-    ...draftFields(input),
+export async function importPdfResource(input: PdfImportInput): Promise<ImportedResource> {
+  const body = new FormData();
+  body.append("file", input.file);
+  body.append("topic_slug", input.topicSlug);
+  body.append("object_type", input.objectType ?? "question");
+  if (input.subtopicSlug) {
+    body.append("subtopic_slug", input.subtopicSlug);
+  }
+  if (input.title?.trim()) {
+    body.append("title", input.title.trim());
+  }
+  if (input.summary?.trim()) {
+    body.append("summary", input.summary.trim());
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/admin/import/pdf`, {
+    method: "POST",
+    body,
   });
+
+  if (!response.ok) {
+    throw new Error(await parseImportError(response));
+  }
+
+  return response.json() as Promise<ImportedResource>;
 }

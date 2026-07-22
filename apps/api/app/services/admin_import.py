@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from sqlalchemy.orm import Session
 
 from app.dedup.text import text_hash
@@ -5,7 +7,7 @@ from app.models.enums import ContentStatus, ResourceSourceType
 from app.models.resource import Resource
 from app.schemas.admin_import import (
     NoteImportCreate,
-    PdfMetadataImportCreate,
+    PdfImportCreate,
     QuestionImportCreate,
     ResourceImportRead,
     UrlImportCreate,
@@ -16,6 +18,7 @@ from app.services.import_extracted_draft import (
     create_extracted_draft_from_resource,
 )
 from app.services.import_topic_validation import ImportTopicError, validate_import_topics
+from app.services.pdf_upload import store_pdf_upload
 
 _NOTE_SOURCE_TYPES = frozenset(
     {
@@ -108,29 +111,29 @@ def import_question_resource(
     )
 
 
-def import_pdf_metadata_resource(
+def import_pdf_resource(
     session: Session,
-    payload: PdfMetadataImportCreate,
+    payload: PdfImportCreate,
+    *,
+    filename: str | None,
+    content_type: str | None,
+    content: bytes,
 ) -> ResourceImportRead:
     draft_options = _draft_options_from_payload(payload)
     _validate_topics(session, draft_options)
 
-    title = payload.title.strip()
-    if not title:
-        raise ValueError("title must not be blank")
-
-    file_path = _blank_to_none(payload.file_path)
-    fingerprint = file_path or title
+    stored = store_pdf_upload(
+        filename=filename,
+        content_type=content_type,
+        content=content,
+    )
+    title = _blank_to_none(payload.title) or _title_from_filename(stored.original_filename)
     resource = Resource(
         source_type=ResourceSourceType.PDF,
-        url=file_path,
+        url=stored.relative_path,
         title=title,
-        author=_blank_to_none(payload.author),
-        publisher=_blank_to_none(payload.publisher),
-        license=_blank_to_none(payload.license),
-        attribution=_blank_to_none(payload.attribution),
         summary=_blank_to_none(payload.summary),
-        raw_text_hash=text_hash(fingerprint),
+        raw_text_hash=stored.content_sha256,
         status=ContentStatus.DRAFT,
     )
     return _persist_resource(session, resource, options=draft_options)
@@ -160,7 +163,7 @@ def _persist_resource(
 
 
 def _draft_options_from_payload(
-    payload: UrlImportCreate | NoteImportCreate | QuestionImportCreate | PdfMetadataImportCreate,
+    payload: UrlImportCreate | NoteImportCreate | QuestionImportCreate | PdfImportCreate,
 ) -> DraftImportOptions:
     return DraftImportOptions(
         object_type=payload.object_type,
@@ -177,6 +180,11 @@ def _validate_topics(session: Session, options: DraftImportOptions) -> None:
     )
 
 
+def _title_from_filename(filename: str) -> str:
+    stem = Path(filename).stem.strip() or "Uploaded PDF"
+    return stem[:300]
+
+
 def _blank_to_none(value: str | None) -> str | None:
     if value is None:
         return None
@@ -184,5 +192,10 @@ def _blank_to_none(value: str | None) -> str | None:
     return stripped or None
 
 
-__all__ = ["ImportTopicError", "import_note_resource", "import_pdf_metadata_resource",
-           "import_question_resource", "import_url_resource"]
+__all__ = [
+    "ImportTopicError",
+    "import_note_resource",
+    "import_pdf_resource",
+    "import_question_resource",
+    "import_url_resource",
+]

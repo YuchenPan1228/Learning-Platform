@@ -528,8 +528,8 @@ Goal: add human-in-the-loop content review before automated collection. Manual i
 
 **AI processing:**
 
-- Phase 4: import URL/PDF metadata or pasted text; user writes or edits draft content in review before publish.
-- Phase 5 (`QP-042`, `QP-043`): local page/PDF extraction and structured AI extraction into the same review queue.
+- Phase 4: import URL bookmarks, uploaded PDFs, or pasted text; user writes or edits draft content in review before publish.
+- Phase 5 (`QP-042`, `QP-043`): fetch/clean source text, then use AI to turn long page/PDF/pasted text into formatted question/answer and flashcard drafts for the same review queue.
 - Do not build a second AI extraction path in Phase 4; it would duplicate Phase 5 work.
 
 **Concept curation:** Editing **existing** seeded concepts (definition, formula, intuition, tips, etc.) is tracked in `QP-038` and is separate from the import → review → publish loop for questions and flashcards.
@@ -575,7 +575,7 @@ Tasks:
 - Add manual URL import.
 - Add manual note import.
 - Add pasted question import.
-- Add local PDF metadata import.
+- Add PDF file upload (store locally; no text extraction yet).
 - Require user-selected topic, optional subtopic, and draft type (question or flashcard).
 - Keep crawling and PDF parsing deferred to Phase 5.
 
@@ -645,7 +645,7 @@ Depends on: `QP-011`, `QP-016`.
 
 ## Phase 5: Knowledge Ingestion Pipeline
 
-Goal: topic-driven automated drafting into the same review queue as Phase 4, still reviewed by a human. Avoid paid crawler services. AI proposes question/flashcard drafts and topic suggestions; the user confirms before publish.
+Goal: topic-driven automated drafting into the same review queue as Phase 4, still reviewed by a human. Avoid paid crawler services. AI should turn long source text (fetched pages given url, uploaded PDFs, or pasted notes) into formatted question/answer and flashcard drafts; the user confirms topic and content before publish.
 
 ### QP-039: Implement Topic Job Lifecycle
 
@@ -696,12 +696,13 @@ Estimate: 3-4 hours
 
 Tasks:
 
-- Use requests.
-- Use BeautifulSoup.
-- Use Trafilatura.
-- Use Playwright only when needed.
-- Use PyMuPDF for PDFs.
+- Fetch and clean page text from imported URLs.
+- Use requests, BeautifulSoup, and Trafilatura.
+- Use Playwright only when needed for JS-heavy pages.
+- Extract raw text from uploaded PDFs with PyMuPDF (no AI in this step).
+- Accept already-pasted note/question text as an extraction input (no fetch required).
 - Do not use Firecrawl in MVP.
+- Hand cleaned text to `QP-043` for structured AI parsing.
 
 Depends on: `QP-040`.
 
@@ -711,10 +712,14 @@ Estimate: 3-4 hours
 
 Tasks:
 
-- Extract candidate questions and flashcards from page or PDF text.
-- Extract summaries and source metadata for review.
+- Use Ollama via `AIProvider` to parse long source text into review drafts.
+- From a long webpage or PDF text dump: propose one or more formatted interview questions with title, body, and answer/solution fields when present.
+- From the same sources: propose flashcard front/back pairs when appropriate.
+- From pasted notes/freeform text: run the same AI parsing path (long blob → structured Q&A / flashcards).
+- Extract short summaries and source metadata for review.
 - Suggest `topic_slug` and optional `subtopic_slug`; user confirms in review.
-- Use Ollama via `AIProvider`.
+- Output structured JSON validated against draft schemas (question/flashcard payloads).
+- Do not auto-publish; create `ExtractedObject` drafts for the existing review queue.
 - Defer automatic concept, formula, and example creation until `QP-038` concept editor and graph curation workflow exist.
 
 Depends on: `QP-024`, `QP-042`.
