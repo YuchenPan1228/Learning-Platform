@@ -20,9 +20,7 @@ _QUESTION_PLACEHOLDER_BODY = (
     "Edit this draft with the interview question stem. "
     "Add context from the linked source before publishing."
 )
-_FLASHCARD_PLACEHOLDER_BACK = (
-    "Edit this draft with the flashcard answer before publishing."
-)
+_FLASHCARD_PLACEHOLDER_BACK = "Edit this draft with the flashcard answer before publishing."
 
 
 @dataclass(frozen=True, slots=True)
