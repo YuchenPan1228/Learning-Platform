@@ -43,16 +43,9 @@ export default async function FlashcardsPage({ searchParams }: FlashcardsPagePro
   ]);
 
   const flashcards =
-    dueFlashcards.length > 0
-      ? dueFlashcards
-      : await fetchFlashcards({ limit: 100, topicSlug });
+    dueFlashcards.length > 0 ? dueFlashcards : await fetchFlashcards({ limit: 100, topicSlug });
 
-  const topicTitle = resolveTopicTitle(
-    topics,
-    topicSlug,
-    topic?.name,
-    flashcards[0]?.topic_slug,
-  );
+  const topicTitle = resolveTopicTitle(topics, topicSlug, topic?.name, flashcards[0]?.topic_slug);
 
   const usedDueFallback = dueFlashcards.length === 0 && flashcards.length > 0;
 

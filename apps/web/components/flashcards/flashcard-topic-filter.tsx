@@ -22,7 +22,9 @@ export function FlashcardTopicFilter({
 
   function handleChange(value: string) {
     startTransition(() => {
-      router.push(value === "all" ? "/flashcards" : `/flashcards?topic=${encodeURIComponent(value)}`);
+      router.push(
+        value === "all" ? "/flashcards" : `/flashcards?topic=${encodeURIComponent(value)}`,
+      );
     });
   }
 

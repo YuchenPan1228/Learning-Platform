@@ -186,162 +186,167 @@ export function FlashcardReview({
 
       {flashcards.length === 0 ? (
         <section className="rounded-lg border border-dashed border-[#dfe6e1] bg-white p-8 text-center">
-          <p className="text-sm text-[#66736e]">Pick another topic from the menu, or choose All topics.</p>
+          <p className="text-sm text-[#66736e]">
+            Pick another topic from the menu, or choose All topics.
+          </p>
         </section>
       ) : null}
 
       {flashcards.length > 0 ? (
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
-        <section className="grid gap-4">
-          {currentCard ? (
-            <>
-              <div className="flex items-center justify-between gap-3 text-sm text-[#66736e]">
-                <span>
-                  Card {index + 1} of {order.length}
-                </span>
-                <span className="font-medium text-[#15201c]">{currentCard.topic_slug}</span>
-              </div>
-
-              <FlipCard flashcard={currentCard} isFlipped={isFlipped} onFlip={handleFlip} />
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={goPrev}
-                  disabled={!canGoPrev || isSubmitting}
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!canGoNext || isSubmitting}
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  Next
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSkip}
-                  disabled={order.length <= 1 || isSubmitting}
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  Skip
-                </button>
-              </div>
-
-              {isFlipped ? (
-                <div className="grid gap-2">
-                  <p className="text-sm text-[#66736e]">
-                    Optional — rate to schedule when this card comes back.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {RATING_OPTIONS.map((option) => (
-                      <button
-                        key={option.rating}
-                        type="button"
-                        onClick={() => handleRating(option.rating)}
-                        disabled={isSubmitting}
-                        title={option.hint}
-                        className={cn(
-                          buttonVariants({
-                            variant: option.rating === "again" ? "outline" : "default",
-                          }),
-                          "disabled:cursor-not-allowed disabled:opacity-50",
-                        )}
-                      >
-                        {isSubmitting ? "Saving…" : `${option.label} · ${option.hint}`}
-                      </button>
-                    ))}
-                  </div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
+          <section className="grid gap-4">
+            {currentCard ? (
+              <>
+                <div className="flex items-center justify-between gap-3 text-sm text-[#66736e]">
+                  <span>
+                    Card {index + 1} of {order.length}
+                  </span>
+                  <span className="font-medium text-[#15201c]">{currentCard.topic_slug}</span>
                 </div>
-              ) : (
-                <p className="text-sm text-[#66736e]">
-                  Reveal the answer to rate, or move on with Next / Skip.
+
+                <FlipCard flashcard={currentCard} isFlipped={isFlipped} onFlip={handleFlip} />
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    disabled={!canGoPrev || isSubmitting}
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={!canGoNext || isSubmitting}
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    Next
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    disabled={order.length <= 1 || isSubmitting}
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    Skip
+                  </button>
+                </div>
+
+                {isFlipped ? (
+                  <div className="grid gap-2">
+                    <p className="text-sm text-[#66736e]">
+                      Optional — rate to schedule when this card comes back.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {RATING_OPTIONS.map((option) => (
+                        <button
+                          key={option.rating}
+                          type="button"
+                          onClick={() => handleRating(option.rating)}
+                          disabled={isSubmitting}
+                          title={option.hint}
+                          className={cn(
+                            buttonVariants({
+                              variant: option.rating === "again" ? "outline" : "default",
+                            }),
+                            "disabled:cursor-not-allowed disabled:opacity-50",
+                          )}
+                        >
+                          {isSubmitting ? "Saving…" : `${option.label} · ${option.hint}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#66736e]">
+                    Reveal the answer to rate, or move on with Next / Skip.
+                  </p>
+                )}
+
+                {atEnd && !canGoNext ? (
+                  <p className="text-sm text-[#66736e]">
+                    You&apos;re on the last card. Rate it, Skip to recycle it, or restart the queue.
+                  </p>
+                ) : null}
+
+                {error ? <p className="text-sm text-[#b42318]">{error}</p> : null}
+              </>
+            ) : (
+              <section className="rounded-lg border border-[#dfe6e1] bg-white p-6 text-center shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
+                <h2 className="text-xl font-semibold text-[#15201c]">Review queue complete</h2>
+                <p className="mt-2 text-sm text-[#66736e]">
+                  You rated {sessionCount} card{sessionCount === 1 ? "" : "s"} this session.
                 </p>
-              )}
+                <button
+                  type="button"
+                  onClick={handleRestart}
+                  className={cn(buttonVariants(), "mt-4")}
+                >
+                  Restart queue
+                </button>
+              </section>
+            )}
+          </section>
 
-              {atEnd && !canGoNext ? (
-                <p className="text-sm text-[#66736e]">
-                  You&apos;re on the last card. Rate it, Skip to recycle it, or restart the queue.
-                </p>
-              ) : null}
-
-              {error ? <p className="text-sm text-[#b42318]">{error}</p> : null}
-            </>
-          ) : (
-            <section className="rounded-lg border border-[#dfe6e1] bg-white p-6 text-center shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
-              <h2 className="text-xl font-semibold text-[#15201c]">Review queue complete</h2>
-              <p className="mt-2 text-sm text-[#66736e]">
-                You rated {sessionCount} card{sessionCount === 1 ? "" : "s"} this session.
-              </p>
-              <button type="button" onClick={handleRestart} className={cn(buttonVariants(), "mt-4")}>
-                Restart queue
-              </button>
-            </section>
-          )}
-        </section>
-
-        <aside className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
-          <div className="mb-4">
-            <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Review</p>
-            <h2 className="text-lg font-semibold text-[#15201c]">Spaced repetition</h2>
-          </div>
-
-          <dl className="grid gap-3 text-sm">
-            <div>
-              <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-                Cards in deck
-              </dt>
-              <dd className="mt-1 font-medium text-[#15201c]">{order.length}</dd>
+          <aside className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
+            <div className="mb-4">
+              <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Review</p>
+              <h2 className="text-lg font-semibold text-[#15201c]">Spaced repetition</h2>
             </div>
-            <div>
-              <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-                Due in loaded set
-              </dt>
-              <dd className="mt-1 font-medium text-[#15201c]">{dueCount}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-                Rated this session
-              </dt>
-              <dd className="mt-1 font-medium text-[#15201c]">{sessionCount}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
-                Last next review
-              </dt>
-              <dd className="mt-1 font-medium text-[#15201c]">
-                {formatNextReview(lastNextReviewAt)}
-              </dd>
-            </div>
-          </dl>
 
-          <p className="mt-4 text-sm leading-relaxed text-[#66736e]">
-            Ratings schedule the next review (Again · Good · Easy). Browsing with Previous / Next /
-            Skip does not change the schedule.
-          </p>
+            <dl className="grid gap-3 text-sm">
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                  Cards in deck
+                </dt>
+                <dd className="mt-1 font-medium text-[#15201c]">{order.length}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                  Due in loaded set
+                </dt>
+                <dd className="mt-1 font-medium text-[#15201c]">{dueCount}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                  Rated this session
+                </dt>
+                <dd className="mt-1 font-medium text-[#15201c]">{sessionCount}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-[#66736e] uppercase">
+                  Last next review
+                </dt>
+                <dd className="mt-1 font-medium text-[#15201c]">
+                  {formatNextReview(lastNextReviewAt)}
+                </dd>
+              </div>
+            </dl>
 
-          <button
-            type="button"
-            onClick={handleRestart}
-            className={cn(buttonVariants({ variant: "outline" }), "mt-4 w-full")}
-          >
-            Restart queue
-          </button>
-        </aside>
-      </div>
+            <p className="mt-4 text-sm leading-relaxed text-[#66736e]">
+              Ratings schedule the next review (Again · Good · Easy). Browsing with Previous / Next
+              / Skip does not change the schedule.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleRestart}
+              className={cn(buttonVariants({ variant: "outline" }), "mt-4 w-full")}
+            >
+              Restart queue
+            </button>
+          </aside>
+        </div>
       ) : null}
     </div>
   );
