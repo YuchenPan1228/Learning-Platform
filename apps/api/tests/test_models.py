@@ -16,6 +16,10 @@ EXPECTED_TABLES = {
     "ai_usage_logs",
     "ai_cache_entries",
     "user_flashcard_progress",
+    "resources",
+    "topic_jobs",
+    "extracted_objects",
+    "job_execution_logs",
 }
 
 
