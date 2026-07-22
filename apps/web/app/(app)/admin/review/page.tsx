@@ -1,10 +1,14 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { AdminReviewView } from "@/components/admin/admin-review-view";
+import { fetchReviewQueue } from "@/lib/api/admin-review";
 
-export default function AdminReviewPage() {
-  return (
-    <PlaceholderPage
-      title="Admin review shell"
-      description="Draft review queue UI will be implemented in QP-036 during Phase 4."
-    />
-  );
+export default async function AdminReviewPage() {
+  let initialItems: Awaited<ReturnType<typeof fetchReviewQueue>>["items"] = [];
+  try {
+    const queue = await fetchReviewQueue("draft");
+    initialItems = queue.items;
+  } catch {
+    initialItems = [];
+  }
+
+  return <AdminReviewView initialItems={initialItems} />;
 }
