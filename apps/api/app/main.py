@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
     admin_import,
+    admin_review,
     analytics,
     attempts,
     concepts,
@@ -79,6 +80,7 @@ def create_app() -> FastAPI:
     application.include_router(analytics.router)
     application.include_router(search.router)
     application.include_router(admin_import.router)
+    application.include_router(admin_review.router)
     application.state.settings = settings
     return application
 
