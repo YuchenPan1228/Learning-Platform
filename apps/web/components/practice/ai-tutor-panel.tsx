@@ -41,16 +41,16 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
   const [showExplanation, setShowExplanation] = useState(false);
   const [similar, setSimilar] = useState<SimilarQuestionResult | null>(null);
 
-  function requireAnswer() {
+  function requireAnswerForExplanation() {
     const trimmedAnswer = answer.trim();
     if (!trimmedAnswer) {
-      throw new Error("Write an answer before requesting AI help.");
+      throw new Error("Write an answer before requesting an explanation.");
     }
     return trimmedAnswer;
   }
 
   async function ensureHints() {
-    const trimmedAnswer = requireAnswer();
+    const trimmedAnswer = answer.trim();
     if (hints !== null && hintsAnswer === trimmedAnswer) {
       return hints;
     }
@@ -61,7 +61,7 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
   }
 
   async function ensureExplanation() {
-    const trimmedAnswer = requireAnswer();
+    const trimmedAnswer = requireAnswerForExplanation();
     if (explanation !== null && explanationAnswer === trimmedAnswer) {
       return explanation;
     }
@@ -126,7 +126,8 @@ export function AiTutorPanel({ questionId, answer, returnTo }: AiTutorPanelProps
     <div className="mt-5 border-t border-[#edf5f1] pt-4">
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">AI tutor</p>
       <p className="mt-1 text-sm text-[#66736e]">
-        Request a hint, full explanation, or an original practice variant.
+        Hints work before you answer. Explanations need an attempt first. You can also request an
+        original practice variant.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">

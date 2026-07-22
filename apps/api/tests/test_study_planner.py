@@ -74,7 +74,10 @@ def test_build_daily_study_plan_includes_due_flashcards_and_practice() -> None:
     assert plan.target_minutes == TARGET_MINUTES
     assert plan.total_minutes > 0
     assert plan.summary.endswith("min plan")
-    assert any(item.kind.value == "flashcard_review" for item in plan.items)
+    flashcard_items = [item for item in plan.items if item.kind.value == "flashcard_review"]
+    assert flashcard_items
+    assert flashcard_items[0].href == "/flashcards?topic=bayes"
+    assert flashcard_items[0].topic_slug == "bayes"
     assert any(item.kind.value == "practice" for item in plan.items)
     assert plan.generated_at.tzinfo == UTC
 

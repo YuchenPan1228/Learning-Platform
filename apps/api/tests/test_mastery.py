@@ -63,6 +63,7 @@ def test_recalculate_user_topic_mastery_removes_stale_rows() -> None:
         topic_id=99,
         mastery_score=10.0,
         attempts_count=1,
+        next_review_at=None,
     )
     session.scalars.return_value.all.return_value = [stale]
     session.refresh.side_effect = lambda row: row
@@ -84,6 +85,42 @@ def test_recalculate_user_topic_mastery_removes_stale_rows() -> None:
         recalculate_user_topic_mastery(session)
 
     session.delete.assert_called_once_with(stale)
+
+
+def test_recalculate_user_topic_mastery_keeps_srs_only_rows() -> None:
+    session = MagicMock()
+    review_at = datetime(2026, 7, 22, tzinfo=UTC)
+    srs_only = UserTopicMastery(
+        user_id="local",
+        topic_id=99,
+        mastery_score=10.0,
+        attempts_count=1,
+        next_review_at=review_at,
+    )
+    session.scalars.return_value.all.return_value = [srs_only]
+    session.refresh.side_effect = lambda row: row
+
+    with (
+        patch(
+            "app.services.mastery.get_topic_progress_stats",
+            return_value={
+                1: TopicProgressStats(
+                    mastery_score=0.0,
+                    attempts_count=0,
+                    solved_count=0,
+                    total_questions=3,
+                ),
+            },
+        ),
+        patch("app.services.mastery._last_practiced_by_topic_id", return_value={}),
+    ):
+        rows = recalculate_user_topic_mastery(session)
+
+    session.delete.assert_not_called()
+    assert srs_only.next_review_at == review_at
+    assert srs_only.mastery_score == 0.0
+    assert srs_only.attempts_count == 0
+    assert srs_only in rows
 
 
 def test_topic_progress_stats_formula_uses_solved_ratio() -> None:

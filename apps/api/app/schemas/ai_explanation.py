@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Field
 
 
+class AIHintsRequest(BaseModel):
+    """Hints can be requested before the learner writes an answer."""
+
+    answer: str = ""
+
+
 class AIExplanationRequest(BaseModel):
     answer: str = Field(min_length=1)
 

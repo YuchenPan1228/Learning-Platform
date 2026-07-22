@@ -77,7 +77,16 @@ def recalculate_user_topic_mastery(session: Session) -> list[UserTopicMastery]:
 
     stale_ids = set(existing_rows) - set(topic_stats)
     for topic_id in stale_ids:
-        session.delete(existing_rows[topic_id])
+        row = existing_rows[topic_id]
+        # Flashcard review may create mastery rows for topics with no questions and
+        # stores next_review_at there. Keep those schedules instead of deleting them.
+        if row.next_review_at is not None:
+            row.mastery_score = 0.0
+            row.attempts_count = 0
+            row.last_practiced_at = None
+            upserted.append(row)
+            continue
+        session.delete(row)
 
     session.commit()
     for row in upserted:

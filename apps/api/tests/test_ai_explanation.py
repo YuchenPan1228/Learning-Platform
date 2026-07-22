@@ -69,6 +69,24 @@ def test_generate_question_hints_calls_provider_and_caches_result() -> None:
     assert cached.result_kind == AICacheResultKind.HINT
 
 
+def test_generate_question_hints_allows_empty_answer() -> None:
+    session = MagicMock()
+    session.scalar.return_value = None
+    session.refresh.side_effect = lambda row: row
+    provider = _provider(content='{"hints":["Identify the sample space first."]}')
+
+    response = generate_question_hints(
+        session,
+        provider,
+        question=_question(),
+        user_answer="",
+    )
+
+    assert response.hints == ["Identify the sample space first."]
+    user_message = provider.chat.call_args.args[0][1]
+    assert '"user_answer": ""' in user_message.content
+
+
 def test_generate_question_explanation_calls_provider_and_caches_result() -> None:
     session = MagicMock()
     session.scalar.return_value = None
@@ -206,6 +224,30 @@ def test_hints_endpoint_generates(
     assert response.status_code == 200
     assert response.json()["hints"]
     assert response.json()["cache_hit"] is False
+
+
+@pytest.mark.integration
+def test_hints_endpoint_allows_empty_answer(
+    client: TestClient,
+    seeded_database: None,
+    require_postgres: None,
+) -> None:
+    provider = _provider(content='{"hints":["Start from the definition."]}')
+    app = cast(FastAPI, client.app)
+    app.dependency_overrides[get_ai_provider] = lambda: provider
+    try:
+        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        empty = client.post(f"/questions/{question_id}/hints", json={"answer": ""})
+        missing = client.post(f"/questions/{question_id}/hints", json={})
+    finally:
+        app.dependency_overrides.pop(get_ai_provider, None)
+
+    assert empty.status_code == 200
+    assert empty.json()["hints"]
+    assert missing.status_code == 200
+    assert missing.json()["hints"]
+    # Same empty-answer cache key should hit on the second call.
+    assert missing.json()["cache_hit"] is True
 
 
 @pytest.mark.integration

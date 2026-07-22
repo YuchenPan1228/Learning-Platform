@@ -93,7 +93,7 @@ def _due_flashcard_items(session: Session, *, budget_used: int) -> list[StudyPla
                 title=f"{topic.name} flashcards",
                 description=f"Review {len(cards)} due card{'s' if len(cards) != 1 else ''}",
                 duration_minutes=duration,
-                href="/flashcards",
+                href=f"/flashcards?topic={topic.slug}",
                 topic_slug=topic.slug,
             ),
         )

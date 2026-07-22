@@ -24,7 +24,7 @@ from app.services.ai_cache import (
 from app.services.ai_usage import AIUsageRecordInput, record_ai_usage
 
 EXPLANATION_PROMPT_TEMPLATE_VERSION = "question-explanation:v5"
-HINTS_PROMPT_TEMPLATE_VERSION = "question-hints:v1"
+HINTS_PROMPT_TEMPLATE_VERSION = "question-hints:v2"
 EXPLANATION_TASK = AITask.REASONING
 HINTS_TASK = AITask.REASONING
 
@@ -188,7 +188,7 @@ def _prompt_payload(*, question: Question, user_answer: str) -> dict[str, object
             "body": question.body,
             "canonical_solution": question.canonical_solution,
         },
-        "user_answer": user_answer,
+        "user_answer": user_answer.strip(),
     }
 
 
@@ -196,7 +196,8 @@ def _hints_system_prompt() -> str:
     return (
         "Quant interview tutor. Return JSON matching the schema. "
         "Give 1-2 short hints only (no full solution, no final answer). "
-        "Each hint is one sentence."
+        "Each hint is one sentence. "
+        "If user_answer is empty, give starting-point hints for the question."
     )
 
 
