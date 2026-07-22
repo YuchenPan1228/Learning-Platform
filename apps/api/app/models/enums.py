@@ -72,3 +72,51 @@ class AICacheResultKind(StrEnum):
     HINT = "hint"
     SUMMARY = "summary"
     GENERATED_QUESTION = "generated_question"
+
+
+class TopicJobStatus(StrEnum):
+    QUEUED = "queued"
+    COLLECTING = "collecting"
+    EXTRACTING = "extracting"
+    REVIEWING = "reviewing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class TopicJobCreatedBy(StrEnum):
+    USER = "user"
+    ADMIN = "admin"
+    ACTIVE_LEARNING = "active_learning"
+
+
+class ResourceSourceType(StrEnum):
+    URL = "url"
+    PDF = "pdf"
+    BOOK_NOTE = "book_note"
+    MANUAL = "manual"
+    GENERATED = "generated"
+
+
+class ExtractedObjectType(StrEnum):
+    CONCEPT = "concept"
+    FORMULA = "formula"
+    EXAMPLE = "example"
+    QUESTION = "question"
+    FLASHCARD = "flashcard"
+
+
+class JobExecutionStatus(StrEnum):
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class JobExecutionStage(StrEnum):
+    COLLECTING = "collecting"
+    POLICY_CHECK = "policy_check"
+    QUALITY_SCORING = "quality_scoring"
+    EXTRACTING = "extracting"
+    AI_EXTRACTION = "ai_extraction"
+    DEDUPLICATION = "deduplication"
+    REVIEWING = "reviewing"
+    PUBLISHING = "publishing"
