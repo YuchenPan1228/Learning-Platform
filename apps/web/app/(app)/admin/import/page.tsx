@@ -1,10 +1,5 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { AdminImportForm } from "@/components/admin/admin-import-form";
 
 export default function AdminImportPage() {
-  return (
-    <PlaceholderPage
-      title="Admin import shell"
-      description="Manual resource import will be implemented in QP-034 during Phase 4."
-    />
-  );
+  return <AdminImportForm />;
 }
