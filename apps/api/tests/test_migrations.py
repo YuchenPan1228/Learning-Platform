@@ -45,6 +45,10 @@ def test_initial_migration_applies(
             "learning_signals",
             "attempts",
             "user_topic_mastery",
+            "resources",
+            "topic_jobs",
+            "extracted_objects",
+            "job_execution_logs",
             "alembic_version",
         }.issubset(table_names)
 

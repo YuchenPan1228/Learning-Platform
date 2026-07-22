@@ -10,17 +10,27 @@ from app.models.enums import (
     ContentStatus,
     Difficulty,
     DuplicateMatchType,
+    ExtractedObjectType,
     FlashcardReviewRating,
+    JobExecutionStage,
+    JobExecutionStatus,
     LearningSignalType,
+    ResourceSourceType,
     SearchResourceType,
     TagCategory,
+    TopicJobCreatedBy,
+    TopicJobStatus,
 )
+from app.models.extracted_object import ExtractedObject
 from app.models.flashcard import Flashcard
+from app.models.job_execution_log import JobExecutionLog
 from app.models.learning_path import LearningPath, LearningPathStep
 from app.models.learning_signal import LearningSignal
 from app.models.question import Question
+from app.models.resource import Resource
 from app.models.tag import QuestionTag, Tag
 from app.models.topic import Topic
+from app.models.topic_job import TopicJob
 from app.models.user_flashcard_progress import UserFlashcardProgress
 from app.models.user_question_progress import UserQuestionProgress
 from app.models.user_topic_mastery import UserTopicMastery
@@ -37,8 +47,13 @@ __all__ = [
     "ContentStatus",
     "Difficulty",
     "DuplicateMatchType",
+    "ExtractedObject",
+    "ExtractedObjectType",
     "Flashcard",
     "FlashcardReviewRating",
+    "JobExecutionLog",
+    "JobExecutionStage",
+    "JobExecutionStatus",
     "LearningPath",
     "LearningPathStep",
     "LearningSignal",
@@ -46,10 +61,15 @@ __all__ = [
     "LOCAL_USER_ID",
     "Question",
     "QuestionTag",
+    "Resource",
+    "ResourceSourceType",
     "SearchResourceType",
     "Tag",
     "TagCategory",
     "Topic",
+    "TopicJob",
+    "TopicJobCreatedBy",
+    "TopicJobStatus",
     "UserFlashcardProgress",
     "UserQuestionProgress",
     "UserTopicMastery",
