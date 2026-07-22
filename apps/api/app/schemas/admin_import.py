@@ -54,5 +54,6 @@ class ResourceImportRead(BaseModel):
     summary: str | None
     raw_text_hash: str | None
     status: ContentStatus
+    extracted_object_id: int | None = None
     created_at: datetime
     updated_at: datetime

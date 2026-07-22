@@ -14,6 +14,7 @@ export type ImportedResource = {
   summary: string | null;
   raw_text_hash: string | null;
   status: ContentStatus;
+  extracted_object_id: number | null;
   created_at: string;
   updated_at: string;
 };

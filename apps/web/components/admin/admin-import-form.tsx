@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -107,7 +108,8 @@ export function AdminImportForm() {
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Admin</p>
       <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Import resources</h2>
       <p className="mt-1 text-sm text-[#66736e]">
-        Create draft resources for later review. Crawling and PDF extraction stay deferred.
+        Create draft resources and review-queue items for human review. Crawling and PDF extraction
+        stay deferred.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Import type">
@@ -272,7 +274,7 @@ export function AdminImportForm() {
 
         <div>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving draft…" : "Save draft resource"}
+            {isSubmitting ? "Saving draft…" : "Save draft"}
           </Button>
         </div>
       </form>
@@ -285,12 +287,21 @@ export function AdminImportForm() {
 
       {result ? (
         <div className="mt-4 rounded-lg border border-[#cfe5db] bg-[#f3faf7] p-3 text-sm text-[#40524b]">
-          <p className="font-semibold text-[#15201c]">Draft resource saved</p>
+          <p className="font-semibold text-[#15201c]">Draft saved to review queue</p>
           <p className="mt-1">
-            ID {result.id} · {result.source_type} · {result.status}
+            Resource ID {result.id} · Review item ID {result.extracted_object_id ?? "—"} ·{" "}
+            {result.source_type} · {result.status}
           </p>
           {result.title ? <p className="mt-1">Title: {result.title}</p> : null}
           {result.url ? <p className="mt-1 break-all">Path/URL: {result.url}</p> : null}
+          {result.extracted_object_id ? (
+            <Link
+              href="/admin/review"
+              className="mt-3 inline-flex text-sm font-medium text-[#176b54] underline-offset-2 hover:underline"
+            >
+              Open review queue
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </section>

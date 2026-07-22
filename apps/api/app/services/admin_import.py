@@ -9,6 +9,7 @@ from app.schemas.admin_import import (
     ResourceImportRead,
     UrlImportCreate,
 )
+from app.services.import_extracted_draft import create_extracted_draft_from_resource
 
 _NOTE_SOURCE_TYPES = frozenset(
     {
@@ -84,9 +85,14 @@ def import_pdf_metadata_resource(
 
 def _persist_resource(session: Session, resource: Resource) -> ResourceImportRead:
     session.add(resource)
+    session.flush()
+    extracted = create_extracted_draft_from_resource(session, resource)
     session.commit()
     session.refresh(resource)
-    return ResourceImportRead.model_validate(resource)
+    session.refresh(extracted)
+    return ResourceImportRead.model_validate(resource).model_copy(
+        update={"extracted_object_id": extracted.id},
+    )
 
 
 def _blank_to_none(value: str | None) -> str | None:

@@ -160,3 +160,8 @@ export function getReviewItemTitle(item: ReviewQueueItem): string {
     `${item.object_type} draft #${item.id}`
   );
 }
+
+export function isPublishedReviewItem(item: ReviewQueueItem): boolean {
+  const published = item.payload_json.published;
+  return typeof published === "object" && published !== null && "id" in published;
+}

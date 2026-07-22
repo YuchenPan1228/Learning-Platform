@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from app.dedup.text import text_hash
-from app.models.enums import ContentStatus, ResourceSourceType
+from app.models.enums import ContentStatus, ExtractedObjectType, ResourceSourceType
+from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
 from app.schemas.admin_import import (
     NoteImportCreate,
@@ -15,6 +16,7 @@ from app.services.admin_import import (
     import_pdf_metadata_resource,
     import_url_resource,
 )
+from app.services.import_extracted_draft import create_extracted_draft_from_resource
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
@@ -26,9 +28,42 @@ def _attach_persisted_fields(row: Resource, resource_id: int) -> None:
     row.updated_at = now
 
 
+def _attach_extracted_fields(row: ExtractedObject, extracted_id: int) -> None:
+    row.id = extracted_id
+    now = datetime.now(UTC)
+    row.created_at = now
+    row.updated_at = now
+
+
+def _mock_import_session(
+    session: MagicMock,
+    *,
+    resource_id: int = 1,
+    extracted_id: int = 10,
+) -> None:
+    flush_count = {"value": 0}
+
+    def refresh(row: object) -> None:
+        if isinstance(row, Resource):
+            _attach_persisted_fields(row, resource_id)
+        elif isinstance(row, ExtractedObject):
+            _attach_extracted_fields(row, extracted_id)
+
+    def flush() -> None:
+        flush_count["value"] += 1
+        if flush_count["value"] == 1:
+            for call in session.add.call_args_list:
+                row = call.args[0]
+                if isinstance(row, Resource):
+                    _attach_persisted_fields(row, resource_id)
+
+    session.refresh.side_effect = refresh
+    session.flush.side_effect = flush
+
+
 def test_import_url_resource_creates_draft_without_crawling() -> None:
     session = MagicMock()
-    session.refresh.side_effect = lambda row: _attach_persisted_fields(row, 1)
+    _mock_import_session(session)
 
     result = import_url_resource(
         session,
@@ -39,9 +74,10 @@ def test_import_url_resource_creates_draft_without_crawling() -> None:
         ),
     )
 
-    session.add.assert_called_once()
+    assert session.add.call_count == 2
+    session.flush.assert_called_once()
     session.commit.assert_called_once()
-    saved = session.add.call_args.args[0]
+    saved = session.add.call_args_list[0].args[0]
     assert isinstance(saved, Resource)
     assert saved.source_type is ResourceSourceType.URL
     assert saved.url == "https://example.com/bayes"
@@ -49,13 +85,19 @@ def test_import_url_resource_creates_draft_without_crawling() -> None:
     assert saved.license == "CC-BY-4.0"
     assert saved.status is ContentStatus.DRAFT
     assert saved.raw_text_hash == text_hash("https://example.com/bayes")
+    extracted = session.add.call_args_list[1].args[0]
+    assert isinstance(extracted, ExtractedObject)
+    assert extracted.object_type is ExtractedObjectType.CONCEPT
+    assert extracted.resource_id == 1
+    assert extracted.extraction_method == "manual:import"
     assert result.id == 1
+    assert result.extracted_object_id == 10
     assert result.source_type is ResourceSourceType.URL
 
 
 def test_import_note_resource_stores_text_as_summary() -> None:
     session = MagicMock()
-    session.refresh.side_effect = lambda row: _attach_persisted_fields(row, 2)
+    _mock_import_session(session, resource_id=2, extracted_id=11)
 
     result = import_note_resource(
         session,
@@ -67,13 +109,16 @@ def test_import_note_resource_stores_text_as_summary() -> None:
         ),
     )
 
-    saved = session.add.call_args.args[0]
+    saved = session.add.call_args_list[0].args[0]
     assert saved.source_type is ResourceSourceType.BOOK_NOTE
     assert saved.summary == "Bayes theorem relates P(A|B) to P(B|A)."
     assert saved.raw_text_hash == text_hash("Bayes theorem relates P(A|B) to P(B|A).")
     assert saved.url is None
     assert saved.status is ContentStatus.DRAFT
+    extracted = session.add.call_args_list[1].args[0]
+    assert extracted.payload_json["definition"] == "Bayes theorem relates P(A|B) to P(B|A)."
     assert result.summary == "Bayes theorem relates P(A|B) to P(B|A)."
+    assert result.extracted_object_id == 11
 
 
 def test_note_import_rejects_non_note_source_type() -> None:
@@ -86,7 +131,7 @@ def test_note_import_rejects_non_note_source_type() -> None:
 
 def test_import_pdf_metadata_stores_path_without_parsing() -> None:
     session = MagicMock()
-    session.refresh.side_effect = lambda row: _attach_persisted_fields(row, 3)
+    _mock_import_session(session, resource_id=3, extracted_id=12)
 
     result = import_pdf_metadata_resource(
         session,
@@ -98,7 +143,7 @@ def test_import_pdf_metadata_stores_path_without_parsing() -> None:
         ),
     )
 
-    saved = session.add.call_args.args[0]
+    saved = session.add.call_args_list[0].args[0]
     assert saved.source_type is ResourceSourceType.PDF
     assert saved.url == "/Users/me/docs/interview-math.pdf"
     assert saved.title == "Interview Math PDF"
@@ -106,6 +151,27 @@ def test_import_pdf_metadata_stores_path_without_parsing() -> None:
     assert saved.status is ContentStatus.DRAFT
     assert saved.raw_text_hash == text_hash("/Users/me/docs/interview-math.pdf")
     assert result.id == 3
+    assert result.extracted_object_id == 12
+
+
+def test_create_extracted_draft_from_resource_builds_concept_payload() -> None:
+    resource = Resource(
+        source_type=ResourceSourceType.MANUAL,
+        title="Bayes note",
+        summary="P(A|B) = P(B|A)P(A)/P(B)",
+        status=ContentStatus.DRAFT,
+    )
+    resource.id = 5
+    session = MagicMock()
+
+    extracted = create_extracted_draft_from_resource(session, resource)
+
+    session.add.assert_called_once_with(extracted)
+    assert extracted.resource_id == 5
+    assert extracted.object_type is ExtractedObjectType.CONCEPT
+    assert extracted.payload_json["name"] == "Bayes note"
+    assert extracted.payload_json["definition"] == "P(A|B) = P(B|A)P(A)/P(B)"
+    assert extracted.extraction_method == "manual:import"
 
 
 @pytest.mark.integration
@@ -153,3 +219,18 @@ def test_admin_import_endpoints_create_resources(
     assert pdf_body["source_type"] == "pdf"
     assert pdf_body["url"] == "/tmp/quant-notes.pdf"
     assert pdf_body["author"] == "Yuchen"
+    assert isinstance(pdf_body["extracted_object_id"], int)
+
+    review_response = client.get("/admin/review")
+    assert review_response.status_code == 200
+    review_items = review_response.json()["items"]
+    extracted_ids = {item["id"] for item in review_items}
+    assert url_body["extracted_object_id"] in extracted_ids
+    assert note_body["extracted_object_id"] in extracted_ids
+    assert pdf_body["extracted_object_id"] in extracted_ids
+
+    url_draft = next(item for item in review_items if item["id"] == url_body["extracted_object_id"])
+    assert url_draft["status"] == "draft"
+    assert url_draft["object_type"] == "concept"
+    assert url_draft["resource"]["id"] == url_body["id"]
+    assert url_draft["extraction_method"] == "manual:import"
