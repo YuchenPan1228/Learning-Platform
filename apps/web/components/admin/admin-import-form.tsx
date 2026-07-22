@@ -133,7 +133,9 @@ export function AdminImportForm() {
           </button>
         ))}
       </div>
-      <p className="mt-2 text-sm text-[#66736e]">{MODES.find((item) => item.id === mode)?.description}</p>
+      <p className="mt-2 text-sm text-[#66736e]">
+        {MODES.find((item) => item.id === mode)?.description}
+      </p>
 
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
         {mode === "url" ? (
