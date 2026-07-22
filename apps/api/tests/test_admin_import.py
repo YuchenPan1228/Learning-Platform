@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -163,7 +164,7 @@ def test_flashcard_note_import_requires_front_title() -> None:
 
 
 def test_import_pdf_resource_stores_uploaded_file_without_parsing(
-    tmp_path,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
@@ -205,7 +206,7 @@ def test_import_pdf_resource_stores_uploaded_file_without_parsing(
 
 
 def test_import_pdf_rejects_non_pdf_bytes(
-    tmp_path,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
