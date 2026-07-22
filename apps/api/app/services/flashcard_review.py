@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.constants import LOCAL_USER_ID
 from app.models.flashcard import Flashcard
@@ -11,6 +11,17 @@ from app.models.user_flashcard_progress import UserFlashcardProgress
 from app.models.user_topic_mastery import UserTopicMastery
 from app.schemas.flashcard import FlashcardRead, FlashcardReviewRequest, FlashcardReviewResponse
 from app.services.spaced_repetition import INITIAL_EASE_FACTOR, schedule_flashcard_review
+
+
+def _topic_scope_ids(session: Session, topic_slug: str) -> list[int] | None:
+    topic = session.scalar(
+        select(Topic).where(Topic.slug == topic_slug).options(selectinload(Topic.subtopics)),
+    )
+    if topic is None:
+        return None
+    topic_ids = [topic.id]
+    topic_ids.extend(subtopic.id for subtopic in topic.subtopics)
+    return topic_ids
 
 
 def _progress_by_flashcard_id(session: Session) -> dict[int, UserFlashcardProgress]:
@@ -69,7 +80,10 @@ def list_flashcards_with_progress(
 ) -> list[FlashcardRead]:
     query = select(Flashcard).options(joinedload(Flashcard.topic)).order_by(Flashcard.id)
     if topic_slug is not None:
-        query = query.join(Flashcard.topic).where(Topic.slug == topic_slug)
+        topic_ids = _topic_scope_ids(session, topic_slug)
+        if topic_ids is None:
+            return []
+        query = query.where(Flashcard.topic_id.in_(topic_ids))
 
     if due_only:
         now = datetime.now(UTC)

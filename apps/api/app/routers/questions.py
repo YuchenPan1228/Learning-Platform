@@ -15,6 +15,7 @@ from app.models.topic import Topic
 from app.schemas.ai_explanation import (
     AIExplanationRequest,
     AIExplanationResponse,
+    AIHintsRequest,
     AIHintsResponse,
 )
 from app.schemas.ai_similar_question import SimilarQuestionResponse
@@ -189,7 +190,7 @@ def list_questions(
 @router.post("/{question_id}/hints")
 def hint_question(
     question_id: int,
-    payload: AIExplanationRequest,
+    payload: AIHintsRequest,
     session: SessionDep,
     provider: AIProviderDep,
 ) -> AIHintsResponse:

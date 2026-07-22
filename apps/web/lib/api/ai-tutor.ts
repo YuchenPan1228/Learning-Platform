@@ -24,7 +24,10 @@ export async function requestExplanation(
   return response.json() as Promise<AIExplanationResult>;
 }
 
-export async function requestHints(questionId: number, answer: string): Promise<AIHintsResult> {
+export async function requestHints(
+  questionId: number,
+  answer: string = "",
+): Promise<AIHintsResult> {
   const response = await fetch(`${getApiBaseUrl()}/questions/${questionId}/hints`, {
     method: "POST",
     headers: {
