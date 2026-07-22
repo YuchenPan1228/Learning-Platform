@@ -30,6 +30,12 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://quant_prep:quant_prep@localhost:5432/quant_prep",
         alias="DATABASE_URL",
     )
+    upload_dir: str = Field(default="data/uploads", alias="UPLOAD_DIR")
+    pdf_upload_max_bytes: int = Field(
+        default=25 * 1024 * 1024,
+        alias="PDF_UPLOAD_MAX_BYTES",
+        gt=0,
+    )
     ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_chat_model: str = Field(default="", alias="OLLAMA_CHAT_MODEL")
@@ -73,6 +79,10 @@ class Settings(BaseSettings):
         if value.startswith("postgresql://"):
             return value.replace("postgresql://", "postgresql+psycopg://", 1)
         return value
+
+    @property
+    def repo_root(self) -> Path:
+        return REPO_ROOT
 
 
 @lru_cache

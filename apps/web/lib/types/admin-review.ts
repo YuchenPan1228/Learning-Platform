@@ -39,6 +39,28 @@ export type ReviewQueueResponse = {
 
 export type ReviewQueueEditInput = {
   payloadJson?: Record<string, unknown>;
+  objectType?: Extract<ExtractedObjectType, "question" | "flashcard">;
   qualityScore?: number | null;
   confidenceScore?: number | null;
+};
+
+export type ReviewQueueStatus = "draft" | "approved" | "rejected";
+
+export type PublishedObjectRef = {
+  kind: "concept" | "question" | "flashcard";
+  id: number;
+};
+
+export type PublishDuplicateMatch = {
+  question_id: number;
+  title: string;
+  match_type: string;
+  similarity_score: number | null;
+};
+
+export type PublishReviewResult = {
+  extracted_object_id: number;
+  object_type: ExtractedObjectType;
+  published: PublishedObjectRef;
+  duplicate_warnings: PublishDuplicateMatch[];
 };

@@ -512,7 +512,27 @@ Depends on: `QP-028`, `QP-030`.
 
 ## Phase 4: Admin Review and Manual Ingestion
 
-Goal: add human-in-the-loop content review before automated collection.
+Goal: add human-in-the-loop content review before automated collection. Manual import creates review-queue drafts as **questions** or **flashcards** only. **Existing concepts** are curated separately; manual import does not create new concepts or topics.
+
+### Phase 4 design notes
+
+**Draft targets:** User chooses whether an import becomes a question or flashcard. Publish converts approved drafts into `Question` or `Flashcard` records only.
+
+**Topic assignment:**
+
+| Phase | Topic assignment |
+| --- | --- |
+| Phase 4 (now) | User picks topic and optional subtopic at import and can change them in review |
+| Phase 5 | AI pre-fills `topic_slug` / `subtopic_slug` from source content; user confirms in review |
+| Later | Optional auto-suggest with override |
+
+**AI processing:**
+
+- Phase 4: import URL bookmarks, uploaded PDFs, or pasted text; user writes or edits draft content in review before publish.
+- Phase 5 (`QP-042`, `QP-043`): fetch/clean source text, then use AI to turn long page/PDF/pasted text into formatted question/answer and flashcard drafts for the same review queue.
+- Do not build a second AI extraction path in Phase 4; it would duplicate Phase 5 work.
+
+**Concept curation:** Editing **existing** seeded concepts (definition, formula, intuition, tips, etc.) is tracked in `QP-038` and is separate from the import → review → publish loop for questions and flashcards.
 
 ### QP-032: Add Ingestion Data Models
 
@@ -554,8 +574,10 @@ Tasks:
 
 - Add manual URL import.
 - Add manual note import.
-- Add local PDF metadata import.
-- Keep actual crawling minimal.
+- Add pasted question import.
+- Add PDF file upload (store locally; no text extraction yet).
+- Require user-selected topic, optional subtopic, and draft type (question or flashcard).
+- Keep crawling and PDF parsing deferred to Phase 5.
 
 Depends on: `QP-032`.
 
@@ -579,34 +601,53 @@ Estimate: 3-4 hours
 
 Tasks:
 
-- Show source.
-- Show extracted text.
-- Show summary.
-- Show formulas.
-- Show candidate questions.
-- Show license status.
-- Show quality score.
-- Show provenance metadata.
+- Show source, extracted text, and provenance metadata.
+- Show license status and quality score.
+- Edit draft content (question or flashcard fields, topic, subtopic).
+- Approve, reject, and publish approved drafts.
+- Show formulas and candidate questions when present in payload (for future AI extraction).
 
 Depends on: `QP-035`.
 
 ### QP-037: Publish Approved Drafts
 
-Estimate: 2-4 hours
+Estimate: 4-6 hours
 
 Tasks:
 
-- Convert approved ExtractedObject into Concept, Question, or Flashcard.
+- Create a linked ExtractedObject draft when a Resource is imported; return `extracted_object_id` from import APIs.
+- Restrict manual import draft types to question and flashcard.
+- Validate `topic_slug` and optional `subtopic_slug` against the topic hierarchy.
+- Map pasted note, URL, PDF, and question imports into question or flashcard payload shapes.
+- Add draft/approved/rejected queue tabs in the review UI.
+- Edit draft payload, object type, topic, and quality score before approval.
+- Convert approved ExtractedObject into Question or Flashcard.
+- Publish approved drafts from the review UI; surface publish duplicate errors (409).
+- Do not create new Concept or Topic records from manual import.
 - Reuse hash-based duplicate detection.
 - Keep generated variants traceable.
+- Link import success UI to the review queue.
 
-Depends on: `QP-035`, `QP-013`.
+Depends on: `QP-034`, `QP-035`, `QP-036`, `QP-013`.
+
+### QP-038: Add Admin Concept Editor
+
+Estimate: 3-4 hours
+
+Tasks:
+
+- List existing concepts by topic.
+- Edit definition, formula, intuition, worked example, common mistakes, and interview tips.
+- Preserve slug and graph edges unless explicitly changed.
+- Keep concept creation out of manual import; new concepts remain a separate curation workflow.
+
+Depends on: `QP-011`, `QP-016`.
 
 ## Phase 5: Knowledge Ingestion Pipeline
 
-Goal: topic-driven automated drafting, still reviewed by a human. Avoid paid crawler services.
+Goal: topic-driven automated drafting into the same review queue as Phase 4, still reviewed by a human. Avoid paid crawler services. AI should turn long source text (fetched pages given url, uploaded PDFs, or pasted notes) into formatted question/answer and flashcard drafts; the user confirms topic and content before publish.
 
-### QP-038: Implement Topic Job Lifecycle
+### QP-039: Implement Topic Job Lifecycle
 
 Estimate: 2-4 hours
 
@@ -619,9 +660,9 @@ Tasks:
 - Completed.
 - Failed.
 
-Depends on: `QP-032`, `QP-033`.
+Depends on: `QP-032`, `QP-033`, `QP-037`.
 
-### QP-039: Add Source Policy Checker
+### QP-040: Add Source Policy Checker
 
 Estimate: 2-3 hours
 
@@ -632,9 +673,9 @@ Tasks:
 - License status.
 - Attribution requirement.
 
-Depends on: `QP-038`.
+Depends on: `QP-039`.
 
-### QP-040: Add Source Quality Scoring
+### QP-041: Add Source Quality Scoring
 
 Estimate: 3-4 hours
 
@@ -647,39 +688,43 @@ Tasks:
 - Educational structure.
 - Human review rating.
 
-Depends on: `QP-039`.
+Depends on: `QP-040`.
 
-### QP-041: Add Local Page Extraction
+### QP-042: Add Local Page Extraction
 
 Estimate: 3-4 hours
 
 Tasks:
 
-- Use requests.
-- Use BeautifulSoup.
-- Use Trafilatura.
-- Use Playwright only when needed.
-- Use PyMuPDF for PDFs.
+- Fetch and clean page text from imported URLs.
+- Use requests, BeautifulSoup, and Trafilatura.
+- Use Playwright only when needed for JS-heavy pages.
+- Extract raw text from uploaded PDFs with PyMuPDF (no AI in this step).
+- Accept already-pasted note/question text as an extraction input (no fetch required).
 - Do not use Firecrawl in MVP.
+- Hand cleaned text to `QP-043` for structured AI parsing.
 
-Depends on: `QP-039`.
+Depends on: `QP-040`.
 
-### QP-042: Add Structured AI Extraction
+### QP-043: Add Structured AI Extraction
 
 Estimate: 3-4 hours
 
 Tasks:
 
-- Extract concepts.
-- Extract formulas.
-- Extract examples.
-- Extract candidate questions.
-- Extract summaries.
-- Use Ollama via `AIProvider`.
+- Use Ollama via `AIProvider` to parse long source text into review drafts.
+- From a long webpage or PDF text dump: propose one or more formatted interview questions with title, body, and answer/solution fields when present.
+- From the same sources: propose flashcard front/back pairs when appropriate.
+- From pasted notes/freeform text: run the same AI parsing path (long blob → structured Q&A / flashcards).
+- Extract short summaries and source metadata for review.
+- Suggest `topic_slug` and optional `subtopic_slug`; user confirms in review.
+- Output structured JSON validated against draft schemas (question/flashcard payloads).
+- Do not auto-publish; create `ExtractedObject` drafts for the existing review queue.
+- Defer automatic concept, formula, and example creation until `QP-038` concept editor and graph curation workflow exist.
 
-Depends on: `QP-024`, `QP-041`.
+Depends on: `QP-024`, `QP-042`.
 
-### QP-043: Store Extracted Typed Objects
+### QP-044: Store Extracted Typed Objects
 
 Estimate: 2-4 hours
 
@@ -691,9 +736,9 @@ Tasks:
 - Save model version.
 - Save provenance.
 
-Depends on: `QP-042`.
+Depends on: `QP-043`.
 
-### QP-044: Add Normalized Text Deduplication for Extracted Objects
+### QP-045: Add Normalized Text Deduplication for Extracted Objects
 
 Estimate: 2-4 hours
 
@@ -705,9 +750,9 @@ Tasks:
 - Suggest canonical object.
 - Do not use embeddings yet.
 
-Depends on: `QP-043`, `QP-013`.
+Depends on: `QP-044`, `QP-013`.
 
-### QP-045: Surface Dedupe and Quality in Review UI
+### QP-046: Surface Dedupe and Quality in Review UI
 
 Estimate: 2-3 hours
 
@@ -718,13 +763,13 @@ Tasks:
 - Show policy status.
 - Show provenance.
 
-Depends on: `QP-036`, `QP-044`.
+Depends on: `QP-036`, `QP-037`, `QP-045`.
 
 ## Phase 6: Embeddings and Semantic Search
 
 Goal: add vector search only after there is enough content to justify it.
 
-### QP-046: Evaluate Dataset Size and Embedding Need
+### QP-047: Evaluate Dataset Size and Embedding Need
 
 Estimate: 1-2 hours
 
@@ -734,9 +779,9 @@ Tasks:
 - Identify search quality gaps.
 - Decide whether embeddings are worth adding.
 
-Depends on: `QP-045`.
+Depends on: `QP-046`.
 
-### QP-047: Add Local Embedding Provider
+### QP-048: Add Local Embedding Provider
 
 Estimate: 2-4 hours
 
@@ -747,9 +792,9 @@ Tasks:
 - Track embedding runtime and cost as zero/local.
 - Wire the reserved `AITask.EMBEDDING` / `OLLAMA_EMBEDDING_MODEL` config into the embedding provider.
 
-Depends on: `QP-046`.
+Depends on: `QP-047`.
 
-### QP-048: Add pgvector
+### QP-049: Add pgvector
 
 Estimate: 2-4 hours
 
@@ -759,9 +804,9 @@ Tasks:
 - Add vector columns.
 - Add vector indexes.
 
-Depends on: `QP-047`.
+Depends on: `QP-048`.
 
-### QP-049: Add Semantic Duplicate Clustering
+### QP-050: Add Semantic Duplicate Clustering
 
 Estimate: 3-4 hours
 
@@ -771,9 +816,9 @@ Tasks:
 - Suggest canonical record.
 - Store similarity scores.
 
-Depends on: `QP-048`.
+Depends on: `QP-049`.
 
-### QP-050: Add Hybrid Search
+### QP-051: Add Hybrid Search
 
 Estimate: 3-4 hours
 
@@ -783,13 +828,13 @@ Tasks:
 - Rank by quality score and relevance.
 - Keep full text search available as fallback.
 
-Depends on: `QP-049`.
+Depends on: `QP-050`.
 
 ## Phase 7: Active Learning
 
 Goal: make the system improve from user behavior.
 
-### QP-051: Track Search Misses
+### QP-052: Track Search Misses
 
 Estimate: 2-3 hours
 
@@ -800,7 +845,7 @@ Tasks:
 
 Depends on: `QP-012`, `QP-032`.
 
-### QP-052: Add Confusing Question Flag
+### QP-053: Add Confusing Question Flag
 
 Estimate: 1-3 hours
 
@@ -811,7 +856,7 @@ Tasks:
 
 Depends on: `QP-018`, `QP-032`.
 
-### QP-053: Promote and Demote Content Quality
+### QP-054: Promote and Demote Content Quality
 
 Estimate: 3-4 hours
 
@@ -822,9 +867,9 @@ Tasks:
 - Use flag count.
 - Update quality signals.
 
-Depends on: `QP-021`, `QP-052`.
+Depends on: `QP-021`, `QP-053`.
 
-### QP-054: Suggest Topic Jobs from Learning Signals
+### QP-055: Suggest Topic Jobs from Learning Signals
 
 Estimate: 3-4 hours
 
@@ -834,13 +879,13 @@ Tasks:
 - Weak concepts suggest content generation.
 - Frequent confusion suggests review queue items.
 
-Depends on: `QP-051`, `QP-053`, `QP-038`.
+Depends on: `QP-052`, `QP-054`, `QP-039`.
 
 ## Phase 8: Interactive Market Games
 
 Goal: add differentiating quant interview practice after the MVP is stable.
 
-### QP-055: Add Market Game Data Model
+### QP-056: Add Market Game Data Model
 
 Estimate: 2-4 hours
 
@@ -853,7 +898,7 @@ Tasks:
 
 Depends on: `QP-007`.
 
-### QP-056: Implement Monty Hall Game
+### QP-057: Implement Monty Hall Game
 
 Estimate: 2-4 hours
 
@@ -863,9 +908,9 @@ Tasks:
 - Explanation.
 - Attempt tracking.
 
-Depends on: `QP-055`.
+Depends on: `QP-056`.
 
-### QP-057: Implement Guess 2/3 Average Game
+### QP-058: Implement Guess 2/3 Average Game
 
 Estimate: 3-4 hours
 
@@ -875,9 +920,9 @@ Tasks:
 - AI or fixed-strategy population.
 - Score and explanation.
 
-Depends on: `QP-055`.
+Depends on: `QP-056`.
 
-### QP-058: Implement Basic Market Making Spread Game
+### QP-059: Implement Basic Market Making Spread Game
 
 Estimate: 3-4 hours
 
@@ -887,13 +932,13 @@ Tasks:
 - Simple inventory state.
 - Deterministic scoring.
 
-Depends on: `QP-055`.
+Depends on: `QP-056`.
 
 ## Phase 9: Authentication and Deployment
 
 Goal: move beyond local single-user mode only after the core product works.
 
-### QP-059: Choose Auth Provider
+### QP-060: Choose Auth Provider
 
 Estimate: 1-2 hours
 
@@ -905,7 +950,7 @@ Tasks:
 
 Depends on: MVP feedback.
 
-### QP-060: Add Authentication
+### QP-061: Add Authentication
 
 Estimate: 3-4 hours
 
@@ -915,9 +960,9 @@ Tasks:
 - Add protected routes.
 - Migrate single-user assumptions.
 
-Depends on: `QP-059`.
+Depends on: `QP-060`.
 
-### QP-061: Add Hosted Deployment
+### QP-062: Add Hosted Deployment
 
 Estimate: 3-4 hours
 
@@ -927,7 +972,7 @@ Tasks:
 - Add production env config.
 - Add deployment pipeline.
 
-Depends on: `QP-060`.
+Depends on: `QP-061`.
 
 ## Final Review
 

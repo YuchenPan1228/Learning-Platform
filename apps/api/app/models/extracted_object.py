@@ -41,7 +41,7 @@ class ExtractedObject(Base, TimestampMixin):
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     quality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    # Nullable integer without FK: DuplicateCluster is deferred until Phase 6 (QP-049).
+    # Nullable integer without FK: DuplicateCluster is deferred until Phase 6 (QP-050).
     duplicate_cluster_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     status: Mapped[ContentStatus] = mapped_column(
         SAEnum(

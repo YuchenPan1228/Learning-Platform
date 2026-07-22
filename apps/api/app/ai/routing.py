@@ -43,7 +43,7 @@ def resolve_chat_model(
 
 
 def resolve_embedding_model(settings: Settings | None = None) -> str:
-    """Return the configured embedding model (reserved until QP-047)."""
+    """Return the configured embedding model (reserved until QP-048)."""
     resolved = settings or get_settings()
     model = resolved.ollama_embedding_model.strip()
     if not model:

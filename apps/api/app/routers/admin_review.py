@@ -4,11 +4,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import SessionDep
 from app.models.enums import ContentStatus, ExtractedObjectType
+from app.schemas.admin_publish import PublishExtractedObjectResponse
 from app.schemas.admin_review import (
     ExtractedObjectEdit,
     ExtractedObjectReviewRead,
     ReviewQueueResponse,
 )
+from app.services.admin_publish import PublishDuplicateError, PublishError, publish_extracted_object
 from app.services.admin_review import (
     ReviewQueueError,
     approve_review_item,
@@ -82,4 +84,33 @@ def reject_review_queue_item(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ReviewQueueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/{extracted_object_id}/publish")
+def publish_review_queue_item(
+    extracted_object_id: int,
+    session: SessionDep,
+) -> PublishExtractedObjectResponse:
+    try:
+        return publish_extracted_object(session, extracted_object_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PublishDuplicateError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": str(exc),
+                "matches": [
+                    {
+                        "question_id": match.question_id,
+                        "title": match.title,
+                        "match_type": match.match_type.value,
+                        "similarity_score": match.similarity_score,
+                    }
+                    for match in exc.matches
+                ],
+            },
+        ) from exc
+    except PublishError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

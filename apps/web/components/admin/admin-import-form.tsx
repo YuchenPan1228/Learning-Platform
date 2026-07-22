@@ -1,67 +1,94 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
+import {
+  fieldClassName,
+  labelClassName,
+  TopicTargetFields,
+} from "@/components/admin/topic-target-fields";
 import { Button } from "@/components/ui/button";
 import {
   importNoteResource,
-  importPdfMetadataResource,
+  importPdfResource,
+  importQuestionResource,
   importUrlResource,
 } from "@/lib/api/admin-import";
+import type { ImportDraftTarget } from "@/lib/admin-review/draft-form";
 import type { ImportedResource } from "@/lib/types/admin-import";
+import type { TopicWithSubtopics } from "@/lib/types/topic";
 import { cn } from "@/lib/utils";
 
-type ImportMode = "url" | "note" | "pdf";
+type ImportMode = "url" | "note" | "question" | "pdf";
 
 const MODES: { id: ImportMode; label: string; description: string }[] = [
   {
     id: "url",
     label: "URL",
-    description: "Save a source URL as a draft resource. No crawling.",
+    description: "Bookmark a source URL. Fill in the question or flashcard in review.",
   },
   {
     id: "note",
     label: "Note",
-    description: "Paste a manual or book note. Stored as draft text only.",
+    description: "Paste freeform text for a question body or flashcard.",
+  },
+  {
+    id: "question",
+    label: "Question",
+    description: "Paste a structured interview question with title and body.",
   },
   {
     id: "pdf",
-    label: "PDF metadata",
-    description: "Record local PDF metadata. No file upload or parsing.",
+    label: "PDF",
+    description: "Upload a PDF and create a draft. Question extraction comes in Phase 5.",
   },
 ];
 
-const fieldClassName =
-  "mt-1.5 w-full rounded-lg border border-[#dfe6e1] bg-white px-3 py-2 text-sm text-[#15201c] outline-none focus-visible:border-[#176b54] focus-visible:ring-2 focus-visible:ring-[#176b54]/25";
+type AdminImportFormProps = {
+  topics: TopicWithSubtopics[];
+};
 
-const labelClassName = "block text-sm font-medium text-[#40524b]";
-
-export function AdminImportForm() {
-  const [mode, setMode] = useState<ImportMode>("url");
+export function AdminImportForm({ topics }: AdminImportFormProps) {
+  const [mode, setMode] = useState<ImportMode>("question");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportedResource | null>(null);
 
+  const [objectType, setObjectType] = useState<ImportDraftTarget>("question");
+  const [topicSlug, setTopicSlug] = useState(topics[0]?.slug ?? "");
+  const [subtopicSlug, setSubtopicSlug] = useState("");
+
   const [url, setUrl] = useState("");
   const [urlTitle, setUrlTitle] = useState("");
-  const [urlLicense, setUrlLicense] = useState("");
-  const [urlAttribution, setUrlAttribution] = useState("");
 
   const [noteText, setNoteText] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
-  const [noteSourceType, setNoteSourceType] = useState<"manual" | "book_note">("manual");
-  const [noteAttribution, setNoteAttribution] = useState("");
+
+  const [questionTitle, setQuestionTitle] = useState("");
+  const [questionBody, setQuestionBody] = useState("");
+  const [questionShortAnswer, setQuestionShortAnswer] = useState("");
 
   const [pdfTitle, setPdfTitle] = useState("");
-  const [pdfPath, setPdfPath] = useState("");
-  const [pdfAuthor, setPdfAuthor] = useState("");
-  const [pdfPublisher, setPdfPublisher] = useState("");
-  const [pdfLicense, setPdfLicense] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfSummary, setPdfSummary] = useState("");
+
+  const sharedDraftOptions = {
+    objectType: mode === "question" ? ("question" as const) : objectType,
+    topicSlug,
+    subtopicSlug: subtopicSlug || undefined,
+  };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setResult(null);
+
+    if (!topicSlug) {
+      setError("Select a topic before importing.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -69,30 +96,46 @@ export function AdminImportForm() {
         const imported = await importUrlResource({
           url: url.trim(),
           title: urlTitle.trim() || undefined,
-          license: urlLicense.trim() || undefined,
-          attribution: urlAttribution.trim() || undefined,
+          ...sharedDraftOptions,
         });
         setResult(imported);
         return;
       }
 
       if (mode === "note") {
+        if (objectType === "flashcard" && !noteTitle.trim()) {
+          throw new Error("Flashcard imports need a title for the card front.");
+        }
         const imported = await importNoteResource({
           noteText: noteText.trim(),
           title: noteTitle.trim() || undefined,
-          sourceType: noteSourceType,
-          attribution: noteAttribution.trim() || undefined,
+          ...sharedDraftOptions,
         });
         setResult(imported);
         return;
       }
 
-      const imported = await importPdfMetadataResource({
-        title: pdfTitle.trim(),
-        filePath: pdfPath.trim() || undefined,
-        author: pdfAuthor.trim() || undefined,
-        publisher: pdfPublisher.trim() || undefined,
-        license: pdfLicense.trim() || undefined,
+      if (mode === "question") {
+        const imported = await importQuestionResource({
+          title: questionTitle.trim(),
+          body: questionBody.trim(),
+          shortAnswer: questionShortAnswer.trim() || undefined,
+          objectType: "question",
+          topicSlug,
+          subtopicSlug: subtopicSlug || undefined,
+        });
+        setResult(imported);
+        return;
+      }
+
+      if (!pdfFile) {
+        throw new Error("Choose a PDF file to upload.");
+      }
+      const imported = await importPdfResource({
+        file: pdfFile,
+        title: pdfTitle.trim() || undefined,
+        summary: pdfSummary.trim() || undefined,
+        ...sharedDraftOptions,
       });
       setResult(imported);
     } catch (submitError) {
@@ -105,9 +148,10 @@ export function AdminImportForm() {
   return (
     <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Admin</p>
-      <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Import resources</h2>
+      <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Import drafts</h2>
       <p className="mt-1 text-sm text-[#66736e]">
-        Create draft resources for later review. Crawling and PDF extraction stay deferred.
+        Create question or flashcard drafts for review. URL bookmarks and PDF uploads store the
+        source now; AI extraction from those sources comes in Phase 5.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Import type">
@@ -127,6 +171,7 @@ export function AdminImportForm() {
               setMode(item.id);
               setError(null);
               setResult(null);
+              setPdfFile(null);
             }}
           >
             {item.label}
@@ -138,6 +183,29 @@ export function AdminImportForm() {
       </p>
 
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
+        {mode === "question" ? (
+          <TopicTargetFields
+            topics={topics}
+            objectType="question"
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            showObjectType={false}
+            onObjectTypeChange={() => undefined}
+            onTopicSlugChange={setTopicSlug}
+            onSubtopicSlugChange={setSubtopicSlug}
+          />
+        ) : (
+          <TopicTargetFields
+            topics={topics}
+            objectType={objectType}
+            topicSlug={topicSlug}
+            subtopicSlug={subtopicSlug}
+            onObjectTypeChange={setObjectType}
+            onTopicSlugChange={setTopicSlug}
+            onSubtopicSlugChange={setSubtopicSlug}
+          />
+        )}
+
         {mode === "url" ? (
           <>
             <label className={labelClassName}>
@@ -152,27 +220,10 @@ export function AdminImportForm() {
               />
             </label>
             <label className={labelClassName}>
-              Title
+              Title (optional)
               <input
                 value={urlTitle}
                 onChange={(event) => setUrlTitle(event.target.value)}
-                className={fieldClassName}
-              />
-            </label>
-            <label className={labelClassName}>
-              License
-              <input
-                value={urlLicense}
-                onChange={(event) => setUrlLicense(event.target.value)}
-                placeholder="CC-BY-4.0"
-                className={fieldClassName}
-              />
-            </label>
-            <label className={labelClassName}>
-              Attribution
-              <input
-                value={urlAttribution}
-                onChange={(event) => setUrlAttribution(event.target.value)}
                 className={fieldClassName}
               />
             </label>
@@ -182,7 +233,16 @@ export function AdminImportForm() {
         {mode === "note" ? (
           <>
             <label className={labelClassName}>
-              Note text
+              {objectType === "flashcard" ? "Flashcard front" : "Title (optional)"}
+              <input
+                required={objectType === "flashcard"}
+                value={noteTitle}
+                onChange={(event) => setNoteTitle(event.target.value)}
+                className={fieldClassName}
+              />
+            </label>
+            <label className={labelClassName}>
+              {objectType === "flashcard" ? "Flashcard back" : "Question body"}
               <textarea
                 required
                 value={noteText}
@@ -191,32 +251,35 @@ export function AdminImportForm() {
                 className={fieldClassName}
               />
             </label>
+          </>
+        ) : null}
+
+        {mode === "question" ? (
+          <>
             <label className={labelClassName}>
-              Title
+              Question title
               <input
-                value={noteTitle}
-                onChange={(event) => setNoteTitle(event.target.value)}
+                required
+                value={questionTitle}
+                onChange={(event) => setQuestionTitle(event.target.value)}
                 className={fieldClassName}
               />
             </label>
             <label className={labelClassName}>
-              Note kind
-              <select
-                value={noteSourceType}
-                onChange={(event) =>
-                  setNoteSourceType(event.target.value as "manual" | "book_note")
-                }
+              Question body
+              <textarea
+                required
+                value={questionBody}
+                onChange={(event) => setQuestionBody(event.target.value)}
+                rows={6}
                 className={fieldClassName}
-              >
-                <option value="manual">Manual note</option>
-                <option value="book_note">Book note</option>
-              </select>
+              />
             </label>
             <label className={labelClassName}>
-              Attribution
+              Short answer (optional)
               <input
-                value={noteAttribution}
-                onChange={(event) => setNoteAttribution(event.target.value)}
+                value={questionShortAnswer}
+                onChange={(event) => setQuestionShortAnswer(event.target.value)}
                 className={fieldClassName}
               />
             </label>
@@ -226,44 +289,34 @@ export function AdminImportForm() {
         {mode === "pdf" ? (
           <>
             <label className={labelClassName}>
-              Title
+              PDF file
               <input
                 required
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
+                className={fieldClassName}
+              />
+            </label>
+            {pdfFile ? (
+              <p className="text-sm text-[#66736e]">
+                Selected: {pdfFile.name} ({Math.max(1, Math.round(pdfFile.size / 1024))} KB)
+              </p>
+            ) : null}
+            <label className={labelClassName}>
+              Title (optional — defaults to filename)
+              <input
                 value={pdfTitle}
                 onChange={(event) => setPdfTitle(event.target.value)}
                 className={fieldClassName}
               />
             </label>
             <label className={labelClassName}>
-              Local file path
-              <input
-                value={pdfPath}
-                onChange={(event) => setPdfPath(event.target.value)}
-                placeholder="/path/to/notes.pdf"
-                className={fieldClassName}
-              />
-            </label>
-            <label className={labelClassName}>
-              Author
-              <input
-                value={pdfAuthor}
-                onChange={(event) => setPdfAuthor(event.target.value)}
-                className={fieldClassName}
-              />
-            </label>
-            <label className={labelClassName}>
-              Publisher
-              <input
-                value={pdfPublisher}
-                onChange={(event) => setPdfPublisher(event.target.value)}
-                className={fieldClassName}
-              />
-            </label>
-            <label className={labelClassName}>
-              License
-              <input
-                value={pdfLicense}
-                onChange={(event) => setPdfLicense(event.target.value)}
+              Notes (optional)
+              <textarea
+                value={pdfSummary}
+                onChange={(event) => setPdfSummary(event.target.value)}
+                rows={4}
                 className={fieldClassName}
               />
             </label>
@@ -271,11 +324,15 @@ export function AdminImportForm() {
         ) : null}
 
         <div>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving draft…" : "Save draft resource"}
+          <Button type="submit" disabled={isSubmitting || topics.length === 0}>
+            {isSubmitting ? "Saving draft…" : "Save draft"}
           </Button>
         </div>
       </form>
+
+      {topics.length === 0 ? (
+        <p className="mt-4 text-sm text-[#9b2c2c]">No topics available. Seed the database first.</p>
+      ) : null}
 
       {error ? (
         <p className="mt-4 text-sm text-[#9b2c2c]" role="alert">
@@ -285,12 +342,21 @@ export function AdminImportForm() {
 
       {result ? (
         <div className="mt-4 rounded-lg border border-[#cfe5db] bg-[#f3faf7] p-3 text-sm text-[#40524b]">
-          <p className="font-semibold text-[#15201c]">Draft resource saved</p>
+          <p className="font-semibold text-[#15201c]">Draft saved to review queue</p>
           <p className="mt-1">
-            ID {result.id} · {result.source_type} · {result.status}
+            Resource ID {result.id} · Review item ID {result.extracted_object_id ?? "—"} ·{" "}
+            {result.source_type} · {result.status}
           </p>
           {result.title ? <p className="mt-1">Title: {result.title}</p> : null}
           {result.url ? <p className="mt-1 break-all">Path/URL: {result.url}</p> : null}
+          {result.extracted_object_id ? (
+            <Link
+              href="/admin/review"
+              className="mt-3 inline-flex text-sm font-medium text-[#176b54] underline-offset-2 hover:underline"
+            >
+              Open review queue
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </section>
