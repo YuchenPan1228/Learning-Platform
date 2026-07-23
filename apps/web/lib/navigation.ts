@@ -16,6 +16,7 @@ export const adminNavItems: NavItem[] = [
   { href: "/admin/import", label: "Import" },
   { href: "/admin/review", label: "Review" },
   { href: "/admin/concepts", label: "Concepts" },
+  { href: "/admin/questions", label: "Questions" },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -28,6 +29,7 @@ const pageTitles: Record<string, string> = {
   "/admin/import": "Admin Import",
   "/admin/review": "Admin Review",
   "/admin/concepts": "Admin Concepts",
+  "/admin/questions": "Admin Questions",
 };
 
 export function isNavItemActive(pathname: string, href: string): boolean {
