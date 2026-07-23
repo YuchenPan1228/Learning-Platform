@@ -84,4 +84,8 @@ class Question(Base, TimestampMixin):
         back_populates="question",
         cascade="all, delete-orphan",
     )
-    attempts: Mapped[list[Attempt]] = relationship(back_populates="question")
+    attempts: Mapped[list[Attempt]] = relationship(
+        back_populates="question",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
