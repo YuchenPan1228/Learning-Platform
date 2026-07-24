@@ -15,6 +15,7 @@ type QuestionBrowserProps = {
   concepts: ConceptSummary[];
   tags: Tag[];
   questions: QuestionSummary[];
+  total: number;
   filters: {
     topicSlug: string;
     conceptSlug: string;
@@ -63,6 +64,7 @@ export function QuestionBrowser({
   concepts,
   tags,
   questions,
+  total,
   filters,
 }: QuestionBrowserProps) {
   const router = useRouter();
@@ -200,7 +202,11 @@ export function QuestionBrowser({
         </div>
 
         <p className="mt-3 text-sm text-[#66736e]">
-          {filteredQuestions.length} question{filteredQuestions.length === 1 ? "" : "s"} shown
+          {filteredQuestions.length === total
+            ? `${filteredQuestions.length} question${filteredQuestions.length === 1 ? "" : "s"}`
+            : `Showing ${filteredQuestions.length} of ${total} question${total === 1 ? "" : "s"}`}
+          {questions.length < total ? ` · first ${questions.length} loaded` : ""}
+          {filters.progress !== "all" ? " · progress filter applied" : ""}
           {isPending ? " · updating…" : ""}
         </p>
       </section>

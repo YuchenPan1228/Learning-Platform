@@ -9,7 +9,7 @@ def test_self_check_endpoint_grades_supported_questions(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
     detail_response = client.get(f"/questions/{question_id}")
     short_answer = detail_response.json()["short_answer"]
     assert short_answer is not None
@@ -50,7 +50,7 @@ def test_self_check_rejects_empty_answer(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
 
     response = client.post(f"/questions/{question_id}/self-check", json={"answer": ""})
     assert response.status_code == 422

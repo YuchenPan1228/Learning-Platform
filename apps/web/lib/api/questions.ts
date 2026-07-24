@@ -23,9 +23,16 @@ export type QuestionListFilters = {
   offset?: number;
 };
 
-export async function fetchQuestions(
+export type QuestionListPage = {
+  items: QuestionSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export async function fetchQuestionsPage(
   filters: QuestionListFilters = {},
-): Promise<QuestionSummary[]> {
+): Promise<QuestionListPage> {
   const params = new URLSearchParams();
 
   if (filters.topicSlug) {
@@ -56,7 +63,14 @@ export async function fetchQuestions(
     throw new Error(`Questions request failed with status ${response.status}`);
   }
 
-  return response.json() as Promise<QuestionSummary[]>;
+  return response.json() as Promise<QuestionListPage>;
+}
+
+export async function fetchQuestions(
+  filters: QuestionListFilters = {},
+): Promise<QuestionSummary[]> {
+  const page = await fetchQuestionsPage(filters);
+  return page.items;
 }
 
 export async function fetchQuestion(questionId: number): Promise<QuestionDetail | null> {

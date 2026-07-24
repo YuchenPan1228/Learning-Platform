@@ -31,7 +31,7 @@ def test_analytics_includes_attempt_history_and_search_misses(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    questions = client.get("/questions", params={"limit": 1}).json()
+    questions = client.get("/questions", params={"limit": 1}).json()["items"]
     question = questions[0]
     detail = client.get(f"/questions/{question['id']}").json()
 

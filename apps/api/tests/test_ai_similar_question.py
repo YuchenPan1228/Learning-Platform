@@ -172,7 +172,7 @@ def test_similar_endpoint_creates_draft_then_uses_cache(
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:
-        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        question_id = client.get("/questions", params={"limit": 1}).json()["items"][0]["id"]
 
         first = client.post(f"/questions/{question_id}/similar")
         second = client.post(f"/questions/{question_id}/similar")

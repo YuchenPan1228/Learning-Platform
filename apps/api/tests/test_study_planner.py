@@ -43,12 +43,11 @@ def test_build_daily_study_plan_includes_due_flashcards_and_practice() -> None:
     )
     card.topic = bayes
 
-    # progress → flashcards → edges → paths → subtopics
+    # progress → flashcards → edges → subtopics
     session.scalars.side_effect = [
         _scalars_result(rows=[]),
         _scalars_result(rows=[card], unique=True),
         _scalars_result(rows=[], unique=True),
-        _scalars_result(rows=[]),
         _scalars_result(rows=[counting]),
     ]
 
@@ -82,6 +81,50 @@ def test_build_daily_study_plan_includes_due_flashcards_and_practice() -> None:
     assert plan.generated_at.tzinfo == UTC
 
 
+def test_build_daily_study_plan_caps_flashcards_and_mixes_practice() -> None:
+    session = MagicMock()
+    topics = [_topic(i, f"topic-{i}", f"Topic {i}", parent_id=1) for i in range(10, 16)]
+    cards = []
+    for index, topic in enumerate(topics, start=1):
+        card = Flashcard(
+            id=index,
+            front=f"Q{index}",
+            back=f"A{index}",
+            topic_id=topic.id,
+            difficulty=Difficulty.EASY,
+        )
+        card.topic = topic
+        cards.append(card)
+
+    practice_topic = _topic(99, "counting", "Counting", parent_id=1)
+
+    # progress → flashcards → edges → subtopics
+    session.scalars.side_effect = [
+        _scalars_result(rows=[]),
+        _scalars_result(rows=cards, unique=True),
+        _scalars_result(rows=[], unique=True),
+        _scalars_result(rows=[practice_topic]),
+    ]
+
+    stats = {
+        99: TopicProgressStats(
+            mastery_score=0.0,
+            attempts_count=0,
+            solved_count=0,
+            total_questions=8,
+        ),
+    }
+
+    with patch("app.services.study_planner.get_topic_progress_stats", return_value=stats):
+        plan = build_daily_study_plan(session)
+
+    flashcard_items = [item for item in plan.items if item.kind.value == "flashcard_review"]
+    practice_items = [item for item in plan.items if item.kind.value == "practice"]
+    assert len(flashcard_items) <= 2
+    assert practice_items
+    assert len(plan.items) <= 5
+
+
 def test_build_daily_study_plan_is_capped_by_target_minutes() -> None:
     session = MagicMock()
     topics = [_topic(i, f"topic-{i}", f"Topic {i}", parent_id=1) for i in range(10, 20)]
@@ -101,7 +144,6 @@ def test_build_daily_study_plan_is_capped_by_target_minutes() -> None:
         _scalars_result(rows=[]),
         _scalars_result(rows=cards, unique=True),
         _scalars_result(rows=[], unique=True),
-        _scalars_result(rows=[]),
         _scalars_result(rows=topics),
     ]
 

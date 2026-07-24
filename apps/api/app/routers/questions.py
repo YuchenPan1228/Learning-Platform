@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.ai.errors import AIProviderRequestError
@@ -22,7 +22,7 @@ from app.schemas.ai_similar_question import SimilarQuestionResponse
 from app.schemas.duplicate import DuplicateMatchRead, QuestionDuplicatesRead
 from app.schemas.practice import SelfCheckRequest, SelfCheckResponse
 from app.schemas.progress import QuestionProgressRead, SetQuestionProgressRequest
-from app.schemas.question import QuestionDetailRead, QuestionSummaryRead
+from app.schemas.question import QuestionDetailRead, QuestionListPage, QuestionSummaryRead
 from app.schemas.tag import TagRead
 from app.services.ai_explanation import (
     AIExplanationResponseError,
@@ -45,7 +45,7 @@ router = APIRouter(prefix="/questions", tags=["questions"])
 
 DifficultyQuery = Annotated[Difficulty | None, Query()]
 StatusQuery = Annotated[ContentStatus, Query()]
-LimitQuery = Annotated[int, Query(ge=1, le=100)]
+LimitQuery = Annotated[int, Query(ge=1, le=500)]
 OffsetQuery = Annotated[int, Query(ge=0)]
 TopicSlugQuery = Annotated[str | None, Query()]
 SubtopicSlugQuery = Annotated[str | None, Query()]
@@ -123,7 +123,37 @@ def list_questions(
     include_progress: IncludeProgressQuery = False,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-) -> list[QuestionSummaryRead]:
+) -> QuestionListPage:
+    filters: list[ColumnElement[bool]] = [Question.status == status]
+
+    if topic_slug is not None:
+        topic_id = _resolve_topic_id(session, topic_slug)
+        if topic_id is None:
+            return QuestionListPage(items=[], total=0, limit=limit, offset=offset)
+        filters.append(Question.topic_id == topic_id)
+
+    if subtopic_slug is not None:
+        subtopic_id = _resolve_topic_id(session, subtopic_slug)
+        if subtopic_id is None:
+            return QuestionListPage(items=[], total=0, limit=limit, offset=offset)
+        filters.append(Question.subtopic_id == subtopic_id)
+
+    if concept_slug is not None:
+        concept_topic_id = _resolve_concept_topic_id(session, concept_slug)
+        if concept_topic_id is None:
+            return QuestionListPage(items=[], total=0, limit=limit, offset=offset)
+        filters.append(Question.subtopic_id == concept_topic_id)
+
+    if tag_slug is not None:
+        tag_id = _resolve_tag_id(session, tag_slug)
+        if tag_id is None:
+            return QuestionListPage(items=[], total=0, limit=limit, offset=offset)
+        filters.append(QuestionTag.tag_id == tag_id)
+
+    if difficulty is not None:
+        filters.append(Question.difficulty == difficulty)
+
+    count_query = select(func.count(func.distinct(Question.id))).select_from(Question)
     query = (
         select(Question)
         .options(
@@ -131,39 +161,20 @@ def list_questions(
             joinedload(Question.subtopic),
             selectinload(Question.question_tags).joinedload(QuestionTag.tag),
         )
-        .where(Question.status == status)
         .order_by(Question.id)
         .limit(limit)
         .offset(offset)
     )
 
-    if topic_slug is not None:
-        topic_id = _resolve_topic_id(session, topic_slug)
-        if topic_id is None:
-            return []
-        query = query.where(Question.topic_id == topic_id)
-
-    if subtopic_slug is not None:
-        subtopic_id = _resolve_topic_id(session, subtopic_slug)
-        if subtopic_id is None:
-            return []
-        query = query.where(Question.subtopic_id == subtopic_id)
-
-    if concept_slug is not None:
-        concept_topic_id = _resolve_concept_topic_id(session, concept_slug)
-        if concept_topic_id is None:
-            return []
-        query = query.where(Question.subtopic_id == concept_topic_id)
-
     if tag_slug is not None:
-        tag_id = _resolve_tag_id(session, tag_slug)
-        if tag_id is None:
-            return []
-        query = query.join(QuestionTag).where(QuestionTag.tag_id == tag_id)
+        count_query = count_query.join(QuestionTag)
+        query = query.join(QuestionTag)
 
-    if difficulty is not None:
-        query = query.where(Question.difficulty == difficulty)
+    for condition in filters:
+        count_query = count_query.where(condition)
+        query = query.where(condition)
 
+    total = int(session.scalar(count_query) or 0)
     questions = session.scalars(query).unique().all()
     progress_by_question_id = get_progress_by_question_id(session) if include_progress else None
     summaries: list[QuestionSummaryRead] = []
@@ -184,7 +195,7 @@ def list_questions(
                 attempt_count=progress.attempt_count if progress is not None else None,
             ),
         )
-    return summaries
+    return QuestionListPage(items=summaries, total=total, limit=limit, offset=offset)
 
 
 @router.post("/{question_id}/hints")

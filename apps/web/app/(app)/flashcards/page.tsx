@@ -1,5 +1,5 @@
 import { FlashcardReview } from "@/components/flashcards/flashcard-review";
-import { fetchFlashcards } from "@/lib/api/flashcards";
+import { fetchFlashcardsPage } from "@/lib/api/flashcards";
 import { fetchTopic, fetchTopics } from "@/lib/api/topics";
 
 type FlashcardsPageProps = {
@@ -36,23 +36,22 @@ export default async function FlashcardsPage({ searchParams }: FlashcardsPagePro
   const params = await searchParams;
   const topicSlug = params.topic?.trim() || undefined;
 
-  const [dueFlashcards, topics, topic] = await Promise.all([
-    fetchFlashcards({ limit: 100, dueOnly: true, topicSlug }),
+  const [duePage, topics, topic] = await Promise.all([
+    fetchFlashcardsPage({ limit: 100, dueOnly: true, topicSlug }),
     fetchTopics(),
     topicSlug ? fetchTopic(topicSlug) : Promise.resolve(null),
   ]);
 
-  const flashcards =
-    dueFlashcards.length > 0 ? dueFlashcards : await fetchFlashcards({ limit: 100, topicSlug });
+  const usedDueFallback = duePage.total === 0;
+  const page = duePage.total > 0 ? duePage : await fetchFlashcardsPage({ limit: 100, topicSlug });
 
-  const topicTitle = resolveTopicTitle(topics, topicSlug, topic?.name, flashcards[0]?.topic_slug);
-
-  const usedDueFallback = dueFlashcards.length === 0 && flashcards.length > 0;
+  const topicTitle = resolveTopicTitle(topics, topicSlug, topic?.name, page.items[0]?.topic_slug);
 
   return (
     <FlashcardReview
       key={topicSlug ?? "all"}
-      flashcards={flashcards}
+      flashcards={page.items}
+      total={page.total}
       topics={topics}
       topicSlug={topicSlug}
       topicTitle={topicTitle}

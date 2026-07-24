@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { QuestionBrowser } from "@/components/practice/question-browser";
 import { fetchConcepts } from "@/lib/api/concepts";
-import { fetchQuestions } from "@/lib/api/questions";
+import { fetchQuestionsPage } from "@/lib/api/questions";
 import { fetchTags } from "@/lib/api/tags";
 import { fetchTopics } from "@/lib/api/topics";
 import type { Difficulty } from "@/lib/types/question";
@@ -36,11 +36,11 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
   const difficulty = parseDifficulty(params.difficulty);
   const progress = parsePracticeProgressFilter(params.progress);
 
-  const [topics, concepts, tags, questions] = await Promise.all([
+  const [topics, concepts, tags, questionPage] = await Promise.all([
     fetchTopics(),
     topicSlug ? fetchConcepts(topicSlug) : Promise.resolve([]),
     fetchTags(),
-    fetchQuestions({
+    fetchQuestionsPage({
       topicSlug,
       conceptSlug,
       tagSlug,
@@ -56,7 +56,8 @@ export default async function PracticePage({ searchParams }: PracticePageProps) 
         topics={topics}
         concepts={concepts}
         tags={tags}
-        questions={questions}
+        questions={questionPage.items}
+        total={questionPage.total}
         filters={{
           topicSlug: topicSlug ?? "all",
           conceptSlug: conceptSlug ?? "all",

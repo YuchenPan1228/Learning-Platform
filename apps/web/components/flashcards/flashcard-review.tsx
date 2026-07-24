@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 type FlashcardReviewProps = {
   flashcards: Flashcard[];
+  total: number;
   topics: TopicWithSubtopics[];
   topicSlug?: string;
   topicTitle?: string | null;
@@ -41,6 +42,7 @@ function formatNextReview(value: string | null | undefined): string {
 
 export function FlashcardReview({
   flashcards,
+  total,
   topics,
   topicSlug,
   topicTitle,
@@ -177,8 +179,10 @@ export function FlashcardReview({
                 ? `No flashcards found for ${topicTitle}.`
                 : "No flashcards are available for review."
               : usedDueFallback
-                ? "Nothing due right now — browsing the full set for this filter."
-                : "Use Previous / Next to browse. Rate a card to schedule the next review."}
+                ? `Nothing due right now — browsing ${flashcards.length} of ${total} card${total === 1 ? "" : "s"} for this filter.`
+                : flashcards.length === total
+                  ? `${flashcards.length} card${flashcards.length === 1 ? "" : "s"} in queue. Use Previous / Next to browse.`
+                  : `Showing ${flashcards.length} of ${total} card${total === 1 ? "" : "s"}. Use Previous / Next to browse.`}
           </p>
         </div>
         <FlashcardTopicFilter topics={topics} selectedSlug={topicSlug} />

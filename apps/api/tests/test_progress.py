@@ -20,7 +20,7 @@ def test_list_questions_include_progress_reflects_attempts(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question = questions_response.json()[0]
+    question = questions_response.json()["items"][0]
     detail_response = client.get(f"/questions/{question['id']}")
     short_answer = detail_response.json()["short_answer"]
     assert short_answer is not None
@@ -39,7 +39,9 @@ def test_list_questions_include_progress_reflects_attempts(
         params={"limit": 100, "include_progress": True},
     )
     assert progress_response.status_code == 200
-    updated = next(item for item in progress_response.json() if item["id"] == question["id"])
+    updated = next(
+        item for item in progress_response.json()["items"] if item["id"] == question["id"]
+    )
     assert updated["progress_status"] == "solved"
     assert updated["attempt_count"] == 1
 
@@ -54,7 +56,7 @@ def test_list_questions_include_progress_marks_incorrect_as_attempted(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
 
     client.post(
         "/attempts",
@@ -69,7 +71,7 @@ def test_list_questions_include_progress_marks_incorrect_as_attempted(
         "/questions",
         params={"limit": 100, "include_progress": True},
     )
-    updated = next(item for item in progress_response.json() if item["id"] == question_id)
+    updated = next(item for item in progress_response.json()["items"] if item["id"] == question_id)
     assert updated["progress_status"] == "attempted"
     assert updated["attempt_count"] == 1
 
@@ -81,7 +83,7 @@ def test_manual_question_progress_override(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
 
     mark_solved = client.post(
         f"/questions/{question_id}/progress",
@@ -95,7 +97,7 @@ def test_manual_question_progress_override(
         "/questions",
         params={"limit": 100, "include_progress": True},
     )
-    updated = next(item for item in progress_response.json() if item["id"] == question_id)
+    updated = next(item for item in progress_response.json()["items"] if item["id"] == question_id)
     assert updated["progress_status"] == "solved"
     assert updated["attempt_count"] == 0
 
@@ -110,7 +112,7 @@ def test_manual_question_progress_override(
         "/questions",
         params={"limit": 100, "include_progress": True},
     )
-    reset = next(item for item in progress_response.json() if item["id"] == question_id)
+    reset = next(item for item in progress_response.json()["items"] if item["id"] == question_id)
     assert reset["progress_status"] == "not_attempted"
 
 
@@ -130,7 +132,7 @@ def test_dashboard_mastery_updates_after_solved_attempt(
         "/questions",
         params={"topic_slug": "probability", "limit": 1},
     )
-    question = questions_response.json()[0]
+    question = questions_response.json()["items"][0]
     detail_response = client.get(f"/questions/{question['id']}")
     short_answer = detail_response.json()["short_answer"]
     assert short_answer is not None

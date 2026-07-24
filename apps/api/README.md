@@ -103,12 +103,11 @@ Read-only endpoints for the MVP content model (no auth per ADR-001):
 - `GET /topics/{slug}` — topic detail
 - `GET /concepts` — list concepts (`topic_slug` filter optional)
 - `GET /concepts/{slug}` — concept detail with graph neighbors
-- `GET /questions` — list approved questions (`topic_slug`, `subtopic_slug`, `difficulty`, `limit`, `offset`)
+- `GET /questions` — paginated approved questions (`items`, `total`, `limit`, `offset`; filters: `topic_slug`, `subtopic_slug`, `difficulty`, …)
 - `GET /questions/{question_id}` — question detail including solution fields
-- `GET /flashcards` — list flashcards (`topic_slug` filter optional)
+- `GET /flashcards` — paginated flashcards (`items`, `total`, `limit`, `offset`; `topic_slug`, `due_only`)
 - `GET /flashcards/{flashcard_id}` — flashcard detail
-- `GET /learning-paths` — list learning paths
-- `GET /learning-paths/{slug}` — learning path with ordered steps
+- `GET /admin/flashcards` — list/edit/delete published flashcards
 
 ## Search
 

@@ -181,7 +181,7 @@ def test_explanation_endpoint_generates_then_uses_cache(
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:
-        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        question_id = client.get("/questions", params={"limit": 1}).json()["items"][0]["id"]
 
         first = client.post(
             f"/questions/{question_id}/explanation",
@@ -213,7 +213,7 @@ def test_hints_endpoint_generates(
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:
-        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        question_id = client.get("/questions", params={"limit": 1}).json()["items"][0]["id"]
         response = client.post(
             f"/questions/{question_id}/hints",
             json={"answer": "My attempted answer"},
@@ -236,7 +236,7 @@ def test_hints_endpoint_allows_empty_answer(
     app = cast(FastAPI, client.app)
     app.dependency_overrides[get_ai_provider] = lambda: provider
     try:
-        question_id = client.get("/questions", params={"limit": 1}).json()[0]["id"]
+        question_id = client.get("/questions", params={"limit": 1}).json()["items"][0]["id"]
         empty = client.post(f"/questions/{question_id}/hints", json={"answer": ""})
         missing = client.post(f"/questions/{question_id}/hints", json={})
     finally:

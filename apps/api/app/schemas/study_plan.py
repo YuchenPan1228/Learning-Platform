@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 class StudyPlanItemKind(StrEnum):
     FLASHCARD_REVIEW = "flashcard_review"
     PREREQUISITE_REPAIR = "prerequisite_repair"
-    LEARNING_PATH = "learning_path"
     PRACTICE = "practice"
 
 
