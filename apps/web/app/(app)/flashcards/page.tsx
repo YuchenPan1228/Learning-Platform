@@ -43,8 +43,7 @@ export default async function FlashcardsPage({ searchParams }: FlashcardsPagePro
   ]);
 
   const usedDueFallback = duePage.total === 0;
-  const page =
-    duePage.total > 0 ? duePage : await fetchFlashcardsPage({ limit: 100, topicSlug });
+  const page = duePage.total > 0 ? duePage : await fetchFlashcardsPage({ limit: 100, topicSlug });
 
   const topicTitle = resolveTopicTitle(topics, topicSlug, topic?.name, page.items[0]?.topic_slug);
 

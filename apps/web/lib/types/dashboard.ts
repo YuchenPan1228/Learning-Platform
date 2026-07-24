@@ -16,8 +16,7 @@ export type WeakPrerequisite = {
   prerequisite_mastery_score: number;
 };
 
-export type StudyPlanItemKind =
-  "flashcard_review" | "prerequisite_repair" | "practice";
+export type StudyPlanItemKind = "flashcard_review" | "prerequisite_repair" | "practice";
 
 export type StudyPlanItem = {
   kind: StudyPlanItemKind;

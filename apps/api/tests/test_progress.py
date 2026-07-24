@@ -39,7 +39,9 @@ def test_list_questions_include_progress_reflects_attempts(
         params={"limit": 100, "include_progress": True},
     )
     assert progress_response.status_code == 200
-    updated = next(item for item in progress_response.json()["items"] if item["id"] == question["id"])
+    updated = next(
+        item for item in progress_response.json()["items"] if item["id"] == question["id"]
+    )
     assert updated["progress_status"] == "solved"
     assert updated["attempt_count"] == 1
 

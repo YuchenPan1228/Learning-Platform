@@ -25,9 +25,7 @@ async function parseError(response: Response, fallback: string): Promise<string>
   return fallback;
 }
 
-export async function fetchAdminFlashcards(options?: {
-  topicSlug?: string;
-}): Promise<Flashcard[]> {
+export async function fetchAdminFlashcards(options?: { topicSlug?: string }): Promise<Flashcard[]> {
   const params = new URLSearchParams();
   if (options?.topicSlug) {
     params.set("topic_slug", options.topicSlug);
