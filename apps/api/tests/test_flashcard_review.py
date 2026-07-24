@@ -8,7 +8,7 @@ def test_flashcard_review_updates_next_review_date(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    cards = client.get("/flashcards", params={"limit": 1}).json()
+    cards = client.get("/flashcards", params={"limit": 1}).json()["items"]
     assert len(cards) == 1
     flashcard_id = cards[0]["id"]
     assert cards[0]["is_due"] is True
@@ -30,7 +30,7 @@ def test_flashcard_review_updates_next_review_date(
     assert detail["next_review_at"] == payload["next_review_at"]
     assert detail["repetitions"] == 1
 
-    due_only = client.get("/flashcards", params={"due_only": True, "limit": 100}).json()
+    due_only = client.get("/flashcards", params={"due_only": True, "limit": 100}).json()["items"]
     assert all(card["id"] != flashcard_id for card in due_only)
 
 
@@ -40,7 +40,7 @@ def test_flashcard_review_again_keeps_card_due_soon(
     seeded_database: None,
     require_postgres: None,
 ) -> None:
-    flashcard_id = client.get("/flashcards", params={"limit": 1}).json()[0]["id"]
+    flashcard_id = client.get("/flashcards", params={"limit": 1}).json()["items"][0]["id"]
     response = client.post(
         f"/flashcards/{flashcard_id}/review",
         json={"rating": "again"},

@@ -15,7 +15,7 @@ def test_record_attempt_persists_graded_answer(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question = questions_response.json()[0]
+    question = questions_response.json()["items"][0]
     detail_response = client.get(f"/questions/{question['id']}")
     short_answer = detail_response.json()["short_answer"]
     assert short_answer is not None
@@ -48,7 +48,7 @@ def test_record_attempt_marks_incorrect_answers(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
 
     response = client.post(
         "/attempts",
@@ -129,7 +129,7 @@ def test_record_attempt_rejects_invalid_payload(
     require_postgres: None,
 ) -> None:
     questions_response = client.get("/questions", params={"limit": 1})
-    question_id = questions_response.json()[0]["id"]
+    question_id = questions_response.json()["items"][0]["id"]
 
     empty_answer_response = client.post(
         "/attempts",
@@ -168,7 +168,7 @@ def test_record_attempt_writes_to_database(
     reset_db_state()
 
     questions_response = client.get("/questions", params={"limit": 1})
-    question = questions_response.json()[0]
+    question = questions_response.json()["items"][0]
 
     response = client.post(
         "/attempts",

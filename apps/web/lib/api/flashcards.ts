@@ -12,7 +12,16 @@ type FetchFlashcardsOptions = {
   offset?: number;
 };
 
-export async function fetchFlashcards(options: FetchFlashcardsOptions = {}): Promise<Flashcard[]> {
+export type FlashcardListPage = {
+  items: Flashcard[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export async function fetchFlashcardsPage(
+  options: FetchFlashcardsOptions = {},
+): Promise<FlashcardListPage> {
   const params = new URLSearchParams();
   params.set("limit", String(options.limit ?? 100));
   if (options.offset !== undefined) {
@@ -33,7 +42,12 @@ export async function fetchFlashcards(options: FetchFlashcardsOptions = {}): Pro
     throw new Error(`Flashcards request failed with status ${response.status}`);
   }
 
-  return response.json() as Promise<Flashcard[]>;
+  return response.json() as Promise<FlashcardListPage>;
+}
+
+export async function fetchFlashcards(options: FetchFlashcardsOptions = {}): Promise<Flashcard[]> {
+  const page = await fetchFlashcardsPage(options);
+  return page.items;
 }
 
 export async function reviewFlashcard(

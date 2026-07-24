@@ -34,3 +34,10 @@ class FlashcardReviewResponse(BaseModel):
     interval_days: float
     ease_factor: float
     repetitions: int
+
+
+class FlashcardListPage(BaseModel):
+    items: list[FlashcardRead]
+    total: int
+    limit: int
+    offset: int

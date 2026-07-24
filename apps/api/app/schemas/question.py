@@ -30,3 +30,10 @@ class QuestionDetailRead(QuestionSummaryRead):
     common_mistakes: list[str] | None
     prerequisites: list[str] | None
     source_attribution: str | None
+
+
+class QuestionListPage(BaseModel):
+    items: list[QuestionSummaryRead]
+    total: int
+    limit: int
+    offset: int

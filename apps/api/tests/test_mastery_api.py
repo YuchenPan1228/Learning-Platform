@@ -37,7 +37,7 @@ def test_mastery_persists_after_solved_attempt(
         "/questions",
         params={"topic_slug": "probability", "limit": 1},
     )
-    question = questions_response.json()[0]
+    question = questions_response.json()["items"][0]
     detail = client.get(f"/questions/{question['id']}").json()
     assert detail["short_answer"] is not None
 

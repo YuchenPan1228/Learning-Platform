@@ -77,33 +77,39 @@ def list_flashcards_with_progress(
     due_only: bool = False,
     limit: int = 50,
     offset: int = 0,
-) -> list[FlashcardRead]:
+) -> tuple[list[FlashcardRead], int]:
     query = select(Flashcard).options(joinedload(Flashcard.topic)).order_by(Flashcard.id)
+    count_query = select(func.count()).select_from(Flashcard)
+
     if topic_slug is not None:
         topic_ids = _topic_scope_ids(session, topic_slug)
         if topic_ids is None:
-            return []
+            return [], 0
         query = query.where(Flashcard.topic_id.in_(topic_ids))
+        count_query = count_query.where(Flashcard.topic_id.in_(topic_ids))
 
     if due_only:
         now = datetime.now(UTC)
-        query = query.outerjoin(
+        due_join = (
             UserFlashcardProgress,
             (UserFlashcardProgress.flashcard_id == Flashcard.id)
             & (UserFlashcardProgress.user_id == LOCAL_USER_ID),
-        ).where(
-            or_(
-                UserFlashcardProgress.flashcard_id.is_(None),
-                UserFlashcardProgress.next_review_at <= now,
-            ),
         )
+        due_filter = or_(
+            UserFlashcardProgress.flashcard_id.is_(None),
+            UserFlashcardProgress.next_review_at <= now,
+        )
+        query = query.outerjoin(*due_join).where(due_filter)
+        count_query = count_query.outerjoin(*due_join).where(due_filter)
 
+    total = int(session.scalar(count_query) or 0)
     query = query.limit(limit).offset(offset)
     flashcards = session.scalars(query).unique().all()
     progress_by_id = _progress_by_flashcard_id(session)
-    return [
+    items = [
         flashcard_to_read(flashcard, progress_by_id.get(flashcard.id)) for flashcard in flashcards
     ]
+    return items, total
 
 
 def get_flashcard_with_progress(session: Session, flashcard_id: int) -> FlashcardRead:

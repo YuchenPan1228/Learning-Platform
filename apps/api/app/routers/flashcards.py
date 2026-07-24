@@ -3,7 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.dependencies import SessionDep
-from app.schemas.flashcard import FlashcardRead, FlashcardReviewRequest, FlashcardReviewResponse
+from app.schemas.flashcard import (
+    FlashcardListPage,
+    FlashcardRead,
+    FlashcardReviewRequest,
+    FlashcardReviewResponse,
+)
 from app.services.flashcard_review import (
     get_flashcard_with_progress,
     list_flashcards_with_progress,
@@ -14,7 +19,7 @@ router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
 TopicSlugQuery = Annotated[str | None, Query()]
 DueOnlyQuery = Annotated[bool, Query()]
-LimitQuery = Annotated[int, Query(ge=1, le=100)]
+LimitQuery = Annotated[int, Query(ge=1, le=500)]
 OffsetQuery = Annotated[int, Query(ge=0)]
 
 
@@ -25,14 +30,15 @@ def list_flashcards(
     due_only: DueOnlyQuery = False,
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
-) -> list[FlashcardRead]:
-    return list_flashcards_with_progress(
+) -> FlashcardListPage:
+    items, total = list_flashcards_with_progress(
         session,
         topic_slug=topic_slug,
         due_only=due_only,
         limit=limit,
         offset=offset,
     )
+    return FlashcardListPage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post("/{flashcard_id}/review")

@@ -17,7 +17,7 @@ export type WeakPrerequisite = {
 };
 
 export type StudyPlanItemKind =
-  "flashcard_review" | "prerequisite_repair" | "learning_path" | "practice";
+  "flashcard_review" | "prerequisite_repair" | "practice";
 
 export type StudyPlanItem = {
   kind: StudyPlanItemKind;
