@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.ai.errors import AIProviderRequestError
@@ -124,7 +124,7 @@ def list_questions(
     limit: LimitQuery = 50,
     offset: OffsetQuery = 0,
 ) -> QuestionListPage:
-    filters: list[object] = [Question.status == status]
+    filters: list[ColumnElement[bool]] = [Question.status == status]
 
     if topic_slug is not None:
         topic_id = _resolve_topic_id(session, topic_slug)
