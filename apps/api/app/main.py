@@ -15,6 +15,7 @@ from app.routers import (
     admin_import,
     admin_questions,
     admin_review,
+    admin_topic_jobs,
     analytics,
     attempts,
     concepts,
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     application.include_router(search.router)
     application.include_router(admin_import.router)
     application.include_router(admin_review.router)
+    application.include_router(admin_topic_jobs.router)
     application.include_router(admin_concepts.router)
     application.include_router(admin_questions.router)
     application.include_router(admin_flashcards.router)
