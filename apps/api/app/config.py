@@ -36,6 +36,22 @@ class Settings(BaseSettings):
         alias="PDF_UPLOAD_MAX_BYTES",
         gt=0,
     )
+    # Comma-separated domains for ingestion URL sources (empty = open, not enforced).
+    # Matches hosts equal to the entry or ending with ".entry" (e.g. "mit.edu" matches
+    # "web.mit.edu"). Entries starting with "." match TLD suffixes (e.g. ".edu").
+    ingestion_source_allowlist: Annotated[list[str], NoDecode] = Field(
+        default_factory=list,
+        alias="INGESTION_SOURCE_ALLOWLIST",
+    )
+    ingestion_user_agent: str = Field(
+        default="QuantPrepBot/0.1 (+local-mvp)",
+        alias="INGESTION_USER_AGENT",
+    )
+    ingestion_robots_timeout_seconds: float = Field(
+        default=10.0,
+        alias="INGESTION_ROBOTS_TIMEOUT_SECONDS",
+        gt=0,
+    )
     ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_chat_model: str = Field(default="", alias="OLLAMA_CHAT_MODEL")
@@ -71,6 +87,15 @@ class Settings(BaseSettings):
     def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
+
+    @field_validator("ingestion_source_allowlist", mode="before")
+    @classmethod
+    def parse_ingestion_source_allowlist(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [entry.strip().lower() for entry in value.split(",") if entry.strip()]
+        if isinstance(value, list):
+            return [str(entry).strip().lower() for entry in value if str(entry).strip()]
         return value
 
     @field_validator("database_url", mode="before")
