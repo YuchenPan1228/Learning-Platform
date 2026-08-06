@@ -5,9 +5,14 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.enums import ContentStatus, Difficulty, ExtractedObjectType, ResourceSourceType
+from app.models.enums import Difficulty, ExtractedObjectType, ResourceSourceType
 from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
+from app.services.extracted_object_store import (
+    ProvenanceData,
+    StoreExtractedObjectInput,
+    store_extracted_object,
+)
 
 _MANUAL_IMPORT_METHOD = "manual:import"
 _NOTE_SOURCE_TYPES = frozenset(
@@ -45,22 +50,31 @@ def create_extracted_draft_from_resource(
     options: DraftImportOptions,
     question_fields: QuestionDraftFields | None = None,
 ) -> ExtractedObject:
-    extracted = ExtractedObject(
-        resource_id=resource.id,
-        object_type=options.object_type,
-        payload_json=_build_import_payload(
-            resource,
-            options=options,
-            question_fields=question_fields,
+    return store_extracted_object(
+        session,
+        StoreExtractedObjectInput(
+            object_type=options.object_type,
+            payload_json=_build_import_payload(
+                resource,
+                options=options,
+                question_fields=question_fields,
+            ),
+            confidence_score=1.0,
+            extraction_method=_MANUAL_IMPORT_METHOD,
+            model_version=None,
+            provenance=ProvenanceData(
+                resource_id=resource.id,
+                source_url=resource.url,
+                source_title=resource.title,
+                source_type=resource.source_type.value,
+                source_license=resource.license,
+                source_attribution=resource.attribution,
+                source_author=resource.author,
+                source_publisher=resource.publisher,
+            ),
         ),
-        confidence_score=1.0,
-        quality_score=None,
-        status=ContentStatus.DRAFT,
-        extraction_method=_MANUAL_IMPORT_METHOD,
-        model_version=None,
+        commit=False,
     )
-    session.add(extracted)
-    return extracted
 
 
 def _build_import_payload(

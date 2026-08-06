@@ -14,7 +14,6 @@ from app.ai.tasks import AITask
 from app.ai.types import AIMessage, AIMessageRole
 from app.models.enums import (
     AICacheResultKind,
-    ContentStatus,
     ExtractedObjectType,
     ExtractionMethod,
 )
@@ -28,6 +27,12 @@ from app.schemas.ai_extraction import (
     ExtractedDraftSummary,
 )
 from app.services.ai_cache import AICacheLookupKey, get_cached_ai_result, store_cached_ai_result
+from app.services.extracted_object_store import (
+    ExtractedObjectStoreError,
+    ProvenanceData,
+    StoreExtractedObjectInput,
+    store_extracted_objects,
+)
 from app.services.source_extraction import (
     ExtractedSourceText,
     SourceExtractionError,
@@ -212,8 +217,14 @@ def _persist_drafts(
     subtopic_slug = _blank_to_none(content.subtopic_slug) or _blank_to_none(data.subtopic_slug_hint)
     source_summary = _blank_to_none(content.summary)
     source_title = _blank_to_none(content.source_title) or _blank_to_none(data.source_title)
+    provenance = ProvenanceData(
+        resource_id=data.resource_id,
+        topic_job_id=data.topic_job_id,
+        source_url=data.source_url,
+        source_title=source_title,
+    )
 
-    rows: list[ExtractedObject] = []
+    items: list[StoreExtractedObjectInput] = []
     for question in content.questions:
         payload = _question_payload(
             question,
@@ -224,15 +235,14 @@ def _persist_drafts(
             source_url=data.source_url,
             source_text=source_text,
         )
-        rows.append(
-            _new_extracted_object(
-                resource_id=data.resource_id,
-                topic_job_id=data.topic_job_id,
+        items.append(
+            StoreExtractedObjectInput(
                 object_type=ExtractedObjectType.QUESTION,
                 payload_json=payload,
                 confidence_score=_confidence(question.confidence_score),
                 extraction_method=extraction_method,
                 model_version=model_version,
+                provenance=provenance,
             )
         )
 
@@ -246,45 +256,21 @@ def _persist_drafts(
             source_url=data.source_url,
             source_text=source_text,
         )
-        rows.append(
-            _new_extracted_object(
-                resource_id=data.resource_id,
-                topic_job_id=data.topic_job_id,
+        items.append(
+            StoreExtractedObjectInput(
                 object_type=ExtractedObjectType.FLASHCARD,
                 payload_json=payload,
                 confidence_score=_confidence(card.confidence_score),
                 extraction_method=extraction_method,
                 model_version=model_version,
+                provenance=provenance,
             )
         )
 
-    for row in rows:
-        session.add(row)
-    session.flush()
-    return rows
-
-
-def _new_extracted_object(
-    *,
-    resource_id: int | None,
-    topic_job_id: int | None,
-    object_type: ExtractedObjectType,
-    payload_json: dict[str, Any],
-    confidence_score: float,
-    extraction_method: str,
-    model_version: str,
-) -> ExtractedObject:
-    return ExtractedObject(
-        resource_id=resource_id,
-        topic_job_id=topic_job_id,
-        object_type=object_type,
-        payload_json=payload_json,
-        confidence_score=confidence_score,
-        quality_score=None,
-        status=ContentStatus.DRAFT,
-        extraction_method=extraction_method,
-        model_version=model_version,
-    )
+    try:
+        return store_extracted_objects(session, items, commit=False)
+    except ExtractedObjectStoreError as exc:
+        raise AIStructuredExtractionError(str(exc)) from exc
 
 
 def _question_payload(

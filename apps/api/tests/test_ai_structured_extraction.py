@@ -70,6 +70,15 @@ def _valid_payload() -> dict[str, object]:
 def test_extract_structured_drafts_creates_question_and_flashcard() -> None:
     session = MagicMock()
     session.scalar.return_value = None
+    resource = Resource(
+        source_type=ResourceSourceType.URL,
+        url="https://example.com/bayes",
+        title="Bayes notes",
+        license="CC-BY-4.0",
+        status=ContentStatus.DRAFT,
+    )
+    resource.id = 7
+    session.get.return_value = resource
     session.refresh.side_effect = lambda row: setattr(row, "id", getattr(row, "id", None) or 1)
     created_ids = {"n": 0}
 
@@ -219,6 +228,7 @@ def test_extract_from_resource_uses_summary_for_manual_notes() -> None:
         status=ContentStatus.DRAFT,
     )
     resource.id = 11
+    session.get.return_value = resource
 
     result = extract_structured_drafts_from_resource(
         session,
