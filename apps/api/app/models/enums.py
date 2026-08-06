@@ -128,6 +128,14 @@ class SourcePolicyDecision(StrEnum):
     DENY = "deny"
 
 
+class ExtractionMethod(StrEnum):
+    URL_TRAFILATURA = "url_trafilatura"
+    URL_BEAUTIFULSOUP = "url_beautifulsoup"
+    URL_PLAYWRIGHT = "url_playwright"
+    PDF_PYMUPDF = "pdf_pymupdf"
+    PASTED_TEXT = "pasted_text"
+
+
 class AllowlistStatus(StrEnum):
     ALLOWED = "allowed"
     DENIED = "denied"
