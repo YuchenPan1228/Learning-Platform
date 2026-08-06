@@ -120,3 +120,30 @@ class JobExecutionStage(StrEnum):
     DEDUPLICATION = "deduplication"
     REVIEWING = "reviewing"
     PUBLISHING = "publishing"
+
+
+class SourcePolicyDecision(StrEnum):
+    ALLOW = "allow"
+    REVIEW = "review"
+    DENY = "deny"
+
+
+class AllowlistStatus(StrEnum):
+    ALLOWED = "allowed"
+    DENIED = "denied"
+    NOT_CONFIGURED = "not_configured"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class RobotsStatus(StrEnum):
+    ALLOWED = "allowed"
+    DISALLOWED = "disallowed"
+    UNKNOWN = "unknown"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class LicenseStatus(StrEnum):
+    PERMISSIVE = "permissive"
+    RESTRICTIVE = "restrictive"
+    UNKNOWN = "unknown"
+    MISSING = "missing"
