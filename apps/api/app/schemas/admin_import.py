@@ -8,7 +8,6 @@ from app.models.enums import ContentStatus, Difficulty, ExtractedObjectType, Res
 _IMPORT_OBJECT_TYPES = frozenset(
     {
         ExtractedObjectType.QUESTION,
-        ExtractedObjectType.FLASHCARD,
     }
 )
 
@@ -22,7 +21,7 @@ class ImportDraftOptions(BaseModel):
     @classmethod
     def validate_import_object_type(cls, value: ExtractedObjectType) -> ExtractedObjectType:
         if value not in _IMPORT_OBJECT_TYPES:
-            raise ValueError("object_type must be question or flashcard")
+            raise ValueError("object_type must be question")
         return value
 
 
@@ -49,12 +48,6 @@ class NoteImportCreate(ImportDraftOptions):
         if value not in {ResourceSourceType.MANUAL, ResourceSourceType.BOOK_NOTE}:
             raise ValueError("source_type must be manual or book_note")
         return value
-
-    @model_validator(mode="after")
-    def validate_flashcard_title(self) -> Self:
-        if self.object_type is ExtractedObjectType.FLASHCARD and not (self.title or "").strip():
-            raise ValueError("title (flashcard front) is required for flashcard imports")
-        return self
 
 
 class QuestionImportCreate(ImportDraftOptions):
@@ -92,6 +85,11 @@ class ResourceImportRead(BaseModel):
     summary: str | None
     raw_text_hash: str | None
     status: ContentStatus
+    # First draft id (convenience); full list is extracted_object_ids.
     extracted_object_id: int | None = None
+    extracted_object_ids: list[int] = Field(default_factory=list)
+    draft_count: int = 0
+    extraction_method: str | None = None
+    policy_decision: str | None = None
     created_at: datetime
     updated_at: datetime

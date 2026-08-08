@@ -200,7 +200,48 @@ def test_ollama_provider_chat_sends_json_format_when_enabled() -> None:
     assert result.content == '{"ok":true}'
 
 
-def test_ollama_provider_chat_sends_response_schema_when_provided() -> None:
+def test_ollama_provider_chat_falls_back_to_json_mode_on_schema_400() -> None:
+    schema = {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+        "required": ["answer"],
+    }
+    calls: list[object] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        calls.append(body.get("format"))
+        if body.get("format") == schema:
+            return httpx.Response(
+                400,
+                json={"error": "failed to parse grammar"},
+            )
+        assert body.get("format") == "json"
+        return httpx.Response(
+            200,
+            json={
+                "model": "qwen2.5:3b",
+                "message": {"role": "assistant", "content": '{"answer":"ok"}'},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport, base_url="http://test")
+    provider = OllamaProvider(
+        base_url="http://test",
+        chat_model="qwen2.5:3b",
+        request_timeout_seconds=30.0,
+        http_client=client,
+    )
+
+    result = provider.chat(
+        [AIMessage(role=AIMessageRole.USER, content="Return JSON")],
+        response_schema=schema,
+    )
+
+    assert result.content == '{"answer":"ok"}'
+    assert calls == [schema, "json"]
+
     schema = {
         "type": "object",
         "properties": {"answer": {"type": "string"}},

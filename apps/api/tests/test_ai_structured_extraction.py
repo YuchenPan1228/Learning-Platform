@@ -57,17 +57,10 @@ def _valid_payload() -> dict[str, object]:
                 "confidence_score": 0.91,
             }
         ],
-        "flashcards": [
-            {
-                "front": "What is P(A|B)?",
-                "back": "P(A and B) / P(B)",
-                "confidence_score": 0.88,
-            }
-        ],
     }
 
 
-def test_extract_structured_drafts_creates_question_and_flashcard() -> None:
+def test_extract_structured_drafts_creates_question() -> None:
     session = MagicMock()
     session.scalar.return_value = None
     resource = Resource(
@@ -112,20 +105,16 @@ def test_extract_structured_drafts_creates_question_and_flashcard() -> None:
     assert result.subtopic_slug == "conditional-probability"
     assert result.extraction_method == "ai:structured:url_trafilatura"
     assert result.model_version == "qwen2.5:3b"
-    assert len(result.drafts) == 2
-    assert {d.object_type for d in result.drafts} == {
-        ExtractedObjectType.QUESTION,
-        ExtractedObjectType.FLASHCARD,
-    }
+    assert len(result.drafts) == 1
+    assert result.drafts[0].object_type is ExtractedObjectType.QUESTION
 
     extracted_rows = [
         call.args[0]
         for call in session.add.call_args_list
         if isinstance(call.args[0], ExtractedObject)
     ]
-    assert len(extracted_rows) == 2
-    question = next(r for r in extracted_rows if r.object_type is ExtractedObjectType.QUESTION)
-    flashcard = next(r for r in extracted_rows if r.object_type is ExtractedObjectType.FLASHCARD)
+    assert len(extracted_rows) == 1
+    question = extracted_rows[0]
 
     assert question.status is ContentStatus.DRAFT
     assert question.resource_id == 7
@@ -139,11 +128,6 @@ def test_extract_structured_drafts_creates_question_and_flashcard() -> None:
     assert question.payload_json["source_summary"]
     assert "canonical_solution" in question.payload_json
     assert question.payload_json["difficulty"] == Difficulty.MEDIUM.value
-
-    assert flashcard.payload_json["front"] == "What is P(A|B)?"
-    assert flashcard.payload_json["back"] == "P(A and B) / P(B)"
-    assert flashcard.payload_json["topic_slug"] == "probability"
-    assert flashcard.status is ContentStatus.DRAFT
     session.commit.assert_called()
     provider.chat.assert_called_once()
     assert provider.chat.call_args.kwargs["response_schema"] is not None
@@ -172,10 +156,9 @@ def test_rejects_empty_draft_lists() -> None:
             "subtopic_slug": None,
             "source_title": None,
             "questions": [],
-            "flashcards": [],
         }
     )
-    with pytest.raises(AIStructuredExtractionError, match="no question or flashcard"):
+    with pytest.raises(AIStructuredExtractionError, match="no question"):
         extract_structured_drafts(
             session,
             provider,
@@ -195,7 +178,7 @@ def test_uses_cache_when_available() -> None:
             row.id = 99
 
     session.add.side_effect = add
-    provider = _provider(content={"questions": [], "flashcards": []})
+    provider = _provider(content={"questions": []})
 
     result = extract_structured_drafts(
         session,
@@ -204,7 +187,7 @@ def test_uses_cache_when_available() -> None:
     )
     assert result.cache_hit is True
     provider.chat.assert_not_called()
-    assert len(result.drafts) == 2
+    assert len(result.drafts) == 1
 
 
 def test_extract_from_resource_uses_summary_for_manual_notes() -> None:

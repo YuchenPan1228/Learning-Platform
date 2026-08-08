@@ -15,7 +15,6 @@ import {
   importQuestionResource,
   importUrlResource,
 } from "@/lib/api/admin-import";
-import type { ImportDraftTarget } from "@/lib/admin-review/draft-form";
 import type { ImportedResource } from "@/lib/types/admin-import";
 import type { TopicWithSubtopics } from "@/lib/types/topic";
 import { cn } from "@/lib/utils";
@@ -26,22 +25,22 @@ const MODES: { id: ImportMode; label: string; description: string }[] = [
   {
     id: "url",
     label: "URL",
-    description: "Bookmark a source URL. Fill in the question or flashcard in review.",
+    description: "Fetch the page, run AI extraction, and create interview question drafts for review.",
   },
   {
     id: "note",
     label: "Note",
-    description: "Paste freeform text for a question body or flashcard.",
+    description: "Paste freeform notes; AI turns them into interview question drafts for review.",
   },
   {
     id: "question",
     label: "Question",
-    description: "Paste a structured interview question with title and body.",
+    description: "Paste a structured interview question with title and body (no AI needed).",
   },
   {
     id: "pdf",
     label: "PDF",
-    description: "Upload a PDF and create a draft. Question extraction comes in Phase 5.",
+    description: "Upload a PDF, extract text, and AI-draft interview questions for review.",
   },
 ];
 
@@ -50,12 +49,11 @@ type AdminImportFormProps = {
 };
 
 export function AdminImportForm({ topics }: AdminImportFormProps) {
-  const [mode, setMode] = useState<ImportMode>("question");
+  const [mode, setMode] = useState<ImportMode>("url");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportedResource | null>(null);
 
-  const [objectType, setObjectType] = useState<ImportDraftTarget>("question");
   const [topicSlug, setTopicSlug] = useState(topics[0]?.slug ?? "");
   const [subtopicSlug, setSubtopicSlug] = useState("");
 
@@ -73,11 +71,7 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfSummary, setPdfSummary] = useState("");
 
-  const sharedDraftOptions = {
-    objectType: mode === "question" ? ("question" as const) : objectType,
-    topicSlug,
-    subtopicSlug: subtopicSlug || undefined,
-  };
+  const isAiMode = mode === "url" || mode === "note" || mode === "pdf";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,20 +90,19 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
         const imported = await importUrlResource({
           url: url.trim(),
           title: urlTitle.trim() || undefined,
-          ...sharedDraftOptions,
+          topicSlug,
+          subtopicSlug: subtopicSlug || undefined,
         });
         setResult(imported);
         return;
       }
 
       if (mode === "note") {
-        if (objectType === "flashcard" && !noteTitle.trim()) {
-          throw new Error("Flashcard imports need a title for the card front.");
-        }
         const imported = await importNoteResource({
           noteText: noteText.trim(),
           title: noteTitle.trim() || undefined,
-          ...sharedDraftOptions,
+          topicSlug,
+          subtopicSlug: subtopicSlug || undefined,
         });
         setResult(imported);
         return;
@@ -135,7 +128,8 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
         file: pdfFile,
         title: pdfTitle.trim() || undefined,
         summary: pdfSummary.trim() || undefined,
-        ...sharedDraftOptions,
+        topicSlug,
+        subtopicSlug: subtopicSlug || undefined,
       });
       setResult(imported);
     } catch (submitError) {
@@ -145,13 +139,22 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
     }
   }
 
+  const submitLabel = isSubmitting
+    ? isAiMode
+      ? "Extracting…"
+      : "Saving draft…"
+    : isAiMode
+      ? "Extract drafts"
+      : "Save draft";
+
   return (
     <section className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]">
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Admin</p>
       <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Import drafts</h2>
       <p className="mt-1 text-sm text-[#66736e]">
-        Create question or flashcard drafts for review. URL bookmarks and PDF uploads store the
-        source now; AI extraction from those sources comes in Phase 5.
+        URL, PDF, and note imports fetch/clean source text and use AI to propose interview
+        questions. Structured question paste skips AI. Nothing is published until you review and
+        approve.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Import type">
@@ -183,28 +186,16 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
       </p>
 
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-        {mode === "question" ? (
-          <TopicTargetFields
-            topics={topics}
-            objectType="question"
-            topicSlug={topicSlug}
-            subtopicSlug={subtopicSlug}
-            showObjectType={false}
-            onObjectTypeChange={() => undefined}
-            onTopicSlugChange={setTopicSlug}
-            onSubtopicSlugChange={setSubtopicSlug}
-          />
-        ) : (
-          <TopicTargetFields
-            topics={topics}
-            objectType={objectType}
-            topicSlug={topicSlug}
-            subtopicSlug={subtopicSlug}
-            onObjectTypeChange={setObjectType}
-            onTopicSlugChange={setTopicSlug}
-            onSubtopicSlugChange={setSubtopicSlug}
-          />
-        )}
+        <TopicTargetFields
+          topics={topics}
+          objectType="question"
+          topicSlug={topicSlug}
+          subtopicSlug={subtopicSlug}
+          showObjectType={false}
+          onObjectTypeChange={() => undefined}
+          onTopicSlugChange={setTopicSlug}
+          onSubtopicSlugChange={setSubtopicSlug}
+        />
 
         {mode === "url" ? (
           <>
@@ -233,21 +224,21 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
         {mode === "note" ? (
           <>
             <label className={labelClassName}>
-              {objectType === "flashcard" ? "Flashcard front" : "Title (optional)"}
+              Title (optional)
               <input
-                required={objectType === "flashcard"}
                 value={noteTitle}
                 onChange={(event) => setNoteTitle(event.target.value)}
                 className={fieldClassName}
               />
             </label>
             <label className={labelClassName}>
-              {objectType === "flashcard" ? "Flashcard back" : "Question body"}
+              Notes
               <textarea
                 required
                 value={noteText}
                 onChange={(event) => setNoteText(event.target.value)}
                 rows={6}
+                placeholder="Paste study notes, interview writeups, or freeform material…"
                 className={fieldClassName}
               />
             </label>
@@ -325,7 +316,7 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
 
         <div>
           <Button type="submit" disabled={isSubmitting || topics.length === 0}>
-            {isSubmitting ? "Saving draft…" : "Save draft"}
+            {submitLabel}
           </Button>
         </div>
       </form>
@@ -342,14 +333,33 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
 
       {result ? (
         <div className="mt-4 rounded-lg border border-[#cfe5db] bg-[#f3faf7] p-3 text-sm text-[#40524b]">
-          <p className="font-semibold text-[#15201c]">Draft saved to review queue</p>
+          <p className="font-semibold text-[#15201c]">
+            {result.draft_count > 1
+              ? `${result.draft_count} drafts saved to review queue`
+              : "Draft saved to review queue"}
+          </p>
           <p className="mt-1">
-            Resource ID {result.id} · Review item ID {result.extracted_object_id ?? "—"} ·{" "}
+            Resource ID {result.id}
+            {result.draft_count > 0
+              ? ` · ${result.draft_count} draft${result.draft_count === 1 ? "" : "s"}`
+              : null}
+            {result.extracted_object_ids?.length
+              ? ` · IDs ${result.extracted_object_ids.join(", ")}`
+              : result.extracted_object_id != null
+                ? ` · Review item ID ${result.extracted_object_id}`
+                : null}
+            {" · "}
             {result.source_type} · {result.status}
           </p>
+          {result.extraction_method ? (
+            <p className="mt-1">Extraction: {result.extraction_method}</p>
+          ) : null}
+          {result.policy_decision ? (
+            <p className="mt-1">Policy: {result.policy_decision}</p>
+          ) : null}
           {result.title ? <p className="mt-1">Title: {result.title}</p> : null}
           {result.url ? <p className="mt-1 break-all">Path/URL: {result.url}</p> : null}
-          {result.extracted_object_id ? (
+          {result.extracted_object_id || (result.extracted_object_ids?.length ?? 0) > 0 ? (
             <Link
               href="/admin/review"
               className="mt-3 inline-flex text-sm font-medium text-[#176b54] underline-offset-2 hover:underline"

@@ -105,7 +105,7 @@ export type ReviewQueueResponse = {
 
 export type ReviewQueueEditInput = {
   payloadJson?: Record<string, unknown>;
-  objectType?: Extract<ExtractedObjectType, "question" | "flashcard">;
+  objectType?: Extract<ExtractedObjectType, "question">;
   qualityScore?: number | null;
   confidenceScore?: number | null;
 };

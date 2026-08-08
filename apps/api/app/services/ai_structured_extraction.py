@@ -7,11 +7,13 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.ai.errors import AIProviderConfigurationError, AIProviderRequestError
 from app.ai.prompt_hash import compute_prompt_hash
 from app.ai.provider import AIProvider
 from app.ai.structured import StructuredOutputError, chat_structured
 from app.ai.tasks import AITask
 from app.ai.types import AIMessage, AIMessageRole
+from app.config import get_settings
 from app.models.enums import (
     AICacheResultKind,
     ExtractedObjectType,
@@ -20,7 +22,6 @@ from app.models.enums import (
 from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
 from app.schemas.ai_extraction import (
-    AIProposedFlashcardDraft,
     AIProposedQuestionDraft,
     AIStructuredExtractionContent,
     AIStructuredExtractionResult,
@@ -38,8 +39,7 @@ from app.services.source_extraction import (
     SourceExtractionError,
     extract_from_resource,
 )
-
-PROMPT_TEMPLATE_VERSION = "structured-source-extraction:v1"
+PROMPT_TEMPLATE_VERSION = "structured-source-extraction:v2-questions-only"
 EXTRACTION_TASK = AITask.REASONING
 _DEFAULT_CONFIDENCE = 0.6
 _MAX_SOURCE_CHARS = 12_000
@@ -70,10 +70,10 @@ def extract_structured_drafts(
     *,
     commit: bool = True,
 ) -> AIStructuredExtractionResult:
-    """Parse long source text into question/flashcard draft rows (no auto-publish).
+    """Parse long source text into question draft rows (no auto-publish).
 
     Creates ExtractedObject rows with status draft for the existing review queue.
-    Concepts/formulas/examples are intentionally not created (ADR-012).
+    Concepts/formulas/examples/flashcards are intentionally not created.
     """
     cleaned = (data.source_text or "").strip()
     if not cleaned:
@@ -129,18 +129,22 @@ def extract_structured_drafts(
                 model=model,
                 temperature=0.2,
                 max_tokens=2048,
+                # Small local models often need one repair pass when schema grammar falls back.
+                repair_attempts=max(1, get_settings().ai_json_repair_attempts),
                 cache_hit=False,
                 prompt_hash=prompt_hash,
                 input_object_version=input_object_version,
             )
-        except StructuredOutputError as exc:
+        except (
+            StructuredOutputError,
+            AIProviderRequestError,
+            AIProviderConfigurationError,
+        ) as exc:
             raise AIStructuredExtractionError(str(exc)) from exc
         store_cached_ai_result(session, cache_key, content.model_dump(mode="json"))
 
-    if not content.questions and not content.flashcards:
-        raise AIStructuredExtractionError(
-            "model proposed no question or flashcard drafts",
-        )
+    if not content.questions:
+        raise AIStructuredExtractionError("model proposed no question drafts")
 
     drafts = _persist_drafts(
         session,
@@ -157,8 +161,9 @@ def extract_structured_drafts(
 
     return AIStructuredExtractionResult(
         summary=content.summary,
-        topic_slug=content.topic_slug or data.topic_slug_hint,
-        subtopic_slug=content.subtopic_slug or data.subtopic_slug_hint,
+        topic_slug=_blank_to_none(data.topic_slug_hint) or _blank_to_none(content.topic_slug),
+        subtopic_slug=_blank_to_none(data.subtopic_slug_hint)
+        or _blank_to_none(content.subtopic_slug),
         source_title=content.source_title or data.source_title,
         model_version=model,
         extraction_method=extraction_method,
@@ -213,8 +218,11 @@ def _persist_drafts(
     extraction_method: str,
     model_version: str,
 ) -> list[ExtractedObject]:
-    topic_slug = _blank_to_none(content.topic_slug) or _blank_to_none(data.topic_slug_hint)
-    subtopic_slug = _blank_to_none(content.subtopic_slug) or _blank_to_none(data.subtopic_slug_hint)
+    # Prefer user-chosen import topic hints; fall back to AI suggestions (ADR-013).
+    topic_slug = _blank_to_none(data.topic_slug_hint) or _blank_to_none(content.topic_slug)
+    subtopic_slug = _blank_to_none(data.subtopic_slug_hint) or _blank_to_none(
+        content.subtopic_slug
+    )
     source_summary = _blank_to_none(content.summary)
     source_title = _blank_to_none(content.source_title) or _blank_to_none(data.source_title)
     provenance = ProvenanceData(
@@ -240,27 +248,6 @@ def _persist_drafts(
                 object_type=ExtractedObjectType.QUESTION,
                 payload_json=payload,
                 confidence_score=_confidence(question.confidence_score),
-                extraction_method=extraction_method,
-                model_version=model_version,
-                provenance=provenance,
-            )
-        )
-
-    for card in content.flashcards:
-        payload = _flashcard_payload(
-            card,
-            topic_slug=topic_slug,
-            subtopic_slug=subtopic_slug,
-            source_summary=source_summary,
-            source_title=source_title,
-            source_url=data.source_url,
-            source_text=source_text,
-        )
-        items.append(
-            StoreExtractedObjectInput(
-                object_type=ExtractedObjectType.FLASHCARD,
-                payload_json=payload,
-                confidence_score=_confidence(card.confidence_score),
                 extraction_method=extraction_method,
                 model_version=model_version,
                 provenance=provenance,
@@ -307,36 +294,6 @@ def _question_payload(
     return payload
 
 
-def _flashcard_payload(
-    card: AIProposedFlashcardDraft,
-    *,
-    topic_slug: str | None,
-    subtopic_slug: str | None,
-    source_summary: str | None,
-    source_title: str | None,
-    source_url: str | None,
-    source_text: str,
-) -> dict[str, Any]:
-    front = card.front.strip()
-    back = card.back.strip()
-    payload: dict[str, Any] = {
-        "front": front,
-        "back": back,
-        "title": front,
-        "extracted_text": back,
-        "source_excerpt": _excerpt(source_text),
-    }
-    _attach_shared_metadata(
-        payload,
-        topic_slug=topic_slug,
-        subtopic_slug=subtopic_slug,
-        source_summary=source_summary,
-        source_title=source_title,
-        source_url=source_url,
-    )
-    return payload
-
-
 def _attach_shared_metadata(
     payload: dict[str, Any],
     *,
@@ -372,17 +329,18 @@ def _draft_summary(row: ExtractedObject) -> ExtractedDraftSummary:
 
 def _system_prompt() -> str:
     return (
-        "You extract quant interview practice material from long educational source text. "
+        "You extract quant interview practice questions from long educational source text. "
         "Return JSON only matching the schema. "
-        "Propose interview questions (title, body, optional short_answer/canonical_solution) "
-        "and flashcards (front/back) when the source supports them. "
+        "Each question MUST include string fields title and body (the full interview stem). "
+        "Optional question fields: short_answer, canonical_solution, difficulty "
+        "(easy|medium|hard|expert), confidence_score (0-1). "
         "Do not invent proprietary firm secrets. "
         "Suggest a topic_slug and optional subtopic_slug as lowercase kebab-case labels "
         "(examples: probability, conditional-probability, black-scholes). "
         "Also include a short source summary and optional source_title. "
-        "Do not create concept, formula, or example records—only questions and flashcards. "
+        "Do not create flashcards, concept, formula, or example records—only questions. "
         "Prefer fewer high-quality drafts over many weak ones. "
-        "If the source is thin, return empty lists only when nothing is salvageable."
+        "If the source is thin, return an empty questions list only when nothing is salvageable."
     )
 
 
@@ -397,8 +355,9 @@ def _prompt_payload(
     payload: dict[str, Any] = {
         "source_text": source_text,
         "instructions": (
-            "Parse the source_text into structured interview questions and flashcards "
-            "for a quant interview prep product. Include answer/solution fields when present."
+            "Parse the source_text into structured interview questions "
+            "for a quant interview prep product. Include answer/solution fields when present. "
+            "Do not invent flashcards."
         ),
     }
     if source_url:

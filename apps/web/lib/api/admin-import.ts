@@ -39,6 +39,16 @@ async function parseImportError(response: Response): Promise<string> {
     const payload = (await response.json()) as { detail?: unknown };
     if (typeof payload.detail === "string") {
       detail = payload.detail;
+    } else if (Array.isArray(payload.detail)) {
+      // FastAPI validation errors
+      detail = payload.detail
+        .map((item) => {
+          if (item && typeof item === "object" && "msg" in item) {
+            return String((item as { msg: unknown }).msg);
+          }
+          return JSON.stringify(item);
+        })
+        .join("; ");
     }
   } catch {
     // Keep the status-based message when the body is not JSON.
@@ -46,14 +56,33 @@ async function parseImportError(response: Response): Promise<string> {
   return detail;
 }
 
+function networkImportError(error: unknown): Error {
+  if (error instanceof TypeError) {
+    const message = error.message || "Load failed";
+    return new Error(
+      `${message}. Could not reach the API (is it running on ${getApiBaseUrl()}?). ` +
+        "If the API returned an error, check the API terminal logs.",
+    );
+  }
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error("Import failed.");
+}
+
 async function postImport(path: string, body: Record<string, unknown>): Promise<ImportedResource> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    throw networkImportError(error);
+  }
 
   if (!response.ok) {
     throw new Error(await parseImportError(response));
@@ -116,6 +145,8 @@ export async function importPdfResource(input: PdfImportInput): Promise<Imported
   const response = await fetch(`${getApiBaseUrl()}/admin/import/pdf`, {
     method: "POST",
     body,
+  }).catch((error: unknown) => {
+    throw networkImportError(error);
   });
 
   if (!response.ok) {

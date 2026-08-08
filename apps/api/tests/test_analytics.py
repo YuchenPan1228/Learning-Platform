@@ -82,14 +82,11 @@ def test_get_learning_analytics_assembles_roadmap_sections() -> None:
         ],
     )
 
-    with (
-        patch("app.services.analytics.get_mastery", return_value=mastery),
-        patch("app.services.analytics.count_due_flashcards", return_value=12),
-    ):
+    with patch("app.services.analytics.get_mastery", return_value=mastery):
         analytics = get_learning_analytics(session)
 
     assert analytics.user_id == "local"
-    assert analytics.review_due_count == 12
+    assert analytics.review_due_count == 0
     assert len(analytics.weak_concepts) == 1
     assert analytics.weak_concepts[0].slug == "bayes"
     assert len(analytics.attempt_history) == 1
@@ -120,10 +117,7 @@ def test_weak_concepts_are_capped_and_sorted_by_mastery() -> None:
     ]
     mastery = MasteryRead(user_id="local", topic_mastery=[], concept_mastery=concepts)
 
-    with (
-        patch("app.services.analytics.get_mastery", return_value=mastery),
-        patch("app.services.analytics.count_due_flashcards", return_value=0),
-    ):
+    with patch("app.services.analytics.get_mastery", return_value=mastery):
         analytics = get_learning_analytics(session)
 
     assert len(analytics.weak_concepts) == WEAK_CONCEPT_LIMIT

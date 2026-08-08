@@ -8,7 +8,6 @@ export const mainNavItems: NavItem[] = [
   { href: "/topics", label: "Topics" },
   { href: "/practice", label: "Practice" },
   { href: "/mental-math", label: "Mental Math" },
-  { href: "/flashcards", label: "Flashcards" },
   { href: "/analytics", label: "Analytics" },
 ];
 
@@ -17,7 +16,6 @@ export const adminNavItems: NavItem[] = [
   { href: "/admin/review", label: "Review" },
   { href: "/admin/concepts", label: "Concepts" },
   { href: "/admin/questions", label: "Questions" },
-  { href: "/admin/flashcards", label: "Flashcards" },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -25,13 +23,11 @@ const pageTitles: Record<string, string> = {
   "/topics": "Topics",
   "/practice": "Practice",
   "/mental-math": "Mental Math",
-  "/flashcards": "Flashcards",
   "/analytics": "Analytics",
   "/admin/import": "Admin Import",
   "/admin/review": "Admin Review",
   "/admin/concepts": "Admin Concepts",
   "/admin/questions": "Admin Questions",
-  "/admin/flashcards": "Admin Flashcards",
 };
 
 export function isNavItemActive(pathname: string, href: string): boolean {

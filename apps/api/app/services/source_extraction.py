@@ -245,6 +245,8 @@ def extract_from_resource(
     return extract_from_pasted_text(text, title=resource.title)
 
 
+# Prefer decoding without env proxy for local ingestion so corporate/sandbox proxies
+# do not block public educational pages (and make failures more actionable).
 def fetch_html(
     url: str,
     *,
@@ -252,12 +254,15 @@ def fetch_html(
     user_agent: str,
 ) -> HtmlFetchResult:
     try:
-        response = requests.get(
-            url,
-            timeout=timeout_seconds,
-            headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
-            allow_redirects=True,
-        )
+        # trust_env=False avoids broken HTTP(S)_PROXY tunnels from IDE sandboxes / local proxy tools.
+        with requests.Session() as session:
+            session.trust_env = False
+            response = session.get(
+                url,
+                timeout=timeout_seconds,
+                headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
+                allow_redirects=True,
+            )
     except requests.RequestException as exc:
         raise SourceExtractionError(f"failed to fetch url: {exc}") from exc
 

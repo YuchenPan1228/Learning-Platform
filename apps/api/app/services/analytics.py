@@ -12,7 +12,6 @@ from app.schemas.analytics import (
     SearchMissRead,
     WeakConceptRead,
 )
-from app.services.flashcard_review import count_due_flashcards
 from app.services.mastery import get_mastery
 
 WEAK_MASTERY_THRESHOLD = 50.0
@@ -113,6 +112,6 @@ def get_learning_analytics(session: Session) -> LearningAnalyticsRead:
         user_id=LOCAL_USER_ID,
         weak_concepts=_weak_concepts(session),
         attempt_history=_attempt_history(session),
-        review_due_count=count_due_flashcards(session),
+        review_due_count=0,  # Flashcard due count paused while learner feature is offline.
         search_misses=_search_misses(session),
     )

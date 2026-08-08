@@ -76,14 +76,9 @@ def publish_extracted_object(
         published_ref = PublishedObjectRef(kind="concept", id=concept.id)
         duplicate_warnings = []
     elif extracted.object_type is ExtractedObjectType.FLASHCARD:
-        flashcard = _publish_flashcard(
-            session,
-            extracted,
-            topic_id=topic_id,
-            provenance=provenance,
+        raise PublishError(
+            "flashcard publishing is disabled; reject leftover flashcard drafts or re-import as questions",
         )
-        published_ref = PublishedObjectRef(kind="flashcard", id=flashcard.id)
-        duplicate_warnings = []
     else:
         raise PublishError(f"unsupported extracted object type: {extracted.object_type.value}")
 

@@ -21,35 +21,20 @@ type TopicTargetFieldsProps = {
 
 export function TopicTargetFields({
   topics,
-  objectType,
   topicSlug,
   subtopicSlug,
-  onObjectTypeChange,
   onTopicSlugChange,
   onSubtopicSlugChange,
   disabled = false,
-  showObjectType = true,
+  showObjectType = false,
 }: TopicTargetFieldsProps) {
   const subtopics = getSubtopicsForTopic(topics, topicSlug);
+  void showObjectType;
 
   return (
     <div className="grid gap-4 rounded-lg border border-[#edf5f1] bg-[#fafcfb] p-4">
       <p className="text-sm font-semibold text-[#15201c]">Draft target</p>
-      <div className={showObjectType ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
-        {showObjectType ? (
-          <label className={labelClassName}>
-            Publish as
-            <select
-              value={objectType}
-              disabled={disabled}
-              onChange={(event) => onObjectTypeChange(event.target.value as ImportDraftTarget)}
-              className={fieldClassName}
-            >
-              <option value="question">Question</option>
-              <option value="flashcard">Flashcard</option>
-            </select>
-          </label>
-        ) : null}
+      <div className="grid gap-4">
         <label className={labelClassName}>
           Topic
           <select

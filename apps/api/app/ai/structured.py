@@ -43,7 +43,15 @@ def chat_structured(
     )
     attempts = 1 + max(0, resolved_repairs)
     schema = response_model.model_json_schema()
-    base_messages = list(messages)
+    schema_hint = (
+        "Respond with a single JSON object that matches this JSON Schema. "
+        "Do not wrap the object in markdown fences or extra text.\n"
+        f"{json.dumps(schema, sort_keys=True)}"
+    )
+    base_messages = [
+        *messages,
+        AIMessage(role=AIMessageRole.SYSTEM, content=schema_hint),
+    ]
     current_messages = base_messages
     last_error = "unknown error"
 

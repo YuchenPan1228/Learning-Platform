@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from app.dedup.text import text_hash
+from app.dependencies import get_ai_provider
 from app.models.enums import ContentStatus, ExtractedObjectType, ResourceSourceType
 from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
@@ -14,7 +15,13 @@ from app.schemas.admin_import import (
     QuestionImportCreate,
     UrlImportCreate,
 )
+from app.schemas.ai_extraction import (
+    AIStructuredExtractionResult,
+    ExtractedDraftSummary,
+)
 from app.services.admin_import import (
+    ImportExtractionError,
+    ImportPolicyError,
     import_note_resource,
     import_pdf_resource,
     import_question_resource,
@@ -24,6 +31,7 @@ from app.services.import_extracted_draft import (
     DraftImportOptions,
     create_extracted_draft_from_resource,
 )
+from app.services.source_policy import SourcePolicyResult
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
@@ -86,9 +94,87 @@ def _mock_import_session(
     session.get.side_effect = get
 
 
-def test_import_url_resource_creates_question_draft_without_crawling() -> None:
+def _allow_policy() -> SourcePolicyResult:
+    from app.models.enums import (
+        AllowlistStatus,
+        LicenseStatus,
+        RobotsStatus,
+        SourcePolicyDecision,
+    )
+
+    return SourcePolicyResult(
+        decision=SourcePolicyDecision.ALLOW,
+        allowlist_status=AllowlistStatus.NOT_CONFIGURED,
+        robots_status=RobotsStatus.ALLOWED,
+        license_status=LicenseStatus.PERMISSIVE,
+        attribution_required=False,
+        attribution_present=True,
+        reasons=("ok",),
+        host="example.com",
+    )
+
+
+def _deny_policy() -> SourcePolicyResult:
+    from app.models.enums import (
+        AllowlistStatus,
+        LicenseStatus,
+        RobotsStatus,
+        SourcePolicyDecision,
+    )
+
+    return SourcePolicyResult(
+        decision=SourcePolicyDecision.DENY,
+        allowlist_status=AllowlistStatus.DENIED,
+        robots_status=RobotsStatus.ALLOWED,
+        license_status=LicenseStatus.MISSING,
+        attribution_required=True,
+        attribution_present=False,
+        reasons=("host not on allowlist",),
+        host="bad.example",
+    )
+
+
+def _ai_result(
+    *,
+    draft_ids: list[int] | None = None,
+    method: str = "ai:structured:url_trafilatura",
+) -> AIStructuredExtractionResult:
+    ids = draft_ids or [10]
+    return AIStructuredExtractionResult(
+        summary="Source summary from AI",
+        topic_slug=_TOPIC_SLUG,
+        subtopic_slug=None,
+        source_title="Extracted title",
+        model_version="qwen2.5:3b",
+        extraction_method=method,
+        cache_hit=False,
+        drafts=[
+            ExtractedDraftSummary(
+                id=draft_id,
+                object_type=ExtractedObjectType.QUESTION,
+                title=f"Draft {draft_id}",
+                confidence_score=0.9,
+            )
+            for draft_id in ids
+        ],
+    )
+
+
+def test_import_url_resource_runs_policy_and_ai_extraction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     session = MagicMock()
     _mock_import_session(session)
+    provider = MagicMock()
+
+    monkeypatch.setattr(
+        "app.services.admin_import.check_resource_policy",
+        lambda resource: _allow_policy(),
+    )
+    monkeypatch.setattr(
+        "app.services.admin_import.extract_structured_drafts_from_resource",
+        lambda *args, **kwargs: _ai_result(draft_ids=[10, 11]),
+    )
 
     result = import_url_resource(
         session,
@@ -99,10 +185,11 @@ def test_import_url_resource_creates_question_draft_without_crawling() -> None:
             topic_slug=_TOPIC_SLUG,
             object_type=ExtractedObjectType.QUESTION,
         ),
+        provider=provider,
     )
 
-    assert session.add.call_count == 2
-    assert session.flush.call_count >= 1
+    assert session.add.call_count >= 1
+    session.flush.assert_called()
     session.commit.assert_called_once()
     saved = session.add.call_args_list[0].args[0]
     assert isinstance(saved, Resource)
@@ -112,21 +199,79 @@ def test_import_url_resource_creates_question_draft_without_crawling() -> None:
     assert saved.license == "CC-BY-4.0"
     assert saved.status is ContentStatus.DRAFT
     assert saved.raw_text_hash == text_hash("https://example.com/bayes")
-    extracted = session.add.call_args_list[1].args[0]
-    assert isinstance(extracted, ExtractedObject)
-    assert extracted.object_type is ExtractedObjectType.QUESTION
-    assert extracted.resource_id == 1
-    assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
-    assert extracted.extraction_method == "manual:import"
-    assert extracted.payload_json["provenance"]["resource_id"] == 1
     assert result.id == 1
     assert result.extracted_object_id == 10
+    assert result.extracted_object_ids == [10, 11]
+    assert result.draft_count == 2
+    assert result.extraction_method == "ai:structured:url_trafilatura"
+    assert result.policy_decision == "allow"
     assert result.source_type is ResourceSourceType.URL
 
 
-def test_import_note_resource_stores_text_as_question_body() -> None:
+def test_import_url_resource_denies_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = MagicMock()
+    _mock_import_session(session)
+    monkeypatch.setattr(
+        "app.services.admin_import.check_resource_policy",
+        lambda resource: _deny_policy(),
+    )
+
+    with pytest.raises(ImportPolicyError, match="source policy denied"):
+        import_url_resource(
+            session,
+            UrlImportCreate(
+                url="https://bad.example/secret",
+                topic_slug=_TOPIC_SLUG,
+            ),
+            provider=MagicMock(),
+        )
+    session.rollback.assert_called()
+    session.commit.assert_not_called()
+
+
+def test_import_url_resource_surfaces_extraction_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = MagicMock()
+    _mock_import_session(session)
+    monkeypatch.setattr(
+        "app.services.admin_import.check_resource_policy",
+        lambda resource: _allow_policy(),
+    )
+
+    from app.services.ai_structured_extraction import AIStructuredExtractionError
+
+    def raise_ai(*_args: object, **_kwargs: object) -> None:
+        raise AIStructuredExtractionError("model proposed no question or flashcard drafts")
+
+    monkeypatch.setattr(
+        "app.services.admin_import.extract_structured_drafts_from_resource",
+        raise_ai,
+    )
+
+    with pytest.raises(ImportExtractionError, match="no question or flashcard"):
+        import_url_resource(
+            session,
+            UrlImportCreate(url="https://example.com/thin", topic_slug=_TOPIC_SLUG),
+            provider=MagicMock(),
+        )
+    session.rollback.assert_called()
+
+
+def test_import_note_resource_runs_ai_extraction(monkeypatch: pytest.MonkeyPatch) -> None:
     session = MagicMock()
     _mock_import_session(session, resource_id=2, extracted_id=11)
+    monkeypatch.setattr(
+        "app.services.admin_import.check_resource_policy",
+        lambda resource: _allow_policy(),
+    )
+    monkeypatch.setattr(
+        "app.services.admin_import.extract_structured_drafts_from_resource",
+        lambda *args, **kwargs: _ai_result(
+            draft_ids=[11],
+            method="ai:structured:pasted_text",
+        ),
+    )
 
     result = import_note_resource(
         session,
@@ -138,6 +283,7 @@ def test_import_note_resource_stores_text_as_question_body() -> None:
             topic_slug=_TOPIC_SLUG,
             object_type=ExtractedObjectType.QUESTION,
         ),
+        provider=MagicMock(),
     )
 
     saved = session.add.call_args_list[0].args[0]
@@ -145,12 +291,10 @@ def test_import_note_resource_stores_text_as_question_body() -> None:
     assert saved.summary == "Bayes theorem relates P(A|B) to P(B|A)."
     assert saved.raw_text_hash == text_hash("Bayes theorem relates P(A|B) to P(B|A).")
     assert saved.url is None
-    assert saved.status is ContentStatus.DRAFT
-    extracted = session.add.call_args_list[1].args[0]
-    assert extracted.payload_json["body"] == "Bayes theorem relates P(A|B) to P(B|A)."
-    assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
     assert result.summary == "Bayes theorem relates P(A|B) to P(B|A)."
     assert result.extracted_object_id == 11
+    assert result.extracted_object_ids == [11]
+    assert result.extraction_method == "ai:structured:pasted_text"
 
 
 def test_note_import_rejects_non_note_source_type() -> None:
@@ -162,16 +306,16 @@ def test_note_import_rejects_non_note_source_type() -> None:
         )
 
 
-def test_flashcard_note_import_requires_front_title() -> None:
-    with pytest.raises(ValidationError):
-        NoteImportCreate(
-            note_text="answer text",
-            topic_slug=_TOPIC_SLUG,
-            object_type=ExtractedObjectType.FLASHCARD,
-        )
+def test_note_import_allows_question_without_title() -> None:
+    payload = NoteImportCreate(
+        note_text="answer text about martingales",
+        topic_slug=_TOPIC_SLUG,
+        object_type=ExtractedObjectType.QUESTION,
+    )
+    assert payload.title is None
 
 
-def test_import_pdf_resource_stores_uploaded_file_without_parsing(
+def test_import_pdf_resource_runs_ai_after_upload(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -183,14 +327,26 @@ def test_import_pdf_resource_stores_uploaded_file_without_parsing(
     session = MagicMock()
     _mock_import_session(session, resource_id=3, extracted_id=12)
     pdf_bytes = b"%PDF-1.4\n%fake pdf content\n"
+    monkeypatch.setattr(
+        "app.services.admin_import.check_resource_policy",
+        lambda resource: _allow_policy(),
+    )
+    monkeypatch.setattr(
+        "app.services.admin_import.extract_structured_drafts_from_resource",
+        lambda *args, **kwargs: _ai_result(
+            draft_ids=[12],
+            method="ai:structured:pdf_pymupdf",
+        ),
+    )
 
     result = import_pdf_resource(
         session,
         PdfImportCreate(
             title="Interview Math PDF",
             topic_slug=_TOPIC_SLUG,
-            object_type=ExtractedObjectType.FLASHCARD,
+            object_type=ExtractedObjectType.QUESTION,
         ),
+        provider=MagicMock(),
         filename="interview-math.pdf",
         content_type="application/pdf",
         content=pdf_bytes,
@@ -205,11 +361,9 @@ def test_import_pdf_resource_stores_uploaded_file_without_parsing(
     assert saved.status is ContentStatus.DRAFT
     assert len(saved.raw_text_hash or "") == 64
     assert (tmp_path / "uploads" / saved.url).is_file()
-    extracted = session.add.call_args_list[1].args[0]
-    assert extracted.object_type is ExtractedObjectType.FLASHCARD
-    assert extracted.payload_json["front"] == "Interview Math PDF"
     assert result.id == 3
     assert result.extracted_object_id == 12
+    assert result.extraction_method == "ai:structured:pdf_pymupdf"
     get_settings.cache_clear()
 
 
@@ -228,6 +382,7 @@ def test_import_pdf_rejects_non_pdf_bytes(
         import_pdf_resource(
             session,
             PdfImportCreate(topic_slug=_TOPIC_SLUG, object_type=ExtractedObjectType.QUESTION),
+            provider=MagicMock(),
             filename="notes.pdf",
             content_type="application/pdf",
             content=b"not a pdf",
@@ -255,6 +410,8 @@ def test_import_question_resource_creates_ready_to_review_draft() -> None:
     assert extracted.payload_json["title"] == "Bayes follow-up"
     assert extracted.payload_json["short_answer"] == "0.15"
     assert result.extracted_object_id == 13
+    assert result.extracted_object_ids == [13]
+    assert result.extraction_method == "manual:import"
 
 
 def test_create_extracted_draft_from_resource_builds_question_payload() -> None:
@@ -286,102 +443,185 @@ def test_create_extracted_draft_from_resource_builds_question_payload() -> None:
     assert extracted.extraction_method == "manual:import"
 
 
+def _extraction_payload() -> dict[str, object]:
+    return {
+        "summary": "Notes on conditional probability.",
+        "topic_slug": "probability",
+        "subtopic_slug": None,
+        "source_title": "Conditional probability",
+        "questions": [
+            {
+                "title": "Independence check",
+                "body": "When are events A and B independent?",
+                "short_answer": "P(A and B)=P(A)P(B)",
+                "difficulty": "easy",
+                "confidence_score": 0.9,
+            }
+        ],
+        "flashcards": [
+            {
+                "front": "Independence formula",
+                "back": "P(A and B) = P(A)P(B)",
+                "confidence_score": 0.85,
+            }
+        ],
+    }
+
+
 @pytest.mark.integration
 def test_admin_import_endpoints_create_resources(
     seeded_database: None,
     require_postgres: None,
     client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    url_response = client.post(
-        "/admin/import/url",
-        json={
-            "url": "https://example.com/conditional-probability",
-            "title": "Conditional probability",
-            "topic_slug": _TOPIC_SLUG,
-            "object_type": "question",
-        },
+    import json
+
+    from app.ai.types import AIChatResult, AITokenUsage
+    from app.main import app
+    from app.services.source_extraction import ExtractedSourceText
+    from app.models.enums import ExtractionMethod
+
+    provider = MagicMock()
+    provider.provider_name = "ollama"
+    provider.chat_model = "qwen2.5:3b"
+    provider.model_for_task.return_value = "qwen2.5:3b"
+    provider.chat.return_value = AIChatResult(
+        content=json.dumps(_extraction_payload()),
+        provider="ollama",
+        model="qwen2.5:3b",
+        token_usage=AITokenUsage(input_tokens=10, output_tokens=20),
+        latency_ms=5,
     )
-    assert url_response.status_code == 200
-    url_body = url_response.json()
-    assert url_body["source_type"] == "url"
-    assert url_body["status"] == "draft"
-    assert url_body["url"] == "https://example.com/conditional-probability"
 
-    note_response = client.post(
-        "/admin/import/note",
-        json={
-            "note_text": "Independence means P(A and B) = P(A)P(B).",
-            "title": "Independence",
-            "source_type": "manual",
-            "topic_slug": _TOPIC_SLUG,
-            "object_type": "flashcard",
-        },
+    def fake_extract(resource: Resource, **_kwargs: object) -> ExtractedSourceText:
+        if resource.source_type is ResourceSourceType.URL:
+            return ExtractedSourceText(
+                text=(
+                    "Conditional probability notes. Independence means P(A and B) = P(A)P(B). "
+                    "Bayes theorem updates priors."
+                ),
+                method=ExtractionMethod.URL_TRAFILATURA,
+                source_url=resource.url,
+                title=resource.title,
+            )
+        if resource.source_type is ResourceSourceType.PDF:
+            return ExtractedSourceText(
+                text="PDF text about fair dice probability for quant interviews.",
+                method=ExtractionMethod.PDF_PYMUPDF,
+                source_url=resource.url,
+                title=resource.title,
+            )
+        return ExtractedSourceText(
+            text=resource.summary or "Empty notes",
+            method=ExtractionMethod.PASTED_TEXT,
+            title=resource.title,
+        )
+
+    monkeypatch.setattr(
+        "app.services.ai_structured_extraction.extract_from_resource",
+        fake_extract,
     )
-    assert note_response.status_code == 200
-    note_body = note_response.json()
-    assert note_body["source_type"] == "manual"
-    assert note_body["summary"].startswith("Independence means")
+    app.dependency_overrides[get_ai_provider] = lambda: provider
 
-    question_response = client.post(
-        "/admin/import/question",
-        json={
-            "title": "Dice parity",
-            "body": "You roll two fair dice. What is P(sum is even)?",
-            "topic_slug": _TOPIC_SLUG,
-            "object_type": "question",
-        },
-    )
-    assert question_response.status_code == 200
-    question_body = question_response.json()
+    try:
+        url_response = client.post(
+            "/admin/import/url",
+            json={
+                "url": "https://example.com/conditional-probability",
+                "title": "Conditional probability",
+                "topic_slug": _TOPIC_SLUG,
+                "object_type": "question",
+            },
+        )
+        assert url_response.status_code == 200, url_response.text
+        url_body = url_response.json()
+        assert url_body["source_type"] == "url"
+        assert url_body["status"] == "draft"
+        assert url_body["url"] == "https://example.com/conditional-probability"
+        assert url_body["draft_count"] >= 1
+        assert url_body["extraction_method"].startswith("ai:structured:")
+        assert isinstance(url_body["extracted_object_ids"], list)
+        assert url_body["extracted_object_id"] in url_body["extracted_object_ids"]
 
-    pdf_response = client.post(
-        "/admin/import/pdf",
-        data={
-            "title": "Local PDF",
-            "topic_slug": _TOPIC_SLUG,
-            "object_type": "question",
-        },
-        files={
-            "file": ("quant-notes.pdf", b"%PDF-1.4\n%test\n", "application/pdf"),
-        },
-    )
-    assert pdf_response.status_code == 200
-    pdf_body = pdf_response.json()
-    assert pdf_body["source_type"] == "pdf"
-    assert pdf_body["url"] is not None
-    assert pdf_body["url"].startswith("pdfs/")
-    assert pdf_body["title"] == "Local PDF"
-    assert isinstance(pdf_body["extracted_object_id"], int)
+        note_response = client.post(
+            "/admin/import/note",
+            json={
+                "note_text": "Independence means P(A and B) = P(A)P(B).",
+                "title": "Independence",
+                "source_type": "manual",
+                "topic_slug": _TOPIC_SLUG,
+                "object_type": "question",
+            },
+        )
+        assert note_response.status_code == 200, note_response.text
+        note_body = note_response.json()
+        assert note_body["source_type"] == "manual"
+        assert note_body["draft_count"] >= 1
+        assert note_body["extraction_method"].startswith("ai:structured:")
 
-    review_response = client.get("/admin/review")
-    assert review_response.status_code == 200
-    review_items = review_response.json()["items"]
-    extracted_ids = {item["id"] for item in review_items}
-    assert url_body["extracted_object_id"] in extracted_ids
-    assert note_body["extracted_object_id"] in extracted_ids
-    assert question_body["extracted_object_id"] in extracted_ids
-    assert pdf_body["extracted_object_id"] in extracted_ids
+        question_response = client.post(
+            "/admin/import/question",
+            json={
+                "title": "Dice parity",
+                "body": "You roll two fair dice. What is P(sum is even)?",
+                "topic_slug": _TOPIC_SLUG,
+                "object_type": "question",
+            },
+        )
+        assert question_response.status_code == 200
+        question_body = question_response.json()
+        assert question_body["extraction_method"] == "manual:import"
 
-    url_draft = next(item for item in review_items if item["id"] == url_body["extracted_object_id"])
-    assert url_draft["status"] == "draft"
-    assert url_draft["object_type"] == "question"
-    assert url_draft["payload_json"]["topic_slug"] == _TOPIC_SLUG
-    assert url_draft["resource"]["id"] == url_body["id"]
-    assert url_draft["extraction_method"] == "manual:import"
+        pdf_response = client.post(
+            "/admin/import/pdf",
+            data={
+                "title": "Local PDF",
+                "topic_slug": _TOPIC_SLUG,
+                "object_type": "question",
+            },
+            files={
+                "file": ("quant-notes.pdf", b"%PDF-1.4\n%test\n", "application/pdf"),
+            },
+        )
+        assert pdf_response.status_code == 200, pdf_response.text
+        pdf_body = pdf_response.json()
+        assert pdf_body["source_type"] == "pdf"
+        assert pdf_body["url"] is not None
+        assert pdf_body["url"].startswith("pdfs/")
+        assert pdf_body["title"] == "Local PDF"
+        assert isinstance(pdf_body["extracted_object_id"], int)
+        assert pdf_body["extraction_method"].startswith("ai:structured:")
 
-    flashcard_draft = next(
-        item for item in review_items if item["id"] == note_body["extracted_object_id"]
-    )
-    assert flashcard_draft["object_type"] == "flashcard"
-    assert flashcard_draft["payload_json"]["front"] == "Independence"
+        review_response = client.get("/admin/review")
+        assert review_response.status_code == 200
+        review_items = review_response.json()["items"]
+        extracted_ids = {item["id"] for item in review_items}
+        for draft_id in url_body["extracted_object_ids"]:
+            assert draft_id in extracted_ids
+        for draft_id in note_body["extracted_object_ids"]:
+            assert draft_id in extracted_ids
+        assert question_body["extracted_object_id"] in extracted_ids
+        assert pdf_body["extracted_object_id"] in extracted_ids
 
-    invalid_topic = client.post(
-        "/admin/import/question",
-        json={
-            "title": "Bad topic",
-            "body": "Question body",
-            "topic_slug": "not-a-real-topic",
-            "object_type": "question",
-        },
-    )
-    assert invalid_topic.status_code == 400
+        url_draft = next(
+            item for item in review_items if item["id"] == url_body["extracted_object_id"]
+        )
+        assert url_draft["status"] == "draft"
+        assert url_draft["payload_json"]["topic_slug"] == _TOPIC_SLUG
+        assert url_draft["resource"]["id"] == url_body["id"]
+        assert url_draft["extraction_method"].startswith("ai:structured:")
+        assert url_draft["object_type"] == "question"
+
+        invalid_topic = client.post(
+            "/admin/import/question",
+            json={
+                "title": "Bad topic",
+                "body": "Question body",
+                "topic_slug": "not-a-real-topic",
+                "object_type": "question",
+            },
+        )
+        assert invalid_topic.status_code == 400
+    finally:
+        app.dependency_overrides.pop(get_ai_provider, None)

@@ -26,7 +26,7 @@ export function DailyPlan({ plan }: DailyPlanProps) {
 
       {plan.items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-[#dfe6e1] bg-[#fbfcfa] px-4 py-6 text-sm text-[#66736e]">
-          No study items scheduled yet. Attempt questions or review flashcards to build a plan.
+          No study items scheduled yet. Attempt practice questions to build a plan.
         </p>
       ) : (
         <ol className="grid gap-3">
