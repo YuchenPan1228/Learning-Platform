@@ -59,8 +59,6 @@ def _mock_import_session(
     )
     session.scalar.return_value = topic
 
-    flush_count = {"value": 0}
-
     def refresh(row: object) -> None:
         if isinstance(row, Resource):
             _attach_persisted_fields(row, resource_id)
@@ -68,15 +66,24 @@ def _mock_import_session(
             _attach_extracted_fields(row, extracted_id)
 
     def flush() -> None:
-        flush_count["value"] += 1
-        if flush_count["value"] == 1:
+        for call in session.add.call_args_list:
+            row = call.args[0]
+            if isinstance(row, Resource) and getattr(row, "id", None) is None:
+                _attach_persisted_fields(row, resource_id)
+            elif isinstance(row, ExtractedObject) and getattr(row, "id", None) is None:
+                _attach_extracted_fields(row, extracted_id)
+
+    def get(model: object, object_id: object) -> Resource | None:
+        if model is Resource:
             for call in session.add.call_args_list:
                 row = call.args[0]
-                if isinstance(row, Resource):
-                    _attach_persisted_fields(row, resource_id)
+                if isinstance(row, Resource) and row.id == object_id:
+                    return row
+        return None
 
     session.refresh.side_effect = refresh
     session.flush.side_effect = flush
+    session.get.side_effect = get
 
 
 def test_import_url_resource_creates_question_draft_without_crawling() -> None:
@@ -95,7 +102,7 @@ def test_import_url_resource_creates_question_draft_without_crawling() -> None:
     )
 
     assert session.add.call_count == 2
-    session.flush.assert_called_once()
+    assert session.flush.call_count >= 1
     session.commit.assert_called_once()
     saved = session.add.call_args_list[0].args[0]
     assert isinstance(saved, Resource)
@@ -111,6 +118,7 @@ def test_import_url_resource_creates_question_draft_without_crawling() -> None:
     assert extracted.resource_id == 1
     assert extracted.payload_json["topic_slug"] == _TOPIC_SLUG
     assert extracted.extraction_method == "manual:import"
+    assert extracted.payload_json["provenance"]["resource_id"] == 1
     assert result.id == 1
     assert result.extracted_object_id == 10
     assert result.source_type is ResourceSourceType.URL
@@ -258,6 +266,7 @@ def test_create_extracted_draft_from_resource_builds_question_payload() -> None:
     )
     resource.id = 5
     session = MagicMock()
+    session.get.return_value = resource
 
     extracted = create_extracted_draft_from_resource(
         session,

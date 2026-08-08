@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +10,20 @@ import {
 import {
   approveReviewItem,
   editReviewItem,
+  fetchReviewItem,
   fetchReviewQueue,
   publishReviewItem,
   rejectReviewItem,
 } from "@/lib/api/admin-review";
 import {
+  formatMatchType,
+  formatScore,
   getCandidateQuestions,
   getExtractedText,
   getFormulas,
+  getProvenanceRows,
+  getQualityComponentRows,
+  getQualityScore,
   getReviewItemTitle,
   getSourceLabel,
   getSummary,
@@ -102,11 +108,25 @@ function DetailSection({
   );
 }
 
+function MetaRows({ rows }: { rows: { label: string; value: string }[] }) {
+  return (
+    <dl className="mt-2 grid gap-1.5 text-sm">
+      {rows.map((row) => (
+        <div key={`${row.label}-${row.value}`} className="grid gap-0.5 sm:grid-cols-[160px_1fr]">
+          <dt className="text-[#66736e]">{row.label}</dt>
+          <dd className="break-all text-[#40524b]">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function ReviewDetailPanel({
   item,
   queueStatus,
   topics,
   isBusy,
+  isLoadingDetail,
   publishMessage,
   onApprove,
   onReject,
@@ -117,6 +137,7 @@ function ReviewDetailPanel({
   queueStatus: ReviewQueueStatus;
   topics: TopicWithSubtopics[];
   isBusy: boolean;
+  isLoadingDetail: boolean;
   publishMessage: string | null;
   onApprove: () => void;
   onReject: () => void;
@@ -128,6 +149,12 @@ function ReviewDetailPanel({
   const formulas = getFormulas(item);
   const candidateQuestions = getCandidateQuestions(item);
   const canEditDraft = queueStatus === "draft";
+  const qualityScore = getQualityScore(item);
+  const qualityComponents = getQualityComponentRows(item.quality);
+  const provenanceRows = getProvenanceRows(item);
+  const policy = item.policy;
+  const duplicates = item.duplicates;
+  const matchCount = duplicates?.matches.length ?? 0;
 
   return (
     <div className={panelClassName}>
@@ -164,7 +191,111 @@ function ReviewDetailPanel({
         </p>
       ) : null}
 
+      {isLoadingDetail ? (
+        <p className={`mt-4 ${mutedTextClassName}`}>Loading review signals…</p>
+      ) : null}
+
       <div className="mt-5 grid gap-4">
+        <DetailSection
+          title="Source quality"
+          emptyMessage="No quality scores for this draft."
+          isEmpty={qualityScore === null && qualityComponents.length === 0}
+        >
+          <div className="mt-2 grid gap-2 text-sm text-[#40524b]">
+            <p>
+              Overall score:{" "}
+              <span className="font-medium text-[#15201c]">{formatScore(qualityScore)}</span>
+            </p>
+            {item.quality ? (
+              <p className={mutedTextClassName}>
+                Draft {formatScore(item.quality.draft_quality_score)} · Resource{" "}
+                {formatScore(item.quality.resource_quality_score)}
+              </p>
+            ) : null}
+            {qualityComponents.length > 0 ? <MetaRows rows={qualityComponents} /> : null}
+          </div>
+        </DetailSection>
+
+        <DetailSection
+          title="Source policy"
+          emptyMessage="No linked source for policy evaluation."
+          isEmpty={!policy}
+        >
+          {policy ? (
+            <div className="mt-2 grid gap-1 text-sm text-[#40524b]">
+              <p>
+                Decision: <span className="font-medium text-[#15201c]">{policy.decision}</span>
+              </p>
+              <MetaRows
+                rows={[
+                  { label: "Allowlist", value: policy.allowlist_status },
+                  { label: "Robots", value: policy.robots_status },
+                  { label: "License status", value: policy.license_status },
+                  {
+                    label: "Attribution",
+                    value: policy.attribution_required
+                      ? policy.attribution_present
+                        ? "required and present"
+                        : "required and missing"
+                      : "not required",
+                  },
+                  ...(policy.host ? [{ label: "Host", value: policy.host }] : []),
+                  ...policy.reasons.map((reason, index) => ({
+                    label: index === 0 ? "Reasons" : " ",
+                    value: reason,
+                  })),
+                ]}
+              />
+            </div>
+          ) : null}
+        </DetailSection>
+
+        <DetailSection
+          title="Duplicate matches"
+          emptyMessage="No near or exact text matches found."
+          isEmpty={!duplicates || matchCount === 0}
+        >
+          {duplicates ? (
+            <div className="mt-2 grid gap-3 text-sm text-[#40524b]">
+              <p className={mutedTextClassName}>
+                Suggested canonical: {duplicates.suggested_canonical.kind} #
+                {duplicates.suggested_canonical.object_id} — {duplicates.suggested_canonical.title}{" "}
+                ({duplicates.suggested_canonical.reason})
+              </p>
+              {matchCount > 0 ? (
+                <ul className="grid gap-2">
+                  {duplicates.matches.map((match) => (
+                    <li
+                      key={`${match.source}-${match.object_id}-${match.match_type}`}
+                      className="rounded-lg border border-[#edf5f1] bg-[#f6f7f4] p-3"
+                    >
+                      <p className="font-medium text-[#15201c]">{match.title}</p>
+                      <p className="mt-1 text-xs text-[#66736e]">
+                        {match.source} #{match.object_id} · {formatMatchType(match.match_type)}
+                        {match.similarity_score !== null
+                          ? ` · ${formatScore(match.similarity_score)}`
+                          : ""}
+                        {match.status ? ` · ${match.status}` : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {item.duplicate_cluster_id !== null ? (
+                <p className={mutedTextClassName}>Linked cluster ID: {item.duplicate_cluster_id}</p>
+              ) : null}
+            </div>
+          ) : null}
+        </DetailSection>
+
+        <DetailSection
+          title="Provenance"
+          emptyMessage="No provenance fields recorded."
+          isEmpty={provenanceRows.length === 0}
+        >
+          {provenanceRows.length > 0 ? <MetaRows rows={provenanceRows} /> : null}
+        </DetailSection>
+
         <DetailSection
           title="Source"
           emptyMessage="No linked source resource."
@@ -285,14 +416,53 @@ export function AdminReviewView({
   const [selectedId, setSelectedId] = useState<number | null>(
     filterQueueItems(initialItems, initialStatus)[0]?.id ?? null,
   );
+  const [selectedDetail, setSelectedDetail] = useState<ReviewQueueItem | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
-  const selectedItem = useMemo(
+  const listItem = useMemo(
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId],
   );
+
+  // Prefer detail GET (policy/quality/duplicates); fall back to list row while loading.
+  const selectedItem = selectedDetail?.id === selectedId ? selectedDetail : listItem;
+
+  useEffect(() => {
+    if (selectedId === null) {
+      return;
+    }
+
+    let cancelled = false;
+    const reviewId = selectedId;
+
+    async function loadDetail() {
+      setIsLoadingDetail(true);
+      try {
+        const detail = await fetchReviewItem(reviewId);
+        if (!cancelled) {
+          setSelectedDetail(detail);
+        }
+      } catch (detailError: unknown) {
+        if (!cancelled) {
+          setError(
+            detailError instanceof Error ? detailError.message : "Review item request failed.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingDetail(false);
+        }
+      }
+    }
+
+    void loadDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   const activeTab = QUEUE_TABS.find((tab) => tab.id === queueStatus) ?? QUEUE_TABS[0];
 
@@ -305,10 +475,21 @@ export function AdminReviewView({
     setItems(visibleItems);
     if (nextSelectedId !== undefined) {
       setSelectedId(nextSelectedId);
+      if (nextSelectedId !== null) {
+        const detail = await fetchReviewItem(nextSelectedId);
+        setSelectedDetail(detail);
+      } else {
+        setSelectedDetail(null);
+      }
       return;
     }
     if (selectedId !== null && !visibleItems.some((item) => item.id === selectedId)) {
       setSelectedId(visibleItems[0]?.id ?? null);
+      return;
+    }
+    if (selectedId !== null) {
+      const detail = await fetchReviewItem(selectedId);
+      setSelectedDetail(detail);
     }
   }
 
@@ -322,10 +503,12 @@ export function AdminReviewView({
       const visibleItems = filterQueueItems(response.items, nextStatus);
       setItems(visibleItems);
       setSelectedId(visibleItems[0]?.id ?? null);
+      setSelectedDetail(null);
     } catch (switchError) {
       setError(switchError instanceof Error ? switchError.message : "Review queue request failed.");
       setItems([]);
       setSelectedId(null);
+      setSelectedDetail(null);
     } finally {
       setIsBusy(false);
     }
@@ -427,6 +610,7 @@ export function AdminReviewView({
             queueStatus={queueStatus}
             topics={topics}
             isBusy={isBusy}
+            isLoadingDetail={isLoadingDetail}
             publishMessage={publishMessage}
             onApprove={() =>
               runAction(async () => {

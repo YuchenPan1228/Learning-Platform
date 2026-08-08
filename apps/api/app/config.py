@@ -52,6 +52,22 @@ class Settings(BaseSettings):
         alias="INGESTION_ROBOTS_TIMEOUT_SECONDS",
         gt=0,
     )
+    ingestion_fetch_timeout_seconds: float = Field(
+        default=30.0,
+        alias="INGESTION_FETCH_TIMEOUT_SECONDS",
+        gt=0,
+    )
+    # Static fetch under this length may trigger optional Playwright fallback.
+    ingestion_min_extracted_chars: int = Field(
+        default=200,
+        alias="INGESTION_MIN_EXTRACTED_CHARS",
+        ge=0,
+    )
+    # Playwright is optional (pip install -e ".[playwright]" + playwright install chromium).
+    ingestion_playwright_enabled: bool = Field(
+        default=False,
+        alias="INGESTION_PLAYWRIGHT_ENABLED",
+    )
     ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_chat_model: str = Field(default="", alias="OLLAMA_CHAT_MODEL")

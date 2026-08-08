@@ -52,6 +52,21 @@ export async function fetchReviewQueue(status: ReviewQueueStatus = "draft") {
   return response.json() as Promise<ReviewQueueResponse>;
 }
 
+/** Detail GET — includes policy, quality snapshot, and duplicate matches (QP-046). */
+export async function fetchReviewItem(extractedObjectId: number): Promise<ReviewQueueItem> {
+  const response = await fetch(`${getApiBaseUrl()}/admin/review/${extractedObjectId}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await parseError(response, `Review item request failed with status ${response.status}`),
+    );
+  }
+
+  return response.json() as Promise<ReviewQueueItem>;
+}
+
 export async function approveReviewItem(extractedObjectId: number): Promise<ReviewQueueItem> {
   const response = await fetch(`${getApiBaseUrl()}/admin/review/${extractedObjectId}/approve`, {
     method: "POST",

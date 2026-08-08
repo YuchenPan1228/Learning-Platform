@@ -1,19 +1,25 @@
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from app.models.enums import (
     ContentStatus,
     ExtractedObjectType,
     ResourceSourceType,
+    SourcePolicyDecision,
 )
 from app.models.extracted_object import ExtractedObject
 from app.models.resource import Resource
 from app.schemas.admin_review import ExtractedObjectEdit
+from app.schemas.extracted_duplicate import (
+    CanonicalSuggestionRead,
+    ExtractedDedupeResultRead,
+)
 from app.services.admin_review import (
     ReviewQueueError,
     approve_review_item,
     edit_review_item,
+    get_review_item,
     list_review_items,
 )
 from fastapi.testclient import TestClient
@@ -30,6 +36,9 @@ def _draft_row(
         url="https://example.com/bayes",
         title="Bayes source",
         license="CC-BY-4.0",
+        attribution="Example author",
+        quality_score=0.65,
+        domain_reputation_score=0.8,
         status=ContentStatus.DRAFT,
     )
     resource.id = 10
@@ -51,19 +60,40 @@ def _draft_row(
     return row
 
 
+def _empty_dedupe(object_id: int = 1) -> ExtractedDedupeResultRead:
+    return ExtractedDedupeResultRead(
+        extracted_object_id=object_id,
+        object_type=ExtractedObjectType.QUESTION,
+        raw_text_hash="raw",
+        normalized_text_hash="norm",
+        normalized_text="what is p a b",
+        matches=[],
+        suggested_canonical=CanonicalSuggestionRead(
+            kind="self",
+            object_id=object_id,
+            title="Bayes draft",
+            reason="no_duplicates",
+        ),
+    )
+
+
 def test_edit_review_item_updates_payload_and_preserves_provenance() -> None:
     session = MagicMock()
     row = _draft_row()
     session.scalar.side_effect = [row, row]
 
-    result = edit_review_item(
-        session,
-        1,
-        ExtractedObjectEdit(
-            payload_json={"title": "Edited Bayes", "body": "Define P(A|B)."},
-            quality_score=0.9,
-        ),
-    )
+    with patch(
+        "app.services.admin_review.get_extracted_object_duplicates",
+        return_value=_empty_dedupe(),
+    ):
+        result = edit_review_item(
+            session,
+            1,
+            ExtractedObjectEdit(
+                payload_json={"title": "Edited Bayes", "body": "Define P(A|B)."},
+                quality_score=0.9,
+            ),
+        )
 
     assert row.payload_json["title"] == "Edited Bayes"
     assert row.quality_score == 0.9
@@ -72,6 +102,8 @@ def test_edit_review_item_updates_payload_and_preserves_provenance() -> None:
     assert row.model_version == "v1"
     assert result.resource is not None
     assert result.resource.license == "CC-BY-4.0"
+    assert result.quality is not None
+    assert result.quality.overall_score == 0.9
     session.commit.assert_called_once()
     assert session.scalar.call_count == 2
 
@@ -95,7 +127,36 @@ def test_list_review_items_filters_by_status() -> None:
     assert len(items) == 1
     assert items[0].id == 1
     assert items[0].status is ContentStatus.DRAFT
+    assert items[0].quality is not None
+    assert items[0].quality.overall_score == 0.7
+    assert items[0].policy is None
+    assert items[0].duplicates is None
     session.scalars.assert_called_once()
+
+
+def test_get_review_item_includes_quality_policy_and_duplicates() -> None:
+    session = MagicMock()
+    row = _draft_row()
+    session.scalar.return_value = row
+    dedupe = _empty_dedupe()
+
+    with patch(
+        "app.services.admin_review.get_extracted_object_duplicates",
+        return_value=dedupe,
+    ) as mock_dedupe:
+        result = get_review_item(session, 1)
+
+    mock_dedupe.assert_called_once_with(session, 1)
+    assert result.quality is not None
+    assert result.quality.overall_score == 0.7
+    assert result.quality.domain_reputation_score == 0.8
+    assert result.policy is not None
+    assert result.policy.decision is SourcePolicyDecision.ALLOW
+    assert result.policy.license_status.value == "permissive"
+    assert result.duplicates is not None
+    assert result.duplicates.extracted_object_id == 1
+    assert result.resource is not None
+    assert result.resource.domain_reputation_score == 0.8
 
 
 @pytest.mark.integration
