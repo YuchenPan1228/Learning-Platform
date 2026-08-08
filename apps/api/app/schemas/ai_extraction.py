@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, AliasChoices
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from app.models.enums import Difficulty, ExtractedObjectType
 

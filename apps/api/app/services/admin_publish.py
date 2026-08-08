@@ -77,7 +77,8 @@ def publish_extracted_object(
         duplicate_warnings = []
     elif extracted.object_type is ExtractedObjectType.FLASHCARD:
         raise PublishError(
-            "flashcard publishing is disabled; reject leftover flashcard drafts or re-import as questions",
+            "flashcard publishing is disabled; reject leftover flashcard drafts "
+            "or re-import as questions",
         )
     else:
         raise PublishError(f"unsupported extracted object type: {extracted.object_type.value}")

@@ -478,9 +478,10 @@ def test_admin_import_endpoints_create_resources(
     import json
 
     from app.ai.types import AIChatResult, AITokenUsage
+    from app.dedup.text import text_hash
     from app.main import app
-    from app.services.source_extraction import ExtractedSourceText
     from app.models.enums import ExtractionMethod
+    from app.services.source_extraction import ExtractedSourceText
 
     provider = MagicMock()
     provider.provider_name = "ollama"
@@ -494,10 +495,26 @@ def test_admin_import_endpoints_create_resources(
         latency_ms=5,
     )
 
+    def _source(
+        text: str,
+        *,
+        method: ExtractionMethod,
+        source_url: str | None = None,
+        title: str | None = None,
+    ) -> ExtractedSourceText:
+        return ExtractedSourceText(
+            text=text,
+            method=method,
+            title=title,
+            source_url=source_url,
+            char_count=len(text),
+            raw_text_hash=text_hash(text),
+        )
+
     def fake_extract(resource: Resource, **_kwargs: object) -> ExtractedSourceText:
         if resource.source_type is ResourceSourceType.URL:
-            return ExtractedSourceText(
-                text=(
+            return _source(
+                (
                     "Conditional probability notes. Independence means P(A and B) = P(A)P(B). "
                     "Bayes theorem updates priors."
                 ),
@@ -506,14 +523,14 @@ def test_admin_import_endpoints_create_resources(
                 title=resource.title,
             )
         if resource.source_type is ResourceSourceType.PDF:
-            return ExtractedSourceText(
-                text="PDF text about fair dice probability for quant interviews.",
+            return _source(
+                "PDF text about fair dice probability for quant interviews.",
                 method=ExtractionMethod.PDF_PYMUPDF,
                 source_url=resource.url,
                 title=resource.title,
             )
-        return ExtractedSourceText(
-            text=resource.summary or "Empty notes",
+        return _source(
+            resource.summary or "Empty notes",
             method=ExtractionMethod.PASTED_TEXT,
             title=resource.title,
         )

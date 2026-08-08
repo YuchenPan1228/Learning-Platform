@@ -209,9 +209,7 @@ def test_source_chunks_splits_numbered_problems() -> None:
 
 
 def test_split_stem_and_solution_separates_marker() -> None:
-    stem, solution = _split_stem_and_solution(
-        "What is E[X]? Solution. By linearity, E[X]=np."
-    )
+    stem, solution = _split_stem_and_solution("What is E[X]? Solution. By linearity, E[X]=np.")
     assert stem == "What is E[X]?"
     assert solution == "By linearity, E[X]=np."
 

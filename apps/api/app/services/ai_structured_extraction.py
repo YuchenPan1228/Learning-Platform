@@ -144,7 +144,9 @@ def extract_structured_drafts(
     )
     extraction_method = _format_extraction_method(data.source_method)
     # Full-source excerpt for review UI; not what was sent to every model call.
-    source_for_payload = cleaned if len(cleaned) <= 50_000 else cleaned[:50_000] + "\n...[truncated]"
+    source_for_payload = (
+        cleaned if len(cleaned) <= 50_000 else cleaned[:50_000] + "\n...[truncated]"
+    )
 
     drafts = _persist_drafts(
         session,
@@ -297,9 +299,7 @@ def _persist_drafts(
 ) -> list[ExtractedObject]:
     # Prefer user-chosen import topic hints; fall back to AI suggestions (ADR-013).
     topic_slug = _blank_to_none(data.topic_slug_hint) or _blank_to_none(content.topic_slug)
-    subtopic_slug = _blank_to_none(data.subtopic_slug_hint) or _blank_to_none(
-        content.subtopic_slug
-    )
+    subtopic_slug = _blank_to_none(data.subtopic_slug_hint) or _blank_to_none(content.subtopic_slug)
     source_summary = _blank_to_none(content.summary)
     source_title = _blank_to_none(content.source_title) or _blank_to_none(data.source_title)
     provenance = ProvenanceData(
@@ -414,9 +414,12 @@ def _system_prompt() -> str:
         "do NOT put solutions, derivations, or 'Solution.' sections in body.\n"
         "3. When the source has 'Solution.' / answer text, put it in canonical_solution "
         "(and a brief short_answer when a final numeric/closed form is clear).\n"
-        "4. Preserve mathematical notation exactly as given, including $...$ / $$...$$ LaTeX.\n"
-        "5. Do not invent problems that are not in the source. Do not invent proprietary firm secrets.\n"
-        "6. If the source lists many numbered problems (Problem 1, Problem 2, …), extract each one.\n"
+        "4. Preserve mathematical notation exactly as given, including "
+        "$...$ / $$...$$ LaTeX.\n"
+        "5. Do not invent problems absent from the source. "
+        "Do not invent proprietary firm secrets.\n"
+        "6. If the source lists many numbered problems "
+        "(Problem 1, Problem 2, …), extract each one.\n"
         "7. difficulty is easy|medium|hard|expert when you can judge; confidence_score is 0-1.\n"
         "8. Suggest topic_slug / subtopic_slug as lowercase kebab-case "
         "(examples: probability, conditional-probability).\n"
@@ -656,11 +659,7 @@ def _input_object_version(
     chunk_index: int,
     chunk_count: int,
 ) -> str:
-    base = (
-        f"resource:{data.resource_id}"
-        if data.resource_id is not None
-        else "source_text"
-    )
+    base = f"resource:{data.resource_id}" if data.resource_id is not None else "source_text"
     return f"{base}:chunk:{chunk_index}/{chunk_count}:chars:{len(source_text)}"
 
 

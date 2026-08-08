@@ -26,9 +26,7 @@ export function createDraftFormState(item: ReviewQueueItem): DraftFormState {
     subtopicSlug: readString(payload.subtopic_slug),
     title: readString(payload.title) || readString(payload.front),
     body:
-      readString(payload.body) ||
-      readString(payload.extracted_text) ||
-      readString(payload.back),
+      readString(payload.body) || readString(payload.extracted_text) || readString(payload.back),
     shortAnswer: readString(payload.short_answer) || readString(payload.answer),
     difficulty: readString(payload.difficulty),
   };

@@ -210,10 +210,7 @@ def _ollama_http_error_message(exc: httpx.HTTPStatusError, model: str) -> str:
         text = (exc.response.text or "").strip()
         if text:
             detail = f" {text[:300]}"
-    return (
-        f"Ollama returned HTTP {exc.response.status_code} using model '{model}'."
-        f"{detail}"
-    )
+    return f"Ollama returned HTTP {exc.response.status_code} using model '{model}'.{detail}"
 
 
 def _coerce_token_count(value: object) -> int | None:

@@ -242,13 +242,15 @@ def test_ollama_provider_chat_falls_back_to_json_mode_on_schema_400() -> None:
     assert result.content == '{"answer":"ok"}'
     assert calls == [schema, "json"]
 
+
+def test_ollama_provider_chat_prefers_schema_over_json_mode_flag() -> None:
     schema = {
         "type": "object",
         "properties": {"answer": {"type": "string"}},
         "required": ["answer"],
     }
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def schema_handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
         assert body["format"] == schema
         return httpx.Response(
@@ -259,7 +261,7 @@ def test_ollama_provider_chat_falls_back_to_json_mode_on_schema_400() -> None:
             },
         )
 
-    transport = httpx.MockTransport(handler)
+    transport = httpx.MockTransport(schema_handler)
     client = httpx.Client(transport=transport, base_url="http://test")
     provider = OllamaProvider(
         base_url="http://test",

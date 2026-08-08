@@ -79,7 +79,9 @@ export function DraftContentEditor({
             <input
               value={form.title}
               disabled={!canEdit || isBusy || isSaving}
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, title: event.target.value }))
+              }
               className={fieldClassName}
             />
           </label>

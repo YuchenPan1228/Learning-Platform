@@ -7,7 +7,8 @@ from pathlib import Path
 
 import requests
 import trafilatura
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 
 from app.config import Settings, get_settings
 from app.dedup.text import text_hash
@@ -263,7 +264,7 @@ def fetch_html(
     user_agent: str,
 ) -> HtmlFetchResult:
     try:
-        # trust_env=False avoids broken HTTP(S)_PROXY tunnels from IDE sandboxes / local proxy tools.
+        # trust_env=False avoids broken HTTP(S)_PROXY tunnels from IDE/sandbox proxies.
         with requests.Session() as session:
             session.trust_env = False
             response = session.get(
@@ -354,53 +355,54 @@ def normalize_math_in_html(html: str) -> str:
 
     # MathJax v2 keeps the TeX source in script tags (ignored by most text extractors).
     for script in soup.find_all("script"):
-        script_type = (script.get("type") or "").strip()
+        if not isinstance(script, Tag):
+            continue
+        script_type = _tag_attr(script, "type")
         if not _MATH_TEX_SCRIPT_TYPE_RE.match(script_type):
             continue
-        latex = (script.string or script.get_text() or "").strip()
-        if not latex:
+        raw = script.string if isinstance(script.string, str) else script.get_text()
+        tex = (raw or "").strip()
+        if not tex:
             script.decompose()
             continue
         display = "mode=display" in script_type.replace(" ", "").lower()
-        script.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+        script.replace_with(NavigableString(_format_latex_token(tex, display=display)))
 
     # MathJax v3 may expose TeX on the container.
     for mjx in soup.find_all("mjx-container"):
-        latex = (mjx.get("data-latex") or mjx.get("aria-label") or "").strip()
-        if not latex:
-            ann = mjx.find("annotation", attrs={"encoding": "application/x-tex"})
-            if ann is not None:
-                latex = ann.get_text(strip=True)
-        if not latex:
+        if not isinstance(mjx, Tag):
             continue
-        display = (mjx.get("display") or "").lower() == "true"
-        mjx.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+        tex = _tag_attr(mjx, "data-latex") or _tag_attr(mjx, "aria-label")
+        if not tex:
+            ann = mjx.find("annotation", attrs={"encoding": "application/x-tex"})
+            if isinstance(ann, Tag):
+                tex = str(ann.get_text(strip=True))
+        if not tex:
+            continue
+        display = _tag_attr(mjx, "display").lower() == "true"
+        mjx.replace_with(NavigableString(_format_latex_token(tex, display=display)))
 
     # Prefer display wrappers first so we do not rewrite nested .katex twice.
     for selector in _KATEX_ROOT_SELECTORS:
         for node in soup.select(selector):
-            # Already replaced parent may leave orphaned empty tags.
-            if not getattr(node, "parent", None):
+            if not isinstance(node, Tag) or node.parent is None:
                 continue
-            latex = _extract_tex_from_math_node(node)
-            if not latex:
+            katex_tex = _extract_tex_from_math_node(node)
+            if katex_tex is None:
                 continue
             display = "display" in selector or _looks_like_display_math(node)
-            node.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+            node.replace_with(NavigableString(_format_latex_token(katex_tex, display=display)))
 
     # Bare MathML (not already rewritten as part of KaTeX).
     for math in soup.find_all("math"):
-        if not getattr(math, "parent", None):
+        if not isinstance(math, Tag) or math.parent is None:
             continue
-        latex = _extract_tex_from_math_node(math)
-        if not latex:
+        mathml_tex = _extract_tex_from_math_node(math)
+        if mathml_tex is None:
             continue
-        display = (math.get("display") or "").lower() == "block"
-        math.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+        display = _tag_attr(math, "display").lower() == "block"
+        math.replace_with(NavigableString(_format_latex_token(mathml_tex, display=display)))
 
-    # Prefer a full HTML document string for trafilatura when available.
-    if soup.body is not None:
-        return str(soup)
     return str(soup)
 
 
@@ -464,40 +466,54 @@ def _extract_with_beautifulsoup(html: str) -> str:
     return clean_extracted_text(text)
 
 
-def _extract_tex_from_math_node(node) -> str | None:
+def _extract_tex_from_math_node(node: Tag) -> str | None:
     """Prefer TeX annotation; fall back to simplified MathML/plain text."""
     annotation = node.find("annotation", attrs={"encoding": "application/x-tex"})
-    if annotation is not None:
-        latex = annotation.get_text(strip=True)
+    if isinstance(annotation, Tag):
+        latex = str(annotation.get_text(strip=True))
         if latex:
             return latex
 
     for attr in ("data-latex", "data-expr", "aria-label"):
-        value = (node.get(attr) or "").strip()
+        value = _tag_attr(node, attr)
         if value:
             return value
 
     # MathML-only nodes: reconstruct a compact readable token from text leaves.
-    text = " ".join(node.stripped_strings)
+    text = " ".join(str(part) for part in node.stripped_strings)
     text = _WHITESPACE_RE.sub(" ", text).strip()
     return text or None
 
 
-def _looks_like_display_math(node) -> bool:
-    classes = " ".join(node.get("class") or [])
+def _looks_like_display_math(node: Tag) -> bool:
+    classes = _tag_attr(node, "class")
     if "display" in classes.lower():
         return True
-    parent = getattr(node, "parent", None)
-    if parent is not None:
-        parent_classes = " ".join(parent.get("class") or [])
+    parent = node.parent
+    if isinstance(parent, Tag):
+        parent_classes = _tag_attr(parent, "class")
         if "display" in parent_classes.lower():
             return True
         if parent.name in {"div", "p"} and parent.find("span", class_="katex") is node:
             # Single-equation block paragraphs are usually display math.
-            siblings = [c for c in parent.children if getattr(c, "name", None) or str(c).strip()]
+            siblings = [
+                child
+                for child in parent.children
+                if getattr(child, "name", None) or str(child).strip()
+            ]
             if len(siblings) <= 2:
                 return True
     return False
+
+
+def _tag_attr(node: Tag, name: str) -> str:
+    """Return a tag attribute as a plain string (BeautifulSoup may return lists)."""
+    value = node.get(name)
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return " ".join(str(part) for part in value).strip()
+    return str(value).strip()
 
 
 def _format_latex_token(latex: str, *, display: bool) -> str:

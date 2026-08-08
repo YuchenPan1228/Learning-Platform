@@ -25,7 +25,8 @@ const MODES: { id: ImportMode; label: string; description: string }[] = [
   {
     id: "url",
     label: "URL",
-    description: "Fetch the page, run AI extraction, and create interview question drafts for review.",
+    description:
+      "Fetch the page, run AI extraction, and create interview question drafts for review.",
   },
   {
     id: "note",
@@ -354,9 +355,7 @@ export function AdminImportForm({ topics }: AdminImportFormProps) {
           {result.extraction_method ? (
             <p className="mt-1">Extraction: {result.extraction_method}</p>
           ) : null}
-          {result.policy_decision ? (
-            <p className="mt-1">Policy: {result.policy_decision}</p>
-          ) : null}
+          {result.policy_decision ? <p className="mt-1">Policy: {result.policy_decision}</p> : null}
           {result.title ? <p className="mt-1">Title: {result.title}</p> : null}
           {result.url ? <p className="mt-1 break-all">Path/URL: {result.url}</p> : null}
           {result.extracted_object_id || (result.extracted_object_ids?.length ?? 0) > 0 ? (
