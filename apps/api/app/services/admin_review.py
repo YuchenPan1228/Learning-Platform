@@ -1,14 +1,21 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from app.dedup.extracted import ExtractedDedupeError
 from app.models.enums import ContentStatus, ExtractedObjectType
 from app.models.extracted_object import ExtractedObject
+from app.models.resource import Resource
 from app.schemas.admin_review import (
     ExtractedObjectEdit,
     ExtractedObjectReviewRead,
     ResourceProvenanceRead,
+    SourcePolicyStatusRead,
+    SourceQualityStatusRead,
 )
+from app.schemas.extracted_duplicate import ExtractedDedupeResultRead
+from app.services.extracted_object_dedup import get_extracted_object_duplicates
 from app.services.import_topic_validation import ImportTopicError, validate_import_topics
+from app.services.source_policy import SourcePolicyInput, check_source_policy
 
 _REVIEW_OBJECT_TYPES = frozenset(
     {
@@ -38,12 +45,13 @@ def list_review_items(
         statement = statement.where(ExtractedObject.object_type == object_type)
 
     rows = session.scalars(statement).unique().all()
-    return [_to_review_read(row) for row in rows]
+    # List stays lean: quality snapshot only; skip policy/dedupe scans.
+    return [_to_review_read(row, include_signals=False) for row in rows]
 
 
 def get_review_item(session: Session, extracted_object_id: int) -> ExtractedObjectReviewRead:
     row = _get_extracted_object(session, extracted_object_id)
-    return _to_review_read(row)
+    return _to_review_read(row, include_signals=True, session=session)
 
 
 def edit_review_item(
@@ -120,10 +128,23 @@ def _get_extracted_object(session: Session, extracted_object_id: int) -> Extract
     return row
 
 
-def _to_review_read(row: ExtractedObject) -> ExtractedObjectReviewRead:
+def _to_review_read(
+    row: ExtractedObject,
+    *,
+    include_signals: bool,
+    session: Session | None = None,
+) -> ExtractedObjectReviewRead:
     resource = None
     if row.resource is not None:
         resource = ResourceProvenanceRead.model_validate(row.resource)
+
+    policy: SourcePolicyStatusRead | None = None
+    quality = _quality_status(row)
+    duplicates: ExtractedDedupeResultRead | None = None
+    if include_signals and session is not None:
+        policy = _policy_status(row.resource)
+        duplicates = _duplicates_status(session, row.id)
+
     return ExtractedObjectReviewRead(
         id=row.id,
         resource_id=row.resource_id,
@@ -139,7 +160,69 @@ def _to_review_read(row: ExtractedObject) -> ExtractedObjectReviewRead:
         created_at=row.created_at,
         updated_at=row.updated_at,
         resource=resource,
+        policy=policy,
+        quality=quality,
+        duplicates=duplicates,
     )
+
+
+def _quality_status(row: ExtractedObject) -> SourceQualityStatusRead:
+    resource = row.resource
+    draft_score = row.quality_score
+    resource_score = resource.quality_score if resource is not None else None
+    overall = draft_score if draft_score is not None else resource_score
+    return SourceQualityStatusRead(
+        draft_quality_score=draft_score,
+        resource_quality_score=resource_score,
+        overall_score=overall,
+        domain_reputation_score=(
+            resource.domain_reputation_score if resource is not None else None
+        ),
+        content_length_score=resource.content_length_score if resource is not None else None,
+        formula_density_score=resource.formula_density_score if resource is not None else None,
+        code_example_score=resource.code_example_score if resource is not None else None,
+        educational_structure_score=(
+            resource.educational_structure_score if resource is not None else None
+        ),
+        human_review_score=resource.human_review_score if resource is not None else None,
+    )
+
+
+def _policy_status(resource: Resource | None) -> SourcePolicyStatusRead | None:
+    if resource is None:
+        return None
+    # Review UI must not re-fetch remote robots.txt (offline-safe snapshot).
+    # Empty body => RobotFileParser allows by default; license/allowlist still apply.
+    result = check_source_policy(
+        SourcePolicyInput(
+            url=resource.url,
+            source_type=resource.source_type,
+            license=resource.license,
+            attribution=resource.attribution,
+        ),
+        robots_body_fetcher=lambda _url: "",
+    )
+    return SourcePolicyStatusRead(
+        decision=result.decision,
+        allowlist_status=result.allowlist_status,
+        robots_status=result.robots_status,
+        license_status=result.license_status,
+        attribution_required=result.attribution_required,
+        attribution_present=result.attribution_present,
+        reasons=list(result.reasons),
+        host=result.host,
+    )
+
+
+def _duplicates_status(
+    session: Session,
+    extracted_object_id: int,
+) -> ExtractedDedupeResultRead | None:
+    # Optional enrichment for review UI — failures must not block detail load.
+    try:
+        return get_extracted_object_duplicates(session, extracted_object_id)
+    except (LookupError, ExtractedDedupeError, TypeError, AttributeError, ValueError):
+        return None
 
 
 def _validate_payload_topics(session: Session, payload_json: dict[str, object]) -> None:
