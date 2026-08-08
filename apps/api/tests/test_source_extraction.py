@@ -13,6 +13,7 @@ from app.services.source_extraction import (
     extract_from_pdf_bytes,
     extract_from_resource,
     extract_from_url,
+    normalize_math_in_html,
     resolve_resource_file_path,
 )
 
@@ -66,6 +67,48 @@ _JS_SHELL_HTML = """
 </body></html>
 """
 
+_KATEX_HTML = """
+<!doctype html>
+<html>
+  <head><title>Coin Toss Problems</title></head>
+  <body>
+    <article>
+      <h1>Probability</h1>
+      <p>
+        Problem 1. What is the expected number of tosses to get three consecutive heads?
+        Solution. Let
+        <span class="katex">
+          <span class="katex-mathml">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <semantics>
+                <mrow><mi mathvariant="double-struck">E</mi><mo>[</mo><mn>3</mn><mo>]</mo></mrow>
+                <annotation encoding="application/x-tex">\\mathbb{E}[3]</annotation>
+              </semantics>
+            </math>
+          </span>
+          <span class="katex-html" aria-hidden="true">
+            <span class="base"><span class="mord mathbb">E</span><span class="mopen">[</span>
+            <span class="mord">3</span><span class="mclose">]</span></span>
+          </span>
+        </span>
+        denote the expected number. Probability of tails is
+        <span class="katex">
+          <span class="katex-mathml">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <semantics>
+                <mrow><mfrac><mn>1</mn><mn>2</mn></mfrac></mrow>
+                <annotation encoding="application/x-tex">\\frac{1}{2}</annotation>
+              </semantics>
+            </math>
+          </span>
+          <span class="katex-html" aria-hidden="true"><span>1</span><span>2</span></span>
+        </span>.
+      </p>
+    </article>
+  </body>
+</html>
+"""
+
 
 def test_clean_extracted_text_collapses_whitespace() -> None:
     raw = "  alpha  \n\n\n  beta\t\tgamma  \n"
@@ -87,6 +130,36 @@ def test_extract_from_pasted_text() -> None:
 def test_extract_from_pasted_text_rejects_blank() -> None:
     with pytest.raises(SourceExtractionError, match="empty"):
         extract_from_pasted_text("   \n  ")
+
+
+def test_normalize_math_in_html_prefers_tex_annotation() -> None:
+    normalized = normalize_math_in_html(_KATEX_HTML)
+    assert r"$\mathbb{E}[3]$" in normalized
+    assert r"$\frac{1}{2}$" in normalized
+    assert "katex-html" not in normalized
+    assert "mord mathbb" not in normalized
+
+
+def test_extract_from_url_keeps_katex_latex() -> None:
+    def fetcher(url: str) -> HtmlFetchResult:
+        return HtmlFetchResult(
+            url=url,
+            status_code=200,
+            content_type="text/html; charset=utf-8",
+            body=_KATEX_HTML,
+        )
+
+    result = extract_from_url(
+        "https://example.com/coins",
+        settings=_settings(ingestion_min_extracted_chars=20),
+        html_fetcher=fetcher,
+    )
+    assert r"\mathbb{E}[3]" in result.text or r"$\mathbb{E}[3]$" in result.text
+    assert r"\frac{1}{2}" in result.text or r"$\frac{1}{2}$" in result.text
+    assert "consecutive heads" in result.text
+    # Should not leave empty holes where math used to be.
+    assert "Let  denote" not in result.text
+    assert "Let denote" not in result.text
 
 
 def test_extract_from_url_uses_trafilatura_on_article_html() -> None:

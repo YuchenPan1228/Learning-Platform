@@ -35,7 +35,8 @@ class AIStructuredExtractionContent(BaseModel):
     topic_slug: str | None = Field(default=None, max_length=120)
     subtopic_slug: str | None = Field(default=None, max_length=120)
     source_title: str | None = Field(default=None, max_length=300)
-    questions: list[AIProposedQuestionDraft] = Field(default_factory=list, max_length=10)
+    # Chunked multi-problem pages can yield many drafts; per-call prompts still cap lower.
+    questions: list[AIProposedQuestionDraft] = Field(default_factory=list, max_length=40)
 
 
 class ExtractedDraftSummary(BaseModel):

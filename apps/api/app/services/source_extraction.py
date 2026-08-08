@@ -25,6 +25,15 @@ _SHELL_MARKERS = (
 
 _WHITESPACE_RE = re.compile(r"[ \t]+")
 _MULTI_BLANK_RE = re.compile(r"\n{3,}")
+_MATH_TEX_SCRIPT_TYPE_RE = re.compile(r"^math/tex", re.IGNORECASE)
+# KaTeX/MathJax HTML often nests MathML + visual glyphs + TeX annotation; plain-text
+# extractors either drop the math or emit garbled multi-layer strings.
+_KATEX_ROOT_SELECTORS = (
+    "span.katex-display",
+    "div.katex-display",
+    "span.katex",
+    "div.katex",
+)
 
 
 class SourceExtractionError(ValueError):
@@ -331,6 +340,70 @@ def clean_extracted_text(text: str) -> str:
     return _MULTI_BLANK_RE.sub("\n\n", collapsed).strip()
 
 
+def normalize_math_in_html(html: str) -> str:
+    """Replace rendered KaTeX/MathJax nodes with portable LaTeX ($...$ / $$...$$).
+
+    Educational sites often serve math as nested MathML + HTML + TeX annotation.
+    Strip-to-text then either drops the math entirely or concatenates all layers
+    (e.g. ``E[3]\\mathbb{E}[3]E[3]``). Convert to a single TeX form first.
+    """
+    if not (html or "").strip():
+        return html or ""
+
+    soup = BeautifulSoup(html, "lxml")
+
+    # MathJax v2 keeps the TeX source in script tags (ignored by most text extractors).
+    for script in soup.find_all("script"):
+        script_type = (script.get("type") or "").strip()
+        if not _MATH_TEX_SCRIPT_TYPE_RE.match(script_type):
+            continue
+        latex = (script.string or script.get_text() or "").strip()
+        if not latex:
+            script.decompose()
+            continue
+        display = "mode=display" in script_type.replace(" ", "").lower()
+        script.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+
+    # MathJax v3 may expose TeX on the container.
+    for mjx in soup.find_all("mjx-container"):
+        latex = (mjx.get("data-latex") or mjx.get("aria-label") or "").strip()
+        if not latex:
+            ann = mjx.find("annotation", attrs={"encoding": "application/x-tex"})
+            if ann is not None:
+                latex = ann.get_text(strip=True)
+        if not latex:
+            continue
+        display = (mjx.get("display") or "").lower() == "true"
+        mjx.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+
+    # Prefer display wrappers first so we do not rewrite nested .katex twice.
+    for selector in _KATEX_ROOT_SELECTORS:
+        for node in soup.select(selector):
+            # Already replaced parent may leave orphaned empty tags.
+            if not getattr(node, "parent", None):
+                continue
+            latex = _extract_tex_from_math_node(node)
+            if not latex:
+                continue
+            display = "display" in selector or _looks_like_display_math(node)
+            node.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+
+    # Bare MathML (not already rewritten as part of KaTeX).
+    for math in soup.find_all("math"):
+        if not getattr(math, "parent", None):
+            continue
+        latex = _extract_tex_from_math_node(math)
+        if not latex:
+            continue
+        display = (math.get("display") or "").lower() == "block"
+        math.replace_with(soup.new_string(_format_latex_token(latex, display=display)))
+
+    # Prefer a full HTML document string for trafilatura when available.
+    if soup.body is not None:
+        return str(soup)
+    return str(soup)
+
+
 def _extract_from_html(
     html: str,
     *,
@@ -341,7 +414,8 @@ def _extract_from_html(
         raise SourceExtractionError("HTML body is empty")
 
     title = _html_title(html)
-    trafilatura_text = _extract_with_trafilatura(html, source_url=source_url)
+    prepared_html = normalize_math_in_html(html)
+    trafilatura_text = _extract_with_trafilatura(prepared_html, source_url=source_url)
     if trafilatura_text:
         method = preferred_method or ExtractionMethod.URL_TRAFILATURA
         return _result(
@@ -351,7 +425,7 @@ def _extract_from_html(
             source_url=source_url,
         )
 
-    soup_text = _extract_with_beautifulsoup(html)
+    soup_text = _extract_with_beautifulsoup(prepared_html)
     if soup_text:
         method = preferred_method or ExtractionMethod.URL_BEAUTIFULSOUP
         return _result(
@@ -388,6 +462,57 @@ def _extract_with_beautifulsoup(html: str) -> str:
         tag.decompose()
     text = soup.get_text(separator="\n")
     return clean_extracted_text(text)
+
+
+def _extract_tex_from_math_node(node) -> str | None:
+    """Prefer TeX annotation; fall back to simplified MathML/plain text."""
+    annotation = node.find("annotation", attrs={"encoding": "application/x-tex"})
+    if annotation is not None:
+        latex = annotation.get_text(strip=True)
+        if latex:
+            return latex
+
+    for attr in ("data-latex", "data-expr", "aria-label"):
+        value = (node.get(attr) or "").strip()
+        if value:
+            return value
+
+    # MathML-only nodes: reconstruct a compact readable token from text leaves.
+    text = " ".join(node.stripped_strings)
+    text = _WHITESPACE_RE.sub(" ", text).strip()
+    return text or None
+
+
+def _looks_like_display_math(node) -> bool:
+    classes = " ".join(node.get("class") or [])
+    if "display" in classes.lower():
+        return True
+    parent = getattr(node, "parent", None)
+    if parent is not None:
+        parent_classes = " ".join(parent.get("class") or [])
+        if "display" in parent_classes.lower():
+            return True
+        if parent.name in {"div", "p"} and parent.find("span", class_="katex") is node:
+            # Single-equation block paragraphs are usually display math.
+            siblings = [c for c in parent.children if getattr(c, "name", None) or str(c).strip()]
+            if len(siblings) <= 2:
+                return True
+    return False
+
+
+def _format_latex_token(latex: str, *, display: bool) -> str:
+    cleaned = latex.strip()
+    if not cleaned:
+        return ""
+    # Avoid double-wrapping when the source already uses dollar delimiters.
+    if (cleaned.startswith("$$") and cleaned.endswith("$$")) or (
+        cleaned.startswith("$") and cleaned.endswith("$") and not cleaned.startswith("$$")
+    ):
+        token = cleaned
+    else:
+        token = f"$${cleaned}$$" if display else f"${cleaned}$"
+    # Surround with spaces so extractors do not glue tokens to adjacent words.
+    return f" {token} "
 
 
 def _html_title(html: str) -> str | None:

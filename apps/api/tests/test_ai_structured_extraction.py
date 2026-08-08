@@ -15,6 +15,8 @@ from app.models.resource import Resource
 from app.services.ai_structured_extraction import (
     AIStructuredExtractionError,
     StructuredExtractionInput,
+    _source_chunks,
+    _split_stem_and_solution,
     extract_structured_drafts,
     extract_structured_drafts_from_resource,
 )
@@ -188,6 +190,96 @@ def test_uses_cache_when_available() -> None:
     assert result.cache_hit is True
     provider.chat.assert_not_called()
     assert len(result.drafts) == 1
+
+
+def test_source_chunks_splits_numbered_problems() -> None:
+    text = (
+        "Intro about interview prep.\n\n"
+        "Problem 1. Expected tosses for three heads? Solution. Answer is 14.\n\n"
+        "Problem 2. Pirates and gold. Solution. Senior pirate keeps 98.\n\n"
+        "Problem 3. Stick broken into three pieces forms a triangle with probability 1/4."
+    )
+    chunks = _source_chunks(text)
+    assert len(chunks) >= 1
+    joined = "\n".join(chunks)
+    assert "Problem 1." in joined
+    assert "Problem 3." in joined
+    # Prefers problem boundaries over a single truncated blob.
+    assert not joined.endswith("...[truncated]")
+
+
+def test_split_stem_and_solution_separates_marker() -> None:
+    stem, solution = _split_stem_and_solution(
+        "What is E[X]? Solution. By linearity, E[X]=np."
+    )
+    assert stem == "What is E[X]?"
+    assert solution == "By linearity, E[X]=np."
+
+
+def test_extract_multipart_source_makes_multiple_provider_calls() -> None:
+    """Long multi-problem pages are chunked so the model sees complete stems."""
+    session = MagicMock()
+    session.scalar.return_value = None
+    session.refresh.side_effect = lambda row: setattr(row, "id", getattr(row, "id", None) or 1)
+    created = {"n": 0}
+
+    def add(row: object) -> None:
+        if isinstance(row, ExtractedObject):
+            created["n"] += 1
+            row.id = created["n"]
+
+    session.add.side_effect = add
+
+    def chat(messages, **kwargs):  # noqa: ANN001, ARG001
+        payload = json.loads(messages[1].content)
+        source = payload["source_text"]
+        title = "Heads" if "Problem 1" in source else "Pirates"
+        body = (
+            "Expected tosses for three consecutive heads?"
+            if "Problem 1" in source
+            else "How will five pirates divide 100 gold coins?"
+        )
+        return AIChatResult(
+            content=json.dumps(
+                {
+                    "summary": "probability problems",
+                    "topic_slug": "probability",
+                    "questions": [
+                        {
+                            "title": title,
+                            "body": body,
+                            "canonical_solution": "see source",
+                            "confidence_score": 0.8,
+                        }
+                    ],
+                }
+            ),
+            provider="ollama",
+            model="qwen2.5:3b",
+            token_usage=AITokenUsage(input_tokens=50, output_tokens=40),
+            latency_ms=10,
+        )
+
+    provider = MagicMock()
+    provider.provider_name = "ollama"
+    provider.chat_model = "qwen2.5:3b"
+    provider.model_for_task.return_value = "qwen2.5:3b"
+    provider.chat.side_effect = chat
+
+    # Force multiple chunks with inflated per-problem size via many problems.
+    problems = "\n\n".join(
+        f"Problem {i}. This is a long quant interview problem stem number {i} "
+        + ("about probability and expected values. " * 40)
+        + f"Solution. Work through problem {i} carefully with equations."
+        for i in range(1, 8)
+    )
+    result = extract_structured_drafts(
+        session,
+        provider,
+        StructuredExtractionInput(source_text=problems, topic_slug_hint="probability"),
+    )
+    assert provider.chat.call_count >= 2
+    assert len(result.drafts) >= 2
 
 
 def test_extract_from_resource_uses_summary_for_manual_notes() -> None:
