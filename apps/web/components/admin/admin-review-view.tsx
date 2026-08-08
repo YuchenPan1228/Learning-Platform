@@ -224,8 +224,7 @@ function ReviewDetailPanel({
           {policy ? (
             <div className="mt-2 grid gap-1 text-sm text-[#40524b]">
               <p>
-                Decision:{" "}
-                <span className="font-medium text-[#15201c]">{policy.decision}</span>
+                Decision: <span className="font-medium text-[#15201c]">{policy.decision}</span>
               </p>
               <MetaRows
                 rows={[
@@ -283,9 +282,7 @@ function ReviewDetailPanel({
                 </ul>
               ) : null}
               {item.duplicate_cluster_id !== null ? (
-                <p className={mutedTextClassName}>
-                  Linked cluster ID: {item.duplicate_cluster_id}
-                </p>
+                <p className={mutedTextClassName}>Linked cluster ID: {item.duplicate_cluster_id}</p>
               ) : null}
             </div>
           ) : null}

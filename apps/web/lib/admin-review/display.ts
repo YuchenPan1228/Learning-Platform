@@ -118,12 +118,7 @@ export function getLicenseStatus(item: ReviewQueueItem): string {
 }
 
 export function getQualityScore(item: ReviewQueueItem): number | null {
-  return (
-    item.quality?.overall_score ??
-    item.quality_score ??
-    item.resource?.quality_score ??
-    null
-  );
+  return item.quality?.overall_score ?? item.quality_score ?? item.resource?.quality_score ?? null;
 }
 
 export function getQualityComponentRows(
