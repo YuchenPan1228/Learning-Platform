@@ -435,32 +435,33 @@ export function AdminReviewView({
 
   useEffect(() => {
     if (selectedId === null) {
-      setSelectedDetail(null);
-      setIsLoadingDetail(false);
       return;
     }
 
     let cancelled = false;
-    setIsLoadingDetail(true);
-    void fetchReviewItem(selectedId)
-      .then((detail) => {
+    const reviewId = selectedId;
+
+    async function loadDetail() {
+      setIsLoadingDetail(true);
+      try {
+        const detail = await fetchReviewItem(reviewId);
         if (!cancelled) {
           setSelectedDetail(detail);
         }
-      })
-      .catch((detailError: unknown) => {
+      } catch (detailError: unknown) {
         if (!cancelled) {
           setError(
             detailError instanceof Error ? detailError.message : "Review item request failed.",
           );
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setIsLoadingDetail(false);
         }
-      });
+      }
+    }
 
+    void loadDetail();
     return () => {
       cancelled = true;
     };
