@@ -210,6 +210,7 @@ def test_get_question_returns_404_for_missing_id(
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Flashcard learner API is paused product-side")
 def test_flashcards_endpoint(
     client: TestClient,
     seeded_database: None,

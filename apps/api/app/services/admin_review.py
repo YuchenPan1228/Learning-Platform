@@ -20,7 +20,6 @@ from app.services.source_policy import SourcePolicyInput, check_source_policy
 _REVIEW_OBJECT_TYPES = frozenset(
     {
         ExtractedObjectType.QUESTION,
-        ExtractedObjectType.FLASHCARD,
     }
 )
 
@@ -41,8 +40,11 @@ def list_review_items(
         .where(ExtractedObject.status == status)
         .order_by(ExtractedObject.created_at.asc(), ExtractedObject.id.asc())
     )
+    # Flashcard drafts are product-paused; only surface question drafts for review.
     if object_type is not None:
         statement = statement.where(ExtractedObject.object_type == object_type)
+    else:
+        statement = statement.where(ExtractedObject.object_type.in_(_REVIEW_OBJECT_TYPES))
 
     rows = session.scalars(statement).unique().all()
     # List stays lean: quality snapshot only; skip policy/dedupe scans.
@@ -69,7 +71,7 @@ def edit_review_item(
 
     if "object_type" in updates and updates["object_type"] is not None:
         if updates["object_type"] not in _REVIEW_OBJECT_TYPES:
-            raise ReviewQueueError("object_type must be question or flashcard")
+            raise ReviewQueueError("object_type must be question")
 
     # Provenance fields (resource_id, topic_job_id, extraction_method, model_version)
     # are intentionally omitted from ExtractedObjectEdit and never mutated here.

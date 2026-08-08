@@ -10,7 +10,6 @@ from app.models.enums import (
     ResourceSourceType,
 )
 from app.models.extracted_object import ExtractedObject
-from app.models.flashcard import Flashcard
 from app.models.question import Question
 from app.models.resource import Resource
 from app.models.topic import Topic
@@ -214,7 +213,7 @@ def test_publish_review_item_creates_approved_question(
 
 
 @pytest.mark.integration
-def test_publish_review_item_creates_concept_and_flashcard(
+def test_publish_review_item_creates_concept_and_rejects_flashcard(
     migrated_database: None,
     require_postgres: None,
     client: TestClient,
@@ -260,16 +259,13 @@ def test_publish_review_item_creates_concept_and_flashcard(
     assert concept_response.json()["published"]["kind"] == "concept"
 
     flashcard_response = client.post(f"/admin/review/{flashcard_id}/publish")
-    assert flashcard_response.status_code == 200
-    assert flashcard_response.json()["published"]["kind"] == "flashcard"
+    assert flashcard_response.status_code in {400, 422, 409}
+    assert "flashcard" in flashcard_response.json()["detail"].lower()
 
     session = get_session_factory()()
     try:
         concept = session.get(Concept, concept_response.json()["published"]["id"])
-        flashcard = session.get(Flashcard, flashcard_response.json()["published"]["id"])
         assert concept is not None
         assert concept.name == "Publish Test Concept"
-        assert flashcard is not None
-        assert flashcard.front == "What is conditional probability?"
     finally:
         session.close()

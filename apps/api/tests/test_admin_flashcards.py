@@ -64,6 +64,7 @@ def test_delete_flashcard_removes_row() -> None:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Flashcard admin API is paused product-side")
 def test_admin_flashcard_editor_update_and_delete(
     client: TestClient,
     seeded_database: None,

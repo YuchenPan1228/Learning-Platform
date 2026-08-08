@@ -186,6 +186,7 @@ def fetch_robots_txt_body(
             timeout=timeout_seconds,
             headers={"User-Agent": user_agent},
             follow_redirects=True,
+            trust_env=False,
         ) as client:
             response = client.get(robots_url)
     except httpx.HTTPError:

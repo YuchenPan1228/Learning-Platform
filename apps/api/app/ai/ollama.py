@@ -103,23 +103,43 @@ class OllamaProvider(AIProvider):
 
         started_at = time.perf_counter()
         try:
-            response = self._get_client().post(
-                "/api/chat",
-                json=payload,
-                timeout=self._request_timeout_seconds,
-            )
-            response.raise_for_status()
-            body = response.json()
+            body = self._post_chat(payload)
+        except httpx.HTTPStatusError as exc:
+            # Full JSON Schema grammars often fail on smaller models (anyOf/$defs).
+            # Fall back to free-form JSON mode and let chat_structured validate.
+            if (
+                response_schema is not None
+                and exc.response is not None
+                and exc.response.status_code == 400
+            ):
+                payload["format"] = "json"
+                try:
+                    body = self._post_chat(payload)
+                except httpx.TimeoutException as timeout_exc:
+                    raise AIProviderRequestError(
+                        f"Ollama timed out after {self._request_timeout_seconds:.0f}s "
+                        f"using model '{resolved_model}'. "
+                        "For local use, clear heavy OLLAMA_MODEL_* overrides or raise "
+                        "OLLAMA_REQUEST_TIMEOUT_SECONDS.",
+                    ) from timeout_exc
+                except httpx.HTTPStatusError as retry_exc:
+                    raise AIProviderRequestError(
+                        _ollama_http_error_message(retry_exc, resolved_model),
+                    ) from retry_exc
+                except httpx.HTTPError as http_exc:
+                    raise AIProviderRequestError(
+                        f"Ollama request failed using model '{resolved_model}'.",
+                    ) from http_exc
+            else:
+                raise AIProviderRequestError(
+                    _ollama_http_error_message(exc, resolved_model),
+                ) from exc
         except httpx.TimeoutException as exc:
             raise AIProviderRequestError(
                 f"Ollama timed out after {self._request_timeout_seconds:.0f}s "
                 f"using model '{resolved_model}'. "
                 "For local use, clear heavy OLLAMA_MODEL_* overrides or raise "
                 "OLLAMA_REQUEST_TIMEOUT_SECONDS.",
-            ) from exc
-        except httpx.HTTPStatusError as exc:
-            raise AIProviderRequestError(
-                f"Ollama returned HTTP {exc.response.status_code} using model '{resolved_model}'.",
             ) from exc
         except httpx.HTTPError as exc:
             raise AIProviderRequestError(
@@ -160,6 +180,37 @@ class OllamaProvider(AIProvider):
         if self._http_client is None:
             self._http_client = httpx.Client(base_url=self._base_url)
         return self._http_client
+
+    def _post_chat(self, payload: dict[str, Any]) -> dict[str, Any]:
+        response = self._get_client().post(
+            "/api/chat",
+            json=payload,
+            timeout=self._request_timeout_seconds,
+        )
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict):
+            raise AIProviderRequestError("Ollama response was not a JSON object.")
+        return body
+
+
+def _ollama_http_error_message(exc: httpx.HTTPStatusError, model: str) -> str:
+    detail = ""
+    try:
+        payload = exc.response.json()
+        if isinstance(payload, dict):
+            error = payload.get("error")
+            if isinstance(error, str) and error.strip():
+                detail = f" {error.strip()}"
+            elif isinstance(error, dict):
+                message = error.get("message")
+                if isinstance(message, str) and message.strip():
+                    detail = f" {message.strip()}"
+    except ValueError:
+        text = (exc.response.text or "").strip()
+        if text:
+            detail = f" {text[:300]}"
+    return f"Ollama returned HTTP {exc.response.status_code} using model '{model}'.{detail}"
 
 
 def _coerce_token_count(value: object) -> int | None:

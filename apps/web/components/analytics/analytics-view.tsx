@@ -38,16 +38,16 @@ function ReviewDueCount({ count }: { count: number }) {
       className="rounded-lg border border-[#dfe6e1] bg-white p-5 shadow-[0_16px_42px_rgba(21,32,28,0.08)]"
     >
       <p className="text-xs font-bold tracking-wide text-[#66736e] uppercase">Spaced repetition</p>
-      <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Flashcards due</h2>
+      <h2 className="mt-1 text-xl font-semibold text-[#15201c]">Review queue</h2>
       <p className="mt-4 text-4xl font-semibold text-[#15201c]">{count}</p>
       <p className="mt-2 text-sm text-[#66736e]">
-        Cards never reviewed or past their next review time.
+        Flashcard review is paused. Practice questions remain on /practice.
       </p>
       <Link
-        href="/flashcards"
+        href="/practice"
         className="mt-4 inline-flex text-sm font-semibold text-[#176b54] hover:underline"
       >
-        Open flashcards
+        Open practice
       </Link>
     </section>
   );

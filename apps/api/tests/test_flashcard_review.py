@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
+pytestmark = pytest.mark.skip(reason="Flashcard learner API is paused product-side")
+
 
 @pytest.mark.integration
 def test_flashcard_review_updates_next_review_date(

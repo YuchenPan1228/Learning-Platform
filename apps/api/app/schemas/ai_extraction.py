@@ -1,20 +1,30 @@
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from app.models.enums import Difficulty, ExtractedObjectType
 
 
 class AIProposedQuestionDraft(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     title: str = Field(min_length=1, max_length=300)
-    body: str = Field(min_length=1)
-    short_answer: str | None = None
-    canonical_solution: str | None = None
+    body: str = Field(
+        min_length=1,
+        validation_alias=AliasChoices("body", "question", "stem", "prompt", "text"),
+    )
+    short_answer: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("short_answer", "answer", "solution_short"),
+    )
+    canonical_solution: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "canonical_solution",
+            "solution",
+            "worked_solution",
+            "explanation",
+        ),
+    )
     difficulty: Difficulty | None = None
-    confidence_score: float | None = Field(default=None, ge=0, le=1)
-
-
-class AIProposedFlashcardDraft(BaseModel):
-    front: str = Field(min_length=1, max_length=300)
-    back: str = Field(min_length=1)
     confidence_score: float | None = Field(default=None, ge=0, le=1)
 
 
@@ -25,8 +35,8 @@ class AIStructuredExtractionContent(BaseModel):
     topic_slug: str | None = Field(default=None, max_length=120)
     subtopic_slug: str | None = Field(default=None, max_length=120)
     source_title: str | None = Field(default=None, max_length=300)
-    questions: list[AIProposedQuestionDraft] = Field(default_factory=list, max_length=10)
-    flashcards: list[AIProposedFlashcardDraft] = Field(default_factory=list, max_length=15)
+    # Chunked multi-problem pages can yield many drafts; per-call prompts still cap lower.
+    questions: list[AIProposedQuestionDraft] = Field(default_factory=list, max_length=40)
 
 
 class ExtractedDraftSummary(BaseModel):

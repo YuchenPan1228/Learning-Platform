@@ -230,19 +230,11 @@ def _build_detail(items: list[StudyPlanItemRead]) -> str:
 
 
 def build_daily_study_plan(session: Session) -> DailyStudyPlanRead:
-    """Deterministic daily plan from due reviews, weak prerequisites, and practice."""
+    """Deterministic daily plan from weak prerequisites and practice (flashcards paused)."""
     items: list[StudyPlanItemRead] = []
     budget_used = 0
 
-    flashcard_items = _due_flashcard_items(
-        session,
-        budget_used=budget_used,
-        max_items=MAX_FLASHCARD_ITEMS,
-    )
-    items.extend(flashcard_items)
-    budget_used += sum(item.duration_minutes for item in flashcard_items)
-
-    remaining_slots = MAX_ITEMS - len(items)
+    remaining_slots = MAX_ITEMS
     if remaining_slots > 0:
         prereq_items = _prerequisite_items(
             session,

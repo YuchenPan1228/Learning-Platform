@@ -195,8 +195,8 @@ def test_review_queue_api_list_edit_approve_reject(
         )
         draft_b = ExtractedObject(
             resource_id=resource.id,
-            object_type=ExtractedObjectType.FLASHCARD,
-            payload_json={"front": "F", "back": "B"},
+            object_type=ExtractedObjectType.QUESTION,
+            payload_json={"title": "Q2", "body": "Body 2"},
             status=ContentStatus.DRAFT,
             extraction_method="manual",
         )

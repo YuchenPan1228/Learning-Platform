@@ -2,8 +2,9 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from app.ai.provider import AIProvider
 from app.dedup.text import text_hash
-from app.models.enums import ContentStatus, ResourceSourceType
+from app.models.enums import ContentStatus, ResourceSourceType, SourcePolicyDecision
 from app.models.resource import Resource
 from app.schemas.admin_import import (
     NoteImportCreate,
@@ -12,6 +13,10 @@ from app.schemas.admin_import import (
     ResourceImportRead,
     UrlImportCreate,
 )
+from app.services.ai_structured_extraction import (
+    AIStructuredExtractionError,
+    extract_structured_drafts_from_resource,
+)
 from app.services.import_extracted_draft import (
     DraftImportOptions,
     QuestionDraftFields,
@@ -19,6 +24,8 @@ from app.services.import_extracted_draft import (
 )
 from app.services.import_topic_validation import ImportTopicError, validate_import_topics
 from app.services.pdf_upload import store_pdf_upload
+from app.services.source_extraction import SourceExtractionError
+from app.services.source_policy import check_resource_policy
 
 _NOTE_SOURCE_TYPES = frozenset(
     {
@@ -28,7 +35,20 @@ _NOTE_SOURCE_TYPES = frozenset(
 )
 
 
-def import_url_resource(session: Session, payload: UrlImportCreate) -> ResourceImportRead:
+class ImportPolicyError(ValueError):
+    """Raised when source policy denies automatic extraction for an import."""
+
+
+class ImportExtractionError(ValueError):
+    """Raised when page/PDF/note text extraction or AI drafting fails."""
+
+
+def import_url_resource(
+    session: Session,
+    payload: UrlImportCreate,
+    *,
+    provider: AIProvider,
+) -> ResourceImportRead:
     draft_options = _draft_options_from_payload(payload)
     _validate_topics(session, draft_options)
 
@@ -44,10 +64,20 @@ def import_url_resource(session: Session, payload: UrlImportCreate) -> ResourceI
         raw_text_hash=text_hash(url),
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource, options=draft_options)
+    return _persist_with_ai_extraction(
+        session,
+        resource,
+        options=draft_options,
+        provider=provider,
+    )
 
 
-def import_note_resource(session: Session, payload: NoteImportCreate) -> ResourceImportRead:
+def import_note_resource(
+    session: Session,
+    payload: NoteImportCreate,
+    *,
+    provider: AIProvider,
+) -> ResourceImportRead:
     if payload.source_type not in _NOTE_SOURCE_TYPES:
         raise ValueError(
             f"note import source_type must be manual or book_note, got {payload.source_type.value}",
@@ -70,13 +100,19 @@ def import_note_resource(session: Session, payload: NoteImportCreate) -> Resourc
         raw_text_hash=text_hash(note_text),
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource, options=draft_options)
+    return _persist_with_ai_extraction(
+        session,
+        resource,
+        options=draft_options,
+        provider=provider,
+    )
 
 
 def import_question_resource(
     session: Session,
     payload: QuestionImportCreate,
 ) -> ResourceImportRead:
+    """Structured question paste still creates a single ready-to-review draft (no AI)."""
     draft_options = _draft_options_from_payload(payload)
     _validate_topics(session, draft_options)
 
@@ -103,7 +139,7 @@ def import_question_resource(
         short_answer=_blank_to_none(payload.short_answer),
         difficulty=payload.difficulty,
     )
-    return _persist_resource(
+    return _persist_manual_resource(
         session,
         resource,
         options=draft_options,
@@ -115,6 +151,7 @@ def import_pdf_resource(
     session: Session,
     payload: PdfImportCreate,
     *,
+    provider: AIProvider,
     filename: str | None,
     content_type: str | None,
     content: bytes,
@@ -136,10 +173,74 @@ def import_pdf_resource(
         raw_text_hash=stored.content_sha256,
         status=ContentStatus.DRAFT,
     )
-    return _persist_resource(session, resource, options=draft_options)
+    return _persist_with_ai_extraction(
+        session,
+        resource,
+        options=draft_options,
+        provider=provider,
+    )
 
 
-def _persist_resource(
+def _persist_with_ai_extraction(
+    session: Session,
+    resource: Resource,
+    *,
+    options: DraftImportOptions,
+    provider: AIProvider,
+) -> ResourceImportRead:
+    session.add(resource)
+    session.flush()
+
+    policy = check_resource_policy(resource)
+    if policy.decision is SourcePolicyDecision.DENY:
+        session.rollback()
+        reasons = "; ".join(policy.reasons) if policy.reasons else "source policy denied"
+        raise ImportPolicyError(f"source policy denied import: {reasons}")
+
+    try:
+        extraction = extract_structured_drafts_from_resource(
+            session,
+            provider,
+            resource,
+            topic_slug_hint=options.topic_slug,
+            subtopic_slug_hint=options.subtopic_slug,
+            commit=False,
+        )
+    except (AIStructuredExtractionError, SourceExtractionError) as exc:
+        session.rollback()
+        raise ImportExtractionError(str(exc)) from exc
+
+    if extraction.source_title and not resource.title:
+        resource.title = extraction.source_title
+    # Keep pasted note body intact; only fill missing URL/PDF summaries from AI.
+    if extraction.summary and resource.source_type in {
+        ResourceSourceType.URL,
+        ResourceSourceType.PDF,
+    }:
+        if not resource.summary:
+            resource.summary = extraction.summary
+
+    draft_ids = [draft.id for draft in extraction.drafts if draft.id is not None]
+    if not draft_ids:
+        session.rollback()
+        raise ImportExtractionError("AI extraction produced no review drafts")
+
+    session.add(resource)
+    session.commit()
+    session.refresh(resource)
+
+    return ResourceImportRead.model_validate(resource).model_copy(
+        update={
+            "extracted_object_id": draft_ids[0],
+            "extracted_object_ids": draft_ids,
+            "draft_count": len(draft_ids),
+            "extraction_method": extraction.extraction_method,
+            "policy_decision": policy.decision.value,
+        },
+    )
+
+
+def _persist_manual_resource(
     session: Session,
     resource: Resource,
     *,
@@ -158,7 +259,13 @@ def _persist_resource(
     session.refresh(resource)
     session.refresh(extracted)
     return ResourceImportRead.model_validate(resource).model_copy(
-        update={"extracted_object_id": extracted.id},
+        update={
+            "extracted_object_id": extracted.id,
+            "extracted_object_ids": [extracted.id],
+            "draft_count": 1,
+            "extraction_method": extracted.extraction_method,
+            "policy_decision": None,
+        },
     )
 
 
@@ -193,6 +300,8 @@ def _blank_to_none(value: str | None) -> str | None:
 
 
 __all__ = [
+    "ImportExtractionError",
+    "ImportPolicyError",
     "ImportTopicError",
     "import_note_resource",
     "import_pdf_resource",

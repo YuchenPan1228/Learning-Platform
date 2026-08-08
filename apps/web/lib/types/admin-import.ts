@@ -15,6 +15,10 @@ export type ImportedResource = {
   raw_text_hash: string | null;
   status: ContentStatus;
   extracted_object_id: number | null;
+  extracted_object_ids: number[];
+  draft_count: number;
+  extraction_method: string | null;
+  policy_decision: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -11,7 +11,6 @@ from app.config import get_settings
 from app.db import get_engine
 from app.routers import (
     admin_concepts,
-    admin_flashcards,
     admin_import,
     admin_questions,
     admin_review,
@@ -20,7 +19,6 @@ from app.routers import (
     attempts,
     concepts,
     dashboard,
-    flashcards,
     health,
     mastery,
     questions,
@@ -76,7 +74,6 @@ def create_app() -> FastAPI:
     application.include_router(questions.router)
     application.include_router(attempts.router)
     application.include_router(tags.router)
-    application.include_router(flashcards.router)
     application.include_router(mastery.router)
     application.include_router(study_plan.router)
     application.include_router(analytics.router)
@@ -86,7 +83,7 @@ def create_app() -> FastAPI:
     application.include_router(admin_topic_jobs.router)
     application.include_router(admin_concepts.router)
     application.include_router(admin_questions.router)
-    application.include_router(admin_flashcards.router)
+    # Flashcard learner + admin APIs are paused product-side; routers remain in repo.
     application.state.settings = settings
     return application
 

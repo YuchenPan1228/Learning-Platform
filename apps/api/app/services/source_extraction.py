@@ -7,7 +7,8 @@ from pathlib import Path
 
 import requests
 import trafilatura
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 
 from app.config import Settings, get_settings
 from app.dedup.text import text_hash
@@ -25,6 +26,15 @@ _SHELL_MARKERS = (
 
 _WHITESPACE_RE = re.compile(r"[ \t]+")
 _MULTI_BLANK_RE = re.compile(r"\n{3,}")
+_MATH_TEX_SCRIPT_TYPE_RE = re.compile(r"^math/tex", re.IGNORECASE)
+# KaTeX/MathJax HTML often nests MathML + visual glyphs + TeX annotation; plain-text
+# extractors either drop the math or emit garbled multi-layer strings.
+_KATEX_ROOT_SELECTORS = (
+    "span.katex-display",
+    "div.katex-display",
+    "span.katex",
+    "div.katex",
+)
 
 
 class SourceExtractionError(ValueError):
@@ -245,6 +255,8 @@ def extract_from_resource(
     return extract_from_pasted_text(text, title=resource.title)
 
 
+# Prefer decoding without env proxy for local ingestion so corporate/sandbox proxies
+# do not block public educational pages (and make failures more actionable).
 def fetch_html(
     url: str,
     *,
@@ -252,12 +264,15 @@ def fetch_html(
     user_agent: str,
 ) -> HtmlFetchResult:
     try:
-        response = requests.get(
-            url,
-            timeout=timeout_seconds,
-            headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
-            allow_redirects=True,
-        )
+        # trust_env=False avoids broken HTTP(S)_PROXY tunnels from IDE/sandbox proxies.
+        with requests.Session() as session:
+            session.trust_env = False
+            response = session.get(
+                url,
+                timeout=timeout_seconds,
+                headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
+                allow_redirects=True,
+            )
     except requests.RequestException as exc:
         raise SourceExtractionError(f"failed to fetch url: {exc}") from exc
 
@@ -326,6 +341,71 @@ def clean_extracted_text(text: str) -> str:
     return _MULTI_BLANK_RE.sub("\n\n", collapsed).strip()
 
 
+def normalize_math_in_html(html: str) -> str:
+    """Replace rendered KaTeX/MathJax nodes with portable LaTeX ($...$ / $$...$$).
+
+    Educational sites often serve math as nested MathML + HTML + TeX annotation.
+    Strip-to-text then either drops the math entirely or concatenates all layers
+    (e.g. ``E[3]\\mathbb{E}[3]E[3]``). Convert to a single TeX form first.
+    """
+    if not (html or "").strip():
+        return html or ""
+
+    soup = BeautifulSoup(html, "lxml")
+
+    # MathJax v2 keeps the TeX source in script tags (ignored by most text extractors).
+    for script in soup.find_all("script"):
+        if not isinstance(script, Tag):
+            continue
+        script_type = _tag_attr(script, "type")
+        if not _MATH_TEX_SCRIPT_TYPE_RE.match(script_type):
+            continue
+        raw = script.string if isinstance(script.string, str) else script.get_text()
+        tex = (raw or "").strip()
+        if not tex:
+            script.decompose()
+            continue
+        display = "mode=display" in script_type.replace(" ", "").lower()
+        script.replace_with(NavigableString(_format_latex_token(tex, display=display)))
+
+    # MathJax v3 may expose TeX on the container.
+    for mjx in soup.find_all("mjx-container"):
+        if not isinstance(mjx, Tag):
+            continue
+        tex = _tag_attr(mjx, "data-latex") or _tag_attr(mjx, "aria-label")
+        if not tex:
+            ann = mjx.find("annotation", attrs={"encoding": "application/x-tex"})
+            if isinstance(ann, Tag):
+                tex = str(ann.get_text(strip=True))
+        if not tex:
+            continue
+        display = _tag_attr(mjx, "display").lower() == "true"
+        mjx.replace_with(NavigableString(_format_latex_token(tex, display=display)))
+
+    # Prefer display wrappers first so we do not rewrite nested .katex twice.
+    for selector in _KATEX_ROOT_SELECTORS:
+        for node in soup.select(selector):
+            if not isinstance(node, Tag) or node.parent is None:
+                continue
+            katex_tex = _extract_tex_from_math_node(node)
+            if katex_tex is None:
+                continue
+            display = "display" in selector or _looks_like_display_math(node)
+            node.replace_with(NavigableString(_format_latex_token(katex_tex, display=display)))
+
+    # Bare MathML (not already rewritten as part of KaTeX).
+    for math in soup.find_all("math"):
+        if not isinstance(math, Tag) or math.parent is None:
+            continue
+        mathml_tex = _extract_tex_from_math_node(math)
+        if mathml_tex is None:
+            continue
+        display = _tag_attr(math, "display").lower() == "block"
+        math.replace_with(NavigableString(_format_latex_token(mathml_tex, display=display)))
+
+    return str(soup)
+
+
 def _extract_from_html(
     html: str,
     *,
@@ -336,7 +416,8 @@ def _extract_from_html(
         raise SourceExtractionError("HTML body is empty")
 
     title = _html_title(html)
-    trafilatura_text = _extract_with_trafilatura(html, source_url=source_url)
+    prepared_html = normalize_math_in_html(html)
+    trafilatura_text = _extract_with_trafilatura(prepared_html, source_url=source_url)
     if trafilatura_text:
         method = preferred_method or ExtractionMethod.URL_TRAFILATURA
         return _result(
@@ -346,7 +427,7 @@ def _extract_from_html(
             source_url=source_url,
         )
 
-    soup_text = _extract_with_beautifulsoup(html)
+    soup_text = _extract_with_beautifulsoup(prepared_html)
     if soup_text:
         method = preferred_method or ExtractionMethod.URL_BEAUTIFULSOUP
         return _result(
@@ -383,6 +464,71 @@ def _extract_with_beautifulsoup(html: str) -> str:
         tag.decompose()
     text = soup.get_text(separator="\n")
     return clean_extracted_text(text)
+
+
+def _extract_tex_from_math_node(node: Tag) -> str | None:
+    """Prefer TeX annotation; fall back to simplified MathML/plain text."""
+    annotation = node.find("annotation", attrs={"encoding": "application/x-tex"})
+    if isinstance(annotation, Tag):
+        latex = str(annotation.get_text(strip=True))
+        if latex:
+            return latex
+
+    for attr in ("data-latex", "data-expr", "aria-label"):
+        value = _tag_attr(node, attr)
+        if value:
+            return value
+
+    # MathML-only nodes: reconstruct a compact readable token from text leaves.
+    text = " ".join(str(part) for part in node.stripped_strings)
+    text = _WHITESPACE_RE.sub(" ", text).strip()
+    return text or None
+
+
+def _looks_like_display_math(node: Tag) -> bool:
+    classes = _tag_attr(node, "class")
+    if "display" in classes.lower():
+        return True
+    parent = node.parent
+    if isinstance(parent, Tag):
+        parent_classes = _tag_attr(parent, "class")
+        if "display" in parent_classes.lower():
+            return True
+        if parent.name in {"div", "p"} and parent.find("span", class_="katex") is node:
+            # Single-equation block paragraphs are usually display math.
+            siblings = [
+                child
+                for child in parent.children
+                if getattr(child, "name", None) or str(child).strip()
+            ]
+            if len(siblings) <= 2:
+                return True
+    return False
+
+
+def _tag_attr(node: Tag, name: str) -> str:
+    """Return a tag attribute as a plain string (BeautifulSoup may return lists)."""
+    value = node.get(name)
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return " ".join(str(part) for part in value).strip()
+    return str(value).strip()
+
+
+def _format_latex_token(latex: str, *, display: bool) -> str:
+    cleaned = latex.strip()
+    if not cleaned:
+        return ""
+    # Avoid double-wrapping when the source already uses dollar delimiters.
+    if (cleaned.startswith("$$") and cleaned.endswith("$$")) or (
+        cleaned.startswith("$") and cleaned.endswith("$") and not cleaned.startswith("$$")
+    ):
+        token = cleaned
+    else:
+        token = f"$${cleaned}$$" if display else f"${cleaned}$"
+    # Surround with spaces so extractors do not glue tokens to adjacent words.
+    return f" {token} "
 
 
 def _html_title(html: str) -> str | None:
